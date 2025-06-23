@@ -1,0 +1,10 @@
+{
+  "name": "Tommy Expense",
+  "short_name": "Expense",
+  "description": "Track and visualize your expenses with a modern blue interface",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary"
+} 

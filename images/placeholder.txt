@@ -1,0 +1,10 @@
+This is a placeholder file for the images directory.
+You can replace this with actual icon files.
+
+For icons, you can use any online icon generator or create your own icons.
+For example:
+1. Visit https://favicon.io/ to generate icons
+2. Download the icons
+3. Place them in this directory with names like:
+   - icon-192x192.png
+   - icon-512x512.png 
