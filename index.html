@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -21,48 +22,144 @@
             <div class="status-message" id="status-message"></div>
         </header>
 
-        <div class="dashboard">
-            <div class="card summary-card">
-                <h2>Total Expenses</h2>
-                <div class="total-amount" id="total-amount">$0.00</div>
-            </div>
-            
-            <div class="card chart-card">
-                <h2>Monthly Trends</h2>
-                <div class="chart-container">
-                    <canvas id="monthly-chart"></canvas>
+        <div class="container">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active fade-in">
+                <div class="dashboard">
+                    <div class="card summary-card">
+                        <h2>Total Expenses</h2>
+                        <div class="total-amount" id="total-amount">$0.00</div>
+                    </div>
+                    
+                    <div class="card chart-card">
+                        <h2>Monthly Trends</h2>
+                        <div class="chart-container">
+                            <canvas id="monthly-chart"></canvas>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
+            
+            <!-- Categories Section -->
+            <section id="categories" class="section fade-in">
+                <div class="card chart-card">
+                    <h2>Categories</h2>
+                    <div class="chart-container">
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Top Categories</h2>
+                    <div class="top-categories" id="top-categories">
+                        <div class="category-loading">Loading category data...</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Category Insights</h2>
+                    <div class="category-insights">
+                        <div class="insight-item">
+                            <div class="insight-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="insight-content">
+                                <div class="insight-title">Highest Spending</div>
+                                <div class="insight-value" id="highest-category">-</div>
+                            </div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="insight-content">
+                                <div class="insight-title">Average per Category</div>
+                                <div class="insight-value" id="average-category">-</div>
+                            </div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-icon">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="insight-content">
+                                <div class="insight-title">Categories Count</div>
+                                <div class="insight-value" id="category-count">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section id="transactions" class="section fade-in">
+                <div class="card expenses-card">
+                    <h2>Transactions</h2>
+                    <div class="table-container">
+                        <table class="expenses-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-body">
+                                <tr>
+                                    <td colspan="5">Loading expense data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings Section -->
+            <section id="settings" class="section fade-in">
+                <div class="card">
+                    <h2>Settings</h2>
+                    <div class="settings-container">
+                        <div class="setting-item">
+                            <div class="setting-label">Data Source</div>
+                            <div class="setting-value">Google Sheets</div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Theme</div>
+                            <div class="setting-value">Dark Neumorphic</div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Version</div>
+                            <div class="setting-value">1.0.0</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
         
-        <div class="card chart-card">
-            <h2>Categories</h2>
-            <div class="chart-container">
-                <canvas id="category-chart"></canvas>
-            </div>
-        </div>
-
-        <div class="card expenses-card">
-            <h2>Transactions</h2>
-            <div class="table-container">
-                <table class="expenses-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th>Payment</th>
-                        </tr>
-                    </thead>
-                    <tbody id="expenses-body">
-                        <tr>
-                            <td colspan="5">Loading expense data...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                <span class="nav-indicator"></span>
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#categories" class="nav-item" data-section="categories">
+                <span class="nav-indicator"></span>
+                <i class="fas fa-chart-pie"></i>
+                <span>Categories</span>
+            </a>
+            <a href="#transactions" class="nav-item" data-section="transactions">
+                <span class="nav-indicator"></span>
+                <i class="fas fa-list"></i>
+                <span>Transactions</span>
+            </a>
+            <a href="#settings" class="nav-item" data-section="settings">
+                <span class="nav-indicator"></span>
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
     </div>
 
     <script src="js/app.js"></script>

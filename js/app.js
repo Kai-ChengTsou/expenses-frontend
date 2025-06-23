@@ -34,11 +34,14 @@ async function fetchExpenseData() {
             document.getElementById('status-message').textContent = '';
         }, 2000);
         
-        return result;
+        // Process and display the data
+        await displayExpenseData(result);
+        
+        return Promise.resolve(result);
     } catch (error) {
         console.error('Error fetching expense data:', error);
         document.getElementById('status-message').textContent = 'Connection error';
-        return null;
+        return Promise.reject(error);
     }
 }
 
@@ -78,8 +81,8 @@ function parseCSV(text) {
 }
 
 // Function to process and display the expense data
-async function displayExpenseData() {
-    const data = await fetchExpenseData();
+async function displayExpenseData(data) {
+    if (!data) return;
     
     if (!data || !data.table || !data.table.rows) {
         document.getElementById('expenses-body').innerHTML = `
@@ -279,24 +282,40 @@ function createCategoryExpenseChart(categoryTotals) {
         categoryTotals[b] - categoryTotals[a]
     );
     
+    // Enhanced color palette with more variety
     const colors = [
-        'rgba(14, 165, 233, 0.8)',
-        'rgba(6, 182, 212, 0.8)',
-        'rgba(2, 132, 199, 0.8)',
-        'rgba(8, 145, 178, 0.8)',
-        'rgba(20, 184, 166, 0.8)',
-        'rgba(56, 189, 248, 0.8)',
-        'rgba(14, 116, 144, 0.8)',
-        'rgba(34, 211, 238, 0.8)'
+        'rgba(14, 165, 233, 0.85)',  // Blue
+        'rgba(236, 72, 153, 0.85)',  // Pink
+        'rgba(34, 197, 94, 0.85)',   // Green
+        'rgba(250, 204, 21, 0.85)',  // Yellow
+        'rgba(168, 85, 247, 0.85)',  // Purple
+        'rgba(249, 115, 22, 0.85)',  // Orange
+        'rgba(6, 182, 212, 0.85)',   // Cyan
+        'rgba(16, 185, 129, 0.85)',  // Emerald
+        'rgba(239, 68, 68, 0.85)',   // Red
+        'rgba(79, 70, 229, 0.85)',   // Indigo
+        'rgba(20, 184, 166, 0.85)',  // Teal
+        'rgba(245, 158, 11, 0.85)',  // Amber
+        'rgba(217, 70, 239, 0.85)',  // Fuchsia
+        'rgba(59, 130, 246, 0.85)',  // Light Blue
+        'rgba(132, 204, 22, 0.85)'   // Lime
     ];
+    
+    // Create a color mapping for categories to ensure consistency
+    const categoryColorMap = {};
+    sortedCategories.forEach((category, index) => {
+        categoryColorMap[category] = colors[index % colors.length];
+    });
     
     const chartData = {
         labels: sortedCategories,
         datasets: [{
             data: sortedCategories.map(category => categoryTotals[category]),
-            backgroundColor: sortedCategories.map((_, i) => colors[i % colors.length]),
-            borderWidth: 0,
-            hoverOffset: 5
+            backgroundColor: sortedCategories.map(category => categoryColorMap[category]),
+            borderWidth: 2,
+            borderColor: '#0f1115',
+            hoverOffset: 8,
+            hoverBorderWidth: 0
         }]
     };
     
@@ -345,6 +364,75 @@ function createCategoryExpenseChart(categoryTotals) {
             cutout: '70%'
         }
     });
+    
+    // Update Top Categories section
+    updateTopCategories(sortedCategories, categoryTotals, categoryColorMap);
+    
+    // Update Category Insights
+    updateCategoryInsights(categoryTotals);
+}
+
+// Function to update the Top Categories section
+function updateTopCategories(sortedCategories, categoryTotals, categoryColorMap) {
+    const topCategoriesElement = document.getElementById('top-categories');
+    const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+    
+    // Take top 5 categories
+    const topCategories = sortedCategories.slice(0, 5);
+    
+    if (topCategories.length === 0) {
+        topCategoriesElement.innerHTML = '<div class="category-loading">No category data available</div>';
+        return;
+    }
+    
+    let topCategoriesHTML = '';
+    
+    topCategories.forEach(category => {
+        const amount = categoryTotals[category];
+        const percentage = ((amount / totalExpenses) * 100).toFixed(1);
+        const color = categoryColorMap[category];
+        
+        topCategoriesHTML += `
+            <div class="category-item">
+                <div class="category-info">
+                    <div class="category-color" style="background-color: ${color}"></div>
+                    <div class="category-name">${category}</div>
+                </div>
+                <div class="category-amount">
+                    $${amount.toFixed(2)}
+                    <span class="category-percentage">${percentage}%</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    topCategoriesElement.innerHTML = topCategoriesHTML;
+}
+
+// Function to update the Category Insights
+function updateCategoryInsights(categoryTotals) {
+    const categories = Object.keys(categoryTotals);
+    const amounts = Object.values(categoryTotals);
+    
+    if (categories.length === 0) {
+        document.getElementById('highest-category').textContent = '-';
+        document.getElementById('average-category').textContent = '-';
+        document.getElementById('category-count').textContent = '-';
+        return;
+    }
+    
+    // Highest spending category
+    const highestAmount = Math.max(...amounts);
+    const highestCategory = categories.find(cat => categoryTotals[cat] === highestAmount);
+    document.getElementById('highest-category').textContent = `${highestCategory} ($${highestAmount.toFixed(2)})`;
+    
+    // Average per category
+    const totalAmount = amounts.reduce((sum, amount) => sum + amount, 0);
+    const averageAmount = totalAmount / categories.length;
+    document.getElementById('average-category').textContent = `$${averageAmount.toFixed(2)}`;
+    
+    // Categories count
+    document.getElementById('category-count').textContent = categories.length.toString();
 }
 
 // Add to Home Screen functionality
@@ -383,7 +471,98 @@ window.addEventListener('beforeinstallprompt', (e) => {
     });
 });
 
-// Initialize the app when the DOM is loaded
+// Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    displayExpenseData();
-}); 
+    fetchExpenseData();
+    setupNavigation();
+});
+
+// Handle bottom navigation
+function setupNavigation() {
+    // Get all navigation items and sections
+    const navItems = document.querySelectorAll('.nav-item');
+    const sections = document.querySelectorAll('section');
+    
+    // Set up click event for each navigation item
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Don't do anything if already active
+            if (item.classList.contains('active')) return;
+            
+            // Get the section id from data attribute
+            const sectionId = item.getAttribute('data-section');
+            const activeSection = document.getElementById(sectionId);
+            
+            // Add animation class to the clicked item
+            item.classList.add('nav-item-clicked');
+            setTimeout(() => item.classList.remove('nav-item-clicked'), 300);
+            
+            // Remove active class from all items and add to clicked item
+            navItems.forEach(navItem => navItem.classList.remove('active'));
+            
+            // Delay the active class to create a smoother transition
+            setTimeout(() => {
+                item.classList.add('active');
+                
+                // Hide all sections and show the selected one
+                sections.forEach(section => {
+                    section.classList.remove('active', 'fade-in');
+                    section.style.display = 'none';
+                });
+                
+                // Show and animate the selected section
+                activeSection.style.display = 'block';
+                
+                // Trigger reflow for animation to work
+                void activeSection.offsetWidth;
+                
+                activeSection.classList.add('active', 'fade-in');
+            }, 50);
+        });
+    });
+    
+    // Initialize - show only the active section
+    sections.forEach(section => {
+        if (!section.classList.contains('active')) {
+            section.style.display = 'none';
+        }
+    });
+    
+    // Add ripple effect to nav items
+    navItems.forEach(item => {
+        item.addEventListener('mousedown', createRipple);
+        item.addEventListener('touchstart', createRipple, { passive: true });
+    });
+}
+
+// Function to create ripple effect
+function createRipple(event) {
+    const button = event.currentTarget;
+    
+    // Remove any existing ripples
+    const ripples = button.querySelectorAll('.ripple');
+    ripples.forEach(ripple => ripple.remove());
+    
+    const circle = document.createElement('span');
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+    
+    // Get position relative to the button
+    const rect = button.getBoundingClientRect();
+    let x = event.clientX ? event.clientX - rect.left : event.touches[0].clientX - rect.left;
+    let y = event.clientY ? event.clientY - rect.top : event.touches[0].clientY - rect.top;
+    
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${x - radius}px`;
+    circle.style.top = `${y - radius}px`;
+    circle.classList.add('ripple');
+    
+    button.appendChild(circle);
+    
+    // Remove ripple after animation completes
+    setTimeout(() => {
+        circle.remove();
+    }, 600);
+} 
