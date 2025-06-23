@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tommy Expense - Icon Generator</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #4fc7ff;
+            text-align: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .icon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1d2a;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .icon-name {
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .download-btn {
+            margin-top: 15px;
+            background: #4fc7ff;
+            color: #0f1115;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            background: #3a95c7;
+        }
+        .instructions {
+            background: #1a1d2a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .instructions h2 {
+            color: #4fc7ff;
+            margin-top: 0;
+        }
+        .instructions ol {
+            line-height: 1.6;
+        }
+        .instructions code {
+            background: #232839;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tommy Expense - App Icon Generator</h1>
+    
+    <div class="container" id="icons-container">
+        <!-- Icons will be generated here -->
+    </div>
+    
+    <div class="instructions">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Click the "Download" button below each icon to save it</li>
+            <li>Save each icon with its specified filename</li>
+            <li>Place all icons in the <code>frontend/images/icons/</code> directory</li>
+            <li>Place all splash screens in the <code>frontend/images/splash/</code> directory</li>
+        </ol>
+    </div>
+    
+    <script>
+        // App icon sizes
+        const iconSizes = [
+            { name: 'favicon-16x16.png', size: 16 },
+            { name: 'favicon-32x32.png', size: 32 },
+            { name: 'apple-touch-icon.png', size: 180 },
+            { name: 'icon-192x192.png', size: 192 },
+            { name: 'icon-512x512.png', size: 512 }
+        ];
+        
+        // Splash screen sizes
+        const splashSizes = [
+            { name: 'apple-launch-640x1136.png', width: 640, height: 1136 },
+            { name: 'apple-launch-750x1334.png', width: 750, height: 1334 },
+            { name: 'apple-launch-1125x2436.png', width: 1125, height: 2436 },
+            { name: 'apple-launch-1242x2208.png', width: 1242, height: 2208 },
+            { name: 'apple-launch-1536x2048.png', width: 1536, height: 2048 },
+            { name: 'apple-launch-1668x2224.png', width: 1668, height: 2224 },
+            { name: 'apple-launch-1668x2388.png', width: 1668, height: 2388 },
+            { name: 'apple-launch-2048x2732.png', width: 2048, height: 2732 }
+        ];
+        
+        // Generate app icons
+        function generateIcon(size, filename) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#1a1d2a');
+            gradient.addColorStop(1, '#232839');
+            
+            // Fill background
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw circle
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.35;
+            
+            // Outer glow
+            ctx.shadowColor = '#4fc7ff';
+            ctx.shadowBlur = size * 0.1;
+            
+            // Circle gradient
+            const circleGradient = ctx.createLinearGradient(
+                centerX - radius, 
+                centerY - radius, 
+                centerX + radius, 
+                centerY + radius
+            );
+            circleGradient.addColorStop(0, '#4fc7ff');
+            circleGradient.addColorStop(1, '#3a95c7');
+            
+            ctx.fillStyle = circleGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowBlur = 0;
+            
+            // Draw "T" letter
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.4}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('T', centerX, centerY);
+            
+            return { canvas, filename };
+        }
+        
+        // Generate splash screens
+        function generateSplashScreen(width, height, filename) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#1a1d2a');
+            gradient.addColorStop(1, '#232839');
+            
+            // Fill background
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw app icon
+            const iconSize = Math.min(width, height) * 0.3;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = iconSize / 2;
+            
+            // Outer glow
+            ctx.shadowColor = '#4fc7ff';
+            ctx.shadowBlur = iconSize * 0.1;
+            
+            // Circle gradient
+            const circleGradient = ctx.createLinearGradient(
+                centerX - radius, 
+                centerY - radius, 
+                centerX + radius, 
+                centerY + radius
+            );
+            circleGradient.addColorStop(0, '#4fc7ff');
+            circleGradient.addColorStop(1, '#3a95c7');
+            
+            ctx.fillStyle = circleGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowBlur = 0;
+            
+            // Draw "T" letter
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${iconSize * 0.5}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('T', centerX, centerY);
+            
+            // Draw app name
+            ctx.font = `bold ${iconSize * 0.2}px Inter, sans-serif`;
+            ctx.fillText('Tommy Expense', centerX, centerY + radius * 1.8);
+            
+            return { canvas, filename };
+        }
+        
+        // Create download button for an icon
+        function createIconElement(canvasInfo) {
+            const { canvas, filename } = canvasInfo;
+            
+            const container = document.createElement('div');
+            container.className = 'icon-container';
+            
+            // Display the canvas
+            container.appendChild(canvas);
+            
+            // Add filename
+            const nameElement = document.createElement('div');
+            nameElement.className = 'icon-name';
+            nameElement.textContent = filename;
+            container.appendChild(nameElement);
+            
+            // Add dimensions
+            const dimensionsElement = document.createElement('div');
+            dimensionsElement.className = 'icon-name';
+            dimensionsElement.textContent = `${canvas.width}x${canvas.height}`;
+            container.appendChild(dimensionsElement);
+            
+            // Add download button
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'download-btn';
+            downloadBtn.textContent = 'Download';
+            downloadBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+            container.appendChild(downloadBtn);
+            
+            return container;
+        }
+        
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('icons-container');
+            
+            // Generate and display app icons
+            iconSizes.forEach(icon => {
+                const iconCanvas = generateIcon(icon.size, icon.name);
+                container.appendChild(createIconElement(iconCanvas));
+            });
+            
+            // Generate and display splash screens
+            splashSizes.forEach(splash => {
+                // For splash screens, generate a preview at a smaller size
+                const previewWidth = 200;
+                const previewHeight = Math.floor((splash.height / splash.width) * previewWidth);
+                
+                // Generate the full-size splash screen
+                const fullSplash = generateSplashScreen(splash.width, splash.height, splash.name);
+                
+                // Create a smaller preview canvas
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.width = previewWidth;
+                previewCanvas.height = previewHeight;
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.drawImage(fullSplash.canvas, 0, 0, previewWidth, previewHeight);
+                
+                // Create element with the preview but download the full size
+                const previewInfo = { canvas: previewCanvas, filename: splash.name };
+                const element = createIconElement(previewInfo);
+                
+                // Replace the download action to use the full-size canvas
+                const downloadBtn = element.querySelector('.download-btn');
+                downloadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Stop the event from the preview handler
+                    const link = document.createElement('a');
+                    link.download = splash.name;
+                    link.href = fullSplash.canvas.toDataURL('image/png');
+                    link.click();
+                }, true);
+                
+                container.appendChild(element);
+            });
+        });
+    </script>
+</body>
+</html> 
