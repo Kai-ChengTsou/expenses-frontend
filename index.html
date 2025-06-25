@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f1115">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tommy Expense">
+    <meta name="apple-mobile-web-app-title" content="Tommy Expensessss">
     <meta name="application-name" content="Tommy Expense">
     <meta name="description" content="Track and visualize your expenses with Tommy Expense">
     
@@ -41,6 +41,9 @@
         <header>
             <div class="logo">
                 <h1>Tommy Expense</h1>
+                <button id="refresh-btn" class="refresh-btn" title="Refresh data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
             </div>
             <div class="status-message" id="status-message"></div>
         </header>
@@ -116,11 +119,24 @@
             <!-- Transactions Section -->
             <section id="transactions" class="section fade-in">
                 <div class="card expenses-card">
-                    <h2>Transactions</h2>
+                    <div class="card-header">
+                        <h2>Transactions</h2>
+                        <div class="transaction-buttons">
+                            <!-- Delete Mode Button -->
+                            <button id="delete-mode-btn" class="delete-transaction-btn-top">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <!-- Add Transaction Button -->
+                            <button id="add-transaction-btn" class="add-transaction-btn-top">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-container">
                         <table class="expenses-table">
                             <thead>
                                 <tr>
+                                    <th class="delete-column hidden">Delete</th>
                                     <th>Date</th>
                                     <th>Amount</th>
                                     <th>Category</th>
@@ -130,10 +146,83 @@
                             </thead>
                             <tbody id="expenses-body">
                                 <tr>
-                                    <td colspan="5">Loading expense data...</td>
+                                    <td colspan="6">Loading expense data...</td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                
+                <!-- Add Transaction Modal -->
+                <div id="transaction-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Add New Transaction</h3>
+                            <span class="close-modal">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="transaction-form">
+                                <div class="form-group">
+                                    <label for="transaction-date">Date</label>
+                                    <input type="date" id="transaction-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transaction-amount">Amount</label>
+                                    <input type="number" id="transaction-amount" step="0.01" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transaction-category">Category</label>
+                                    <select id="transaction-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="食物">食物</option>
+                                        <option value="穿著">穿著</option>
+                                        <option value="生活用品">生活用品</option>
+                                        <option value="禮物">禮物</option>
+                                        <option value="網路購物">網路購物</option>
+                                        <option value="小雜碎">小雜碎</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transaction-description">Description</label>
+                                    <input type="text" id="transaction-description" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transaction-payment">Payment Method</label>
+                                    <select id="transaction-payment" required>
+                                        <option value="">Select Payment Method</option>
+                                        <option value="紙錢">紙錢</option>
+                                        <option value="熊大">熊大</option>
+                                        <option value="Line Bank">Line Bank</option>
+                                        <option value="星展">星展</option>
+                                        <option value="Bank of America">Bank of America</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" id="cancel-transaction" class="btn-secondary">Cancel</button>
+                                    <button type="submit" class="btn-primary">Add Transaction</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delete Confirmation Modal -->
+                <div id="delete-confirm-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Confirm Delete</h3>
+                            <span class="close-modal-delete">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete this transaction?</p>
+                            <div class="transaction-details" id="delete-transaction-details">
+                                <!-- Transaction details will be inserted here -->
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="confirm-delete" class="btn-danger">Delete</button>
+                                <button type="button" id="cancel-delete" class="btn-secondary">Cancel</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
