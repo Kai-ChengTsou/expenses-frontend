@@ -1,4 +1,5 @@
-const CACHE_NAME = 'tommy-expense-v1';
+// Tommy Expense Service Worker
+const CACHE_NAME = 'tommy-expense-cache-v1.0.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -10,18 +11,12 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Install event - cache assets
+// Skip waiting to ensure the new service worker activates immediately
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(ASSETS_TO_CACHE);
-      })
-      .then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Clear old caches when a new service worker activates
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -32,41 +27,31 @@ self.addEventListener('activate', event => {
           return caches.delete(cacheName);
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
 });
 
-// Fetch event - serve from cache if available, otherwise fetch from network
+// Fetch event - bypass cache for API requests and dynamic content
 self.addEventListener('fetch', event => {
-  // Skip cross-origin requests
-  if (event.request.url.startsWith(self.location.origin) || 
-      event.request.url.includes('fonts.googleapis.com') || 
-      event.request.url.includes('cdn.jsdelivr.net')) {
-    
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          if (response) {
-            return response;
-          }
-          return fetch(event.request)
-            .then(response => {
-              // Don't cache if not a valid response
-              if (!response || response.status !== 200 || response.type !== 'basic') {
-                return response;
-              }
-              
-              // Clone the response
-              const responseToCache = response.clone();
-              
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
-                
-              return response;
-            });
-        })
-    );
+  const url = new URL(event.request.url);
+  
+  // Skip caching for Google Sheets API and Google Apps Script requests
+  if (url.hostname.includes('google') || 
+      url.hostname.includes('googleapis') || 
+      url.pathname.includes('script.google.com')) {
+    return;
   }
+  
+  // Skip caching for requests with cache-busting parameters
+  if (url.search.includes('v=')) {
+    return;
+  }
+  
+  // For other requests, use network-first strategy
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
 }); 

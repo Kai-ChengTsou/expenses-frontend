@@ -6,6 +6,9 @@ const RANGE = 'A1:F1000'; // Adjust range as needed
 // Google Apps Script Web App URL with the new script ID
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-LLk4KrVEAeviuPsOukGgfDA_s1VsZG1dQjAtjXhUOx_IAxK_8rHCoKILGwIqhoKpmg/exec';
 
+// App version to force cache refresh
+const APP_VERSION = Date.now();
+
 // Global variables for delete functionality
 let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
@@ -14,12 +17,20 @@ let transactionData = []; // Store transaction data for deletion
 async function fetchExpenseData() {
     try {
         // Using the CSV export approach which is more reliable
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}`;
+        // Add version parameter to bust cache
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}&v=${APP_VERSION}`;
         
         // Show loading status
         document.getElementById('status-message').textContent = 'Loading...';
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            cache: 'no-store', // Force fetch from network, not cache
+            headers: {
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
         const csvText = await response.text();
         
         // Parse CSV data
@@ -492,16 +503,21 @@ async function deleteTransactionFromSheet(rowIndex) {
             action: 'delete',
             rowIndex: rowIndex,
             spreadsheetId: SPREADSHEET_ID,
-            sheetName: SHEET_NAME
+            sheetName: SHEET_NAME,
+            // Add timestamp to prevent caching
+            timestamp: Date.now()
         };
         
         // Send the data to Google Apps Script Web App
-        const response = await fetch(SCRIPT_URL, {
+        const response = await fetch(`${SCRIPT_URL}?v=${Date.now()}`, {
             method: 'POST',
             mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
-            cache: 'no-cache',
+            cache: 'no-store',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             },
             redirect: 'follow',
             body: JSON.stringify(data)
@@ -1056,16 +1072,21 @@ async function addTransactionToSheet(date, amount, category, description, paymen
             paymentMethod: paymentMethod,
             // Optional: Include these if you want to specify a different sheet
             spreadsheetId: SPREADSHEET_ID,
-            sheetName: SHEET_NAME
+            sheetName: SHEET_NAME,
+            // Add timestamp to prevent caching
+            timestamp: Date.now()
         };
         
         // Send the data to Google Apps Script Web App
-        const response = await fetch(SCRIPT_URL, {
+        const response = await fetch(`${SCRIPT_URL}?v=${Date.now()}`, {
             method: 'POST',
             mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
-            cache: 'no-cache',
+            cache: 'no-store',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             },
             redirect: 'follow',
             body: JSON.stringify(data)
