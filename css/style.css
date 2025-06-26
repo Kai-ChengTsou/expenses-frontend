@@ -259,24 +259,25 @@ header {
 }
 
 .delete-button {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #e53e3e, #c53030);
+    background: #ff6b6b;
     color: white;
     border: none;
-    font-size: 12px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
 }
 
 .delete-button:hover {
     transform: scale(1.1);
-    background: linear-gradient(145deg, #f56565, #e53e3e);
+    background: #ff5252;
 }
 
 /* Hidden Elements */
@@ -330,6 +331,9 @@ header {
     flex-direction: column;
     gap: 8px;
     margin-top: 24px;
+    padding-bottom: 15px;
+    position: relative;
+    z-index: 1001;
 }
 
 .form-actions .btn-secondary,
@@ -1056,15 +1060,15 @@ section h2 {
 .modal {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
+    overflow: auto;
     background-color: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
-    overflow-y: auto;
-    padding: 20px;
-    box-sizing: border-box;
+    animation: modalFadeIn 0.3s ease;
+    padding-bottom: 80px; /* Added padding at the bottom to avoid nav bar */
 }
 
 .modal-content {
@@ -1158,9 +1162,18 @@ section h2 {
 
 .form-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 24px;
+    padding-bottom: 15px;
+    position: relative;
+    z-index: 1001;
+}
+
+.form-actions .btn-secondary,
+.form-actions .btn-primary,
+.form-actions .btn-danger {
+    width: 100%;
 }
 
 .btn-primary,
@@ -1212,4 +1225,410 @@ section h2 {
         width: 100%;
         margin-bottom: 8px;
     }
+}
+
+/* Subscription section */
+#subscriptions .expenses-card {
+    margin-bottom: 20px;
+}
+
+#subscriptions .table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+#subscriptions .expenses-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#subscriptions .expenses-table th,
+#subscriptions .expenses-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+}
+
+#subscriptions .expenses-table th {
+    font-weight: 600;
+    color: #8e9aaf;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+#subscriptions .expenses-table td {
+    color: #e4e6eb;
+    font-size: 0.95rem;
+}
+
+#subscriptions .expenses-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#subscriptions .expenses-table .delete-column {
+    width: 50px;
+    text-align: center;
+}
+
+#subscriptions .expenses-table .delete-column.hidden {
+    display: none;
+}
+
+#subscriptions .delete-btn {
+    background: transparent;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#subscriptions .delete-btn:hover {
+    background-color: rgba(255, 107, 107, 0.2);
+}
+
+/* Subscription modal */
+#subscription-modal .modal-content {
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#edit-subscription-modal .modal-content {
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin-bottom: 70px; /* Add margin at the bottom to avoid nav bar */
+}
+
+/* Delete confirmation modal inherits styles from subscription-detail-modal */
+
+/* Delete mode button */
+#delete-subscription-btn.active {
+    background: linear-gradient(145deg, #ff6b6b, #ff8e8e);
+    color: white;
+}
+
+/* Empty row styling */
+#subscriptions .empty-row td {
+    text-align: center;
+    padding: 30px;
+    color: #8e9aaf;
+}
+
+/* Subscription section */
+#subscriptions .subscription-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+}
+
+/* Subscription card */
+.subscription-card {
+    background: #1a1e24;
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -8px -8px 16px rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+}
+
+.subscription-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.4), -10px -10px 20px rgba(255, 255, 255, 0.07);
+}
+
+.subscription-card .service-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.subscription-card .price {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #e4e6eb;
+    line-height: 1.2;
+}
+
+.subscription-card .billing-cycle {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #8e9aaf;
+}
+
+.subscription-card .next-payment {
+    color: #e4e6eb;
+    font-size: 0.95rem;
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+}
+
+.subscription-card .next-payment i {
+    color: #4fc7ff;
+    margin-right: 8px;
+    font-size: 0.9rem;
+}
+
+/* Subscription details modal - optimized size */
+.fullscreen-modal {
+    position: fixed;
+    z-index: 1000; /* Higher than other elements */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: flex-start; /* Changed from center to flex-start */
+    justify-content: center;
+    padding-top: 40px; /* Reduced from 50px to 40px */
+}
+
+.fullscreen-modal .modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 450px;
+    height: 75vh; /* Reduced from 80vh to 75vh */
+    max-height: 75vh; /* Reduced from 80vh to 75vh */
+    margin: 0 auto;
+    margin-bottom: 80px; /* Increased from 70px to 80px to avoid nav bar */
+    border-radius: 20px;
+    background: #1a1e24;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.subscription-detail-modal .modal-header {
+    padding: 15px;
+    border-bottom: none;
+    text-align: right;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 10;
+}
+
+.subscription-detail-modal .close-details-modal {
+    font-size: 1.8rem;
+    color: #8e9aaf;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+}
+
+.subscription-detail-modal .modal-body {
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.subscription-detail-content {
+    padding: 20px 25px 15px; /* Reduced padding */
+    margin-bottom: 0;
+    background-color: transparent;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.subscription-detail-content .service-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    background: linear-gradient(145deg, #4fc7ff, #4673ff);
+    color: white;
+    align-self: flex-start;
+}
+
+.subscription-detail-content .service-name {
+    font-size: 1.8rem; /* Reduced from 2rem */
+    font-weight: 700;
+    margin-bottom: 6px; /* Reduced from 8px */
+    color: #ffffff;
+}
+
+.subscription-detail-content .price {
+    font-size: 2rem; /* Reduced from 2.2rem */
+    font-weight: 700;
+    margin-bottom: 15px; /* Reduced from 25px */
+    background: linear-gradient(145deg, #4fc7ff, #4673ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.subscription-detail-content .detail-group {
+    margin-bottom: 20px;
+}
+
+.subscription-detail-content .detail-item {
+    display: flex;
+    margin-bottom: 14px; /* Reduced from 18px */
+    align-items: center;
+}
+
+.subscription-detail-content .detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.subscription-detail-content .detail-item i {
+    width: 36px; /* Reduced from 42px */
+    height: 36px; /* Reduced from 42px */
+    margin-right: 12px; /* Reduced from 15px */
+    color: #4fc7ff;
+    background: rgba(79, 199, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem; /* Reduced from 1.2rem */
+    flex-shrink: 0;
+}
+
+.subscription-detail-content .detail-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.subscription-detail-content .detail-label {
+    font-weight: 600;
+    color: #8e9aaf;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.subscription-detail-content .detail-value {
+    color: #e4e6eb;
+    font-size: 1.1rem; /* Reduced from 1.2rem */
+    word-break: break-word;
+}
+
+.subscription-actions {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px; /* Reduced from 20px */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    margin-bottom: 10px; /* Added margin at the bottom */
+    position: relative; /* Added position relative */
+    z-index: 1001; /* Higher than the bottom nav */
+}
+
+.subscription-actions button {
+    margin: 0 15px;
+}
+
+/* Loading message */
+.loading-message {
+    text-align: center;
+    padding: 30px;
+    color: #8e9aaf;
+    grid-column: 1 / -1;
+}
+
+/* Empty state */
+.empty-subscriptions {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8e9aaf;
+    grid-column: 1 / -1;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin: 10px 0;
+}
+
+.empty-subscriptions i {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.subscription-card .delete-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    border-radius: 16px;
+    z-index: 5;
+}
+
+.subscription-card .delete-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.subscription-card .delete-btn {
+    background: #ff6b6b;
+    border: none;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+    transition: all 0.3s ease;
+}
+
+.subscription-card .delete-btn:hover {
+    transform: scale(1.1);
+}
+
+.action-icon-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* Added position relative */
+    z-index: 1002; /* Higher than other elements */
+}
+
+.action-icon-btn i {
+    margin: 0 !important;
+    font-size: 1.2rem;
 } 

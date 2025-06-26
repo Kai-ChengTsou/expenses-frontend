@@ -3,8 +3,12 @@ const SPREADSHEET_ID = '1YztC7lJq9mg2GEt92TdPWAfhH_UmFvXFQW8hKLKL798';
 const SHEET_NAME = 'Expenses'; // Changed to match the Apple Shortcuts script
 const RANGE = 'A1:F1000'; // Adjust range as needed
 
+// Subscription sheet constants
+const SUBSCRIPTION_SHEET_NAME = 'Subscription';
+const SUBSCRIPTION_RANGE = 'A1:H1000'; // Include all columns for subscriptions
+
 // Google Apps Script Web App URL with the new script ID
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-LLk4KrVEAeviuPsOukGgfDA_s1VsZG1dQjAtjXhUOx_IAxK_8rHCoKILGwIqhoKpmg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv9ivlEENtsOGzODQeBNIdlenH85hhpC0qo6RiJRVrPqq5BK0VQ/exec';
 
 // App version to force cache refresh
 const APP_VERSION = Date.now();
@@ -12,6 +16,8 @@ const APP_VERSION = Date.now();
 // Global variables for delete functionality
 let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
+let isSubscriptionDeleteMode = false;
+let subscriptionData = []; // Store subscription data for deletion
 
 // Function to fetch data from the published Google Sheet
 async function fetchExpenseData() {
@@ -150,7 +156,7 @@ async function displayExpenseData(data) {
         const amount = row.c[amountIndex]?.v || '0';
         const category = row.c[categoryIndex]?.v || 'Uncategorized';
         const description = row.c[descriptionIndex]?.v || '';
-        const paymentMethod = row.c[paymentMethodIndex]?.v || 'N/A';
+        const payment = row.c[paymentMethodIndex]?.v || 'N/A';
         
         // Clean amount string and convert to number
         const amountValue = parseFloat(String(amount).replace(/[^0-9.-]+/g, ''));
@@ -190,27 +196,29 @@ async function displayExpenseData(data) {
         }
         
         // Add data attributes for deletion
+        // For display, we use the array index (0-based)
+        // For sheet operations, we'll calculate the actual sheet row later
         const dataAttributes = `
             data-row-index="${rowIndex}"
             data-date="${date}"
             data-amount="${amountValue}"
             data-category="${category}"
             data-description="${description}"
-            data-payment="${paymentMethod}"
+            data-payment="${payment}"
         `;
         
         return `
-            <tr ${dataAttributes}>
+            <tr ${dataAttributes} class="transaction-row">
                 <td class="delete-column hidden">
                     <button class="delete-button" data-row-index="${rowIndex}">
-                        <i class="fas fa-minus"></i>
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
                 <td>${displayDate}</td>
                 <td>${displayAmount}</td>
                 <td>${category}</td>
                 <td>${description}</td>
-                <td>${paymentMethod}</td>
+                <td>${payment}</td>
             </tr>
         `;
     }).join('');
@@ -371,119 +379,76 @@ function createEmptyCategoryChart() {
 // Function to setup delete buttons
 function setupDeleteButtons() {
     const deleteButtons = document.querySelectorAll('.delete-button');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const rowIndex = this.getAttribute('data-row-index');
-            const row = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+    
+    // Define the delete handler function
+    function handleDeleteClick(e) {
+        e.stopPropagation();
+        const rowIndex = this.getAttribute('data-row-index');
+        const row = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+        
+        if (row) {
+            // Get transaction details for confirmation
+            const date = row.getAttribute('data-date');
+            const amount = row.getAttribute('data-amount');
+            const category = row.getAttribute('data-category');
+            const description = row.getAttribute('data-description');
+            const payment = row.getAttribute('data-payment');
             
-            if (row) {
-                // Get transaction details for confirmation
-                const date = row.getAttribute('data-date');
-                const amount = row.getAttribute('data-amount');
-                const category = row.getAttribute('data-category');
-                const description = row.getAttribute('data-description');
-                const payment = row.getAttribute('data-payment');
-                
-                // Show confirmation modal
-                showDeleteConfirmation(rowIndex, date, amount, category, description, payment);
+            // Format date for display
+            let displayDate = date;
+            try {
+                const dateObj = new Date(date);
+                if (!isNaN(dateObj.getTime())) {
+                    displayDate = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                }
+            } catch (e) {
+                console.warn('Date parsing error:', e);
             }
-        });
-    });
-}
-
-// Function to show delete confirmation modal
-function showDeleteConfirmation(rowIndex, date, amount, category, description, payment) {
-    const modal = document.getElementById('delete-confirm-modal');
-    const detailsContainer = document.getElementById('delete-transaction-details');
-    
-    // Format date for display
-    let displayDate = date;
-    try {
-        const dateObj = new Date(date);
-        if (!isNaN(dateObj.getTime())) {
-            displayDate = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            
+            // Format amount for display
+            const displayAmount = `$${parseFloat(amount).toFixed(2)}`;
+            
+            // Show simple confirmation
+            const confirmed = confirm(`Delete transaction?\n\nDate: ${displayDate}\nAmount: ${displayAmount}\nCategory: ${category}\nDescription: ${description}`);
+            
+            if (confirmed) {
+                // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
+                const actualRowIndex = parseInt(rowIndex) + 2;
+                
+                // Show loading status
+                document.getElementById('status-message').textContent = 'Deleting...';
+                
+                // Delete from Google Sheet
+                deleteTransactionFromSheet(actualRowIndex)
+                    .then(() => {
+                        // Show success message
+                        document.getElementById('status-message').textContent = 'Deleted!';
+                        setTimeout(() => {
+                            document.getElementById('status-message').textContent = '';
+                        }, 2000);
+                        
+                        // Refresh data to update charts and totals
+                        fetchExpenseData();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting transaction:', error);
+                        document.getElementById('status-message').textContent = 'Error deleting';
+                        setTimeout(() => {
+                            document.getElementById('status-message').textContent = '';
+                        }, 2000);
+                    });
+            }
         }
-    } catch (e) {
-        console.warn('Date parsing error:', e);
     }
     
-    // Format amount for display
-    const displayAmount = `$${parseFloat(amount).toFixed(2)}`;
-    
-    // Display transaction details
-    detailsContainer.innerHTML = `
-        <p><strong>Date:</strong> ${displayDate}</p>
-        <p><strong>Amount:</strong> ${displayAmount}</p>
-        <p><strong>Category:</strong> ${category}</p>
-        <p><strong>Description:</strong> ${description}</p>
-        <p><strong>Payment Method:</strong> ${payment}</p>
-    `;
-    
-    // Store the row index on the confirm button
-    document.getElementById('confirm-delete').setAttribute('data-row-index', rowIndex);
-    
-    // Show the modal
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
-    
-    // Setup close modal events
-    const closeModalBtn = document.querySelector('.close-modal-delete');
-    const cancelBtn = document.getElementById('cancel-delete');
-    
-    function closeModal() {
-        modal.style.display = 'none';
-        document.body.style.overflow = ''; // Re-enable scrolling
-    }
-    
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    
-    // Setup confirm delete event
-    const confirmBtn = document.getElementById('confirm-delete');
-    confirmBtn.addEventListener('click', async function() {
-        const rowIndex = parseInt(this.getAttribute('data-row-index'));
+    // Remove existing event listeners and add new ones
+    deleteButtons.forEach(button => {
+        // First remove any existing click listeners by cloning the node
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
         
-        // Show loading status
-        document.getElementById('status-message').textContent = 'Deleting...';
-        
-        try {
-            // Get the actual row number in the spreadsheet (add 2: 1 for header, 1 for 0-index)
-            const spreadsheetRowIndex = rowIndex + 2;
-            
-            // Delete from Google Sheet
-            await deleteTransactionFromSheet(spreadsheetRowIndex);
-            
-            // Close the modal first to prevent UI jumps
-            closeModal();
-            
-            // Show success message
-            document.getElementById('status-message').textContent = 'Transaction deleted';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-            
-            // Refresh data to update charts and totals
-            // This is better than removing just one row as it maintains the layout
-            await fetchExpenseData();
-            
-        } catch (error) {
-            console.error('Error deleting transaction:', error);
-            document.getElementById('status-message').textContent = 'Error deleting transaction';
-            
-            // Show error message
-            alert('Failed to delete transaction. Please try again.');
-            
-            // Close the modal
-            closeModal();
-        }
-    }, { once: true }); // Use once to prevent multiple clicks
-    
-    // Close modal when clicking outside
-    window.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            closeModal();
-        }
+        // Add the event listener to the new button
+        newButton.addEventListener('click', handleDeleteClick);
     });
 }
 
@@ -498,29 +463,22 @@ async function deleteTransactionFromSheet(rowIndex) {
     }
     
     try {
-        // Prepare the data to send
-        const data = {
-            action: 'delete',
-            rowIndex: rowIndex,
-            spreadsheetId: SPREADSHEET_ID,
-            sheetName: SHEET_NAME,
-            // Add timestamp to prevent caching
-            timestamp: Date.now()
-        };
+        console.log('Deleting transaction at row:', rowIndex);
         
-        // Send the data to Google Apps Script Web App
-        const response = await fetch(`${SCRIPT_URL}?v=${Date.now()}`, {
-            method: 'POST',
+        // Build URL with all parameters since no-cors mode doesn't properly send JSON body
+        const url = `${SCRIPT_URL}?action=delete&rowIndex=${rowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SHEET_NAME}&v=${Date.now()}`;
+        
+        // Send the request to Google Apps Script Web App
+        const response = await fetch(url, {
+            method: 'GET', // Changed to GET since we're passing parameters in URL
             mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
             cache: 'no-store',
             headers: {
-                'Content-Type': 'application/json',
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
                 'Expires': '0'
             },
-            redirect: 'follow',
-            body: JSON.stringify(data)
+            redirect: 'follow'
         });
         
         // Note: Due to 'no-cors' mode, we won't be able to read the response
@@ -528,7 +486,7 @@ async function deleteTransactionFromSheet(rowIndex) {
         
         return true;
     } catch (error) {
-        console.error('Error deleting data from Google Sheet:', error);
+        console.error('Error deleting transaction from Google Sheet:', error);
         throw error;
     }
 }
@@ -827,25 +785,49 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', async function() {
+window.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Fetch and display expense data
-        await fetchExpenseData();
+        console.log('Initializing app...');
+        
+        // Hide any visible modals that might be stuck
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+        
+        // Initialize sections
+        initializeSections();
         
         // Setup navigation
         setupNavigation();
         
-        // Setup transaction modal functionality
+        // Add ripple effect to buttons
+        document.querySelectorAll('.btn-primary, .btn-secondary, .btn-danger').forEach(button => {
+            button.addEventListener('click', createRipple);
+        });
+        
+        // Setup transaction modal
         setupTransactionModal();
         
-        // Setup delete mode functionality
+        // Setup subscription modal
+        setupSubscriptionModal();
+        
+        // Setup delete mode
         setupDeleteMode();
         
-        // Setup refresh button functionality
+        // Setup subscription delete mode
+        setupSubscriptionDeleteMode();
+        
+        // Setup refresh button
         setupRefreshButton();
         
-        // Initialize the UI to show only the active section
-        initializeSections();
+        // Create empty charts initially
+        createEmptyCharts();
+        
+        // Fetch expense data from Google Sheet
+        await fetchExpenseData();
+        
+        // Fetch subscription data from Google Sheet
+        await fetchSubscriptionData();
         
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -1063,33 +1045,29 @@ async function addTransactionToSheet(date, amount, category, description, paymen
         // Convert amount to a number to ensure proper formatting
         const numericAmount = parseFloat(amount);
         
-        // Prepare the data to send - simplified to match Apple Shortcuts format
-        const data = {
-            date: formattedDate,
-            amount: numericAmount,
-            category: category,
-            description: description,
-            paymentMethod: paymentMethod,
-            // Optional: Include these if you want to specify a different sheet
-            spreadsheetId: SPREADSHEET_ID,
-            sheetName: SHEET_NAME,
-            // Add timestamp to prevent caching
-            timestamp: Date.now()
-        };
+        // Build URL with parameters
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.append('action', 'addTransaction');
+        url.searchParams.append('date', formattedDate);
+        url.searchParams.append('amount', numericAmount);
+        url.searchParams.append('category', category);
+        url.searchParams.append('description', description || '');
+        url.searchParams.append('paymentMethod', paymentMethod);
+        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
+        url.searchParams.append('sheetName', SHEET_NAME);
+        url.searchParams.append('v', Date.now());
         
-        // Send the data to Google Apps Script Web App
-        const response = await fetch(`${SCRIPT_URL}?v=${Date.now()}`, {
-            method: 'POST',
-            mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
+        // Send the request to Google Apps Script Web App
+        const response = await fetch(url.toString(), {
+            method: 'GET', // Using GET with URL parameters
+            mode: 'no-cors',
             cache: 'no-store',
             headers: {
-                'Content-Type': 'application/json',
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
                 'Expires': '0'
             },
-            redirect: 'follow',
-            body: JSON.stringify(data)
+            redirect: 'follow'
         });
         
         // Note: Due to 'no-cors' mode, we won't be able to read the response
@@ -1097,7 +1075,7 @@ async function addTransactionToSheet(date, amount, category, description, paymen
         
         return true;
     } catch (error) {
-        console.error('Error sending data to Google Sheet:', error);
+        console.error('Error adding transaction to Google Sheet:', error);
         throw error;
     }
 }
@@ -1105,36 +1083,49 @@ async function addTransactionToSheet(date, amount, category, description, paymen
 // Function to setup delete mode
 function setupDeleteMode() {
     const deleteModeBtn = document.getElementById('delete-mode-btn');
-    const deleteColumn = document.querySelectorAll('.delete-column');
     
     deleteModeBtn.addEventListener('click', function() {
         // Toggle delete mode
         isDeleteMode = !isDeleteMode;
         
         // Toggle active class on button
-        this.classList.toggle('active', isDeleteMode);
+        if (isDeleteMode) {
+            deleteModeBtn.classList.add('active');
+        } else {
+            deleteModeBtn.classList.remove('active');
+        }
         
         // Show/hide delete column
-        deleteColumn.forEach(cell => {
-            cell.classList.toggle('hidden', !isDeleteMode);
+        const deleteColumns = document.querySelectorAll('.delete-column');
+        deleteColumns.forEach(cell => {
+            if (isDeleteMode) {
+                cell.classList.remove('hidden');
+            } else {
+                cell.classList.add('hidden');
+            }
         });
+        
+        // Setup delete buttons if in delete mode
+        if (isDeleteMode) {
+            setupDeleteButtons();
+        }
     });
 }
 
 // Function to setup refresh button
 function setupRefreshButton() {
-    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshButton = document.getElementById('refresh-btn');
     
-    refreshBtn.addEventListener('click', async function() {
-        // Add refreshing class for spinning animation
-        this.classList.add('refreshing');
-        
-        // Show loading status
-        document.getElementById('status-message').textContent = 'Refreshing data...';
-        
+    refreshButton.addEventListener('click', async function() {
         try {
-            // Fetch fresh data
+            // Show loading animation
+            refreshButton.classList.add('rotating');
+            
+            // Fetch expense data
             await fetchExpenseData();
+            
+            // Fetch subscription data
+            await fetchSubscriptionData();
             
             // Show success message
             document.getElementById('status-message').textContent = 'Refreshed!';
@@ -1143,13 +1134,903 @@ function setupRefreshButton() {
             }, 2000);
         } catch (error) {
             console.error('Error refreshing data:', error);
-            document.getElementById('status-message').textContent = 'Refresh failed';
+            document.getElementById('status-message').textContent = 'Error refreshing';
             setTimeout(() => {
                 document.getElementById('status-message').textContent = '';
             }, 2000);
         } finally {
-            // Remove refreshing class to stop animation
-            this.classList.remove('refreshing');
+            // Remove loading animation
+            refreshButton.classList.remove('rotating');
         }
     });
+}
+
+// Function to fetch subscription data from the Google Sheet
+async function fetchSubscriptionData() {
+    try {
+        // Using the CSV export approach which is more reliable
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}&v=${APP_VERSION}`;
+        
+        // Show loading status
+        document.getElementById('status-message').textContent = 'Loading...';
+        
+        const response = await fetch(url, {
+            cache: 'no-store', // Force fetch from network, not cache
+            headers: {
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        const csvText = await response.text();
+        
+        // Parse CSV data
+        const rows = parseCSV(csvText);
+        
+        // Store the raw data for deletion purposes
+        subscriptionData = rows.slice(1).map((row, index) => ({
+            index: index + 1, // +1 because row 0 is headers
+            service: row[0],
+            account: row[1],
+            price: row[2],
+            billingCycle: row[3],
+            category: row[4],
+            nextPaymentDate: row[5],
+            paymentMethod: row[6],
+            description: row[7]
+        }));
+        
+        // Convert to the format expected by the rest of the code
+        const result = {
+            table: {
+                cols: rows[0].map(header => ({ label: header })),
+                rows: rows.slice(1).map(row => ({
+                    c: row.map(cell => ({ v: cell }))
+                }))
+            }
+        };
+        
+        // Show success status
+        document.getElementById('status-message').textContent = 'Updated';
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = '';
+        }, 2000);
+        
+        // Process and display the data
+        await displaySubscriptionData(result);
+        
+        return Promise.resolve(result);
+    } catch (error) {
+        console.error('Error fetching subscription data:', error);
+        document.getElementById('status-message').textContent = 'Connection error';
+        return Promise.reject(error);
+    }
+}
+
+// Function to display subscription data
+async function displaySubscriptionData(data) {
+    if (!data) return;
+    
+    const container = document.getElementById('subscription-cards-container');
+    
+    if (!data || !data.table || !data.table.rows || data.table.rows.length === 0) {
+        container.innerHTML = `
+            <div class="empty-subscriptions">
+                <i class="fas fa-calendar-alt"></i>
+                <p>No subscriptions found. Click the + button to add your first subscription.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const rows = data.table.rows;
+    const columns = data.table.cols;
+    
+    // Get column indices
+    const serviceIndex = 0;       // Service
+    const accountIndex = 1;       // Account
+    const priceIndex = 2;         // Price
+    const billingCycleIndex = 3;  // Billing Cycle
+    const categoryIndex = 4;      // Category
+    const nextPaymentIndex = 5;   // Next Payment Date
+    const paymentMethodIndex = 6; // Payment Method
+    const descriptionIndex = 7;   // Description (optional)
+    
+    // Process subscription data
+    const subscriptionsHTML = rows.map((row, rowIndex) => {
+        if (!row.c || row.c.some(cell => !cell)) return ''; // Skip rows with empty cells
+        
+        const service = row.c[serviceIndex]?.v || 'N/A';
+        const account = row.c[accountIndex]?.v || 'N/A';
+        const price = row.c[priceIndex]?.v || '0';
+        const billingCycle = row.c[billingCycleIndex]?.v || 'N/A';
+        const category = row.c[categoryIndex]?.v || 'Uncategorized';
+        const nextPayment = row.c[nextPaymentIndex]?.v || 'N/A';
+        const paymentMethod = row.c[paymentMethodIndex]?.v || 'N/A';
+        const description = row.c[descriptionIndex]?.v || '';
+        
+        // Clean price string and convert to number
+        const priceValue = parseFloat(String(price).replace(/[^0-9.-]+/g, ''));
+        
+        // Format price for display - ensure $ is always shown
+        let displayPrice;
+        if (typeof priceValue === 'number' && !isNaN(priceValue)) {
+            displayPrice = `$${priceValue.toFixed(2)}`;
+        } else {
+            // If for some reason we can't parse it, just show the original
+            displayPrice = price.toString().startsWith('$') ? price : `$${price}`;
+        }
+        
+        // Format date for display
+        let displayNextPayment = nextPayment;
+        try {
+            const dateObj = new Date(nextPayment);
+            if (!isNaN(dateObj.getTime())) {
+                displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        } catch (e) {
+            console.warn('Date parsing error:', e);
+        }
+        
+        // Add data attributes for details and deletion
+        // For display, we use the array index (0-based)
+        // For sheet operations, we'll calculate the actual sheet row later
+        const dataAttributes = `
+            data-row-index="${rowIndex}"
+            data-service="${service}"
+            data-account="${account}"
+            data-price="${priceValue}"
+            data-billing="${billingCycle}"
+            data-category="${category}"
+            data-next-payment="${nextPayment}"
+            data-payment="${paymentMethod}"
+            data-description="${description}"
+        `;
+        
+        // Determine if the service has an icon or use the first letter
+        const serviceFirstLetter = service.charAt(0).toUpperCase();
+        let serviceIcon;
+        
+        // Map common services to Font Awesome icons
+        const serviceIcons = {
+            'google': 'fab fa-google',
+            'netflix': 'fab fa-netflix',
+            'spotify': 'fab fa-spotify',
+            'apple': 'fab fa-apple',
+            'amazon': 'fab fa-amazon',
+            'youtube': 'fab fa-youtube',
+            'disney': 'fab fa-disney',
+            'hulu': 'fas fa-tv',
+            'dropbox': 'fab fa-dropbox',
+            'microsoft': 'fab fa-microsoft',
+            'github': 'fab fa-github',
+            'slack': 'fab fa-slack',
+            'adobe': 'fab fa-adobe',
+            'paypal': 'fab fa-paypal',
+            'twitter': 'fab fa-twitter',
+            'facebook': 'fab fa-facebook',
+            'instagram': 'fab fa-instagram',
+            'linkedin': 'fab fa-linkedin'
+        };
+        
+        // Try to find a matching icon
+        const serviceLower = service.toLowerCase();
+        for (const [key, icon] of Object.entries(serviceIcons)) {
+            if (serviceLower.includes(key)) {
+                serviceIcon = icon;
+                break;
+            }
+        }
+        
+        // If no icon found, use a default
+        if (!serviceIcon) {
+            serviceIcon = 'fas fa-calendar-alt';
+        }
+        
+        // Generate HTML for the card - only showing service, price and next payment date
+        return `
+            <div class="subscription-card" ${dataAttributes}>
+                <div class="service-name">${service}</div>
+                <div class="price">${displayPrice}<span class="billing-cycle">/${billingCycle}</span></div>
+                <div class="next-payment">
+                    <i class="far fa-calendar-alt"></i>
+                    ${displayNextPayment}
+                </div>
+                <div class="delete-overlay">
+                    <button class="delete-btn" data-row-index="${rowIndex}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Update the container
+    container.innerHTML = subscriptionsHTML || `
+        <div class="empty-subscriptions">
+            <i class="fas fa-calendar-alt"></i>
+            <p>No subscriptions found. Click the + button to add your first subscription.</p>
+        </div>
+    `;
+    
+    // Add click listeners to cards for showing details
+    const cards = document.querySelectorAll('.subscription-card');
+    cards.forEach(card => {
+        card.addEventListener('click', function(event) {
+            // Don't show details if delete mode is active or if clicking on delete button
+            if (isSubscriptionDeleteMode || event.target.closest('.delete-btn')) {
+                return;
+            }
+            
+            // Show subscription details
+            showSubscriptionDetails(
+                this.getAttribute('data-service'),
+                this.getAttribute('data-account'),
+                this.getAttribute('data-price'),
+                this.getAttribute('data-billing'),
+                this.getAttribute('data-category'),
+                this.getAttribute('data-next-payment'),
+                this.getAttribute('data-payment'),
+                this.getAttribute('data-description'),
+                this.getAttribute('data-row-index')
+            );
+        });
+    });
+    
+    // Setup delete buttons if in delete mode
+    if (isSubscriptionDeleteMode) {
+        setupSubscriptionDeleteButtons();
+    }
+}
+
+// Function to add subscription to Google Sheet
+async function addSubscriptionToSheet(service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
+    // Check if we have a deployed Google Apps Script Web App URL
+    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+        console.warn('No Google Apps Script Web App URL configured. Subscription will only be added to UI.');
+        
+        // For demo purposes, we'll just simulate a successful API call
+        return new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    try {
+        // Format the next payment date to YYYY-MM-DD for consistency
+        const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
+        
+        // Convert price to a number to ensure proper formatting
+        const numericPrice = parseFloat(price);
+        
+        // Build URL with parameters
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.append('action', 'addSubscription');
+        url.searchParams.append('service', service);
+        url.searchParams.append('account', account);
+        url.searchParams.append('price', numericPrice);
+        url.searchParams.append('billingCycle', billingCycle);
+        url.searchParams.append('category', category);
+        url.searchParams.append('nextPaymentDate', formattedDate);
+        url.searchParams.append('paymentMethod', paymentMethod);
+        url.searchParams.append('description', description || '');
+        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
+        url.searchParams.append('sheetName', SUBSCRIPTION_SHEET_NAME);
+        url.searchParams.append('v', Date.now());
+        
+        // Send the request to Google Apps Script Web App
+        const response = await fetch(url.toString(), {
+            method: 'GET', // Using GET with URL parameters
+            mode: 'no-cors',
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
+            redirect: 'follow'
+        });
+        
+        // Note: Due to 'no-cors' mode, we won't be able to read the response
+        // We'll assume it was successful if no error was thrown
+        
+        return true;
+    } catch (error) {
+        console.error('Error adding subscription to Google Sheet:', error);
+        throw error;
+    }
+}
+
+// Function to delete subscription from Google Sheet
+async function deleteSubscriptionFromSheet(rowIndex) {
+    // Check if we have a deployed Google Apps Script Web App URL
+    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+        console.warn('No Google Apps Script Web App URL configured. Subscription will not be deleted from Google Sheet.');
+        
+        // For demo purposes, we'll just simulate a successful API call
+        return new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    try {
+        // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
+        const actualRowIndex = parseInt(rowIndex) + 2;
+        
+        console.log('Deleting subscription at row:', actualRowIndex);
+        
+        // Build URL with all parameters since no-cors mode doesn't properly send JSON body
+        const url = `${SCRIPT_URL}?action=deleteSubscription&rowIndex=${actualRowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SUBSCRIPTION_SHEET_NAME}&v=${Date.now()}`;
+        
+        // Send the request to Google Apps Script Web App
+        const response = await fetch(url, {
+            method: 'GET', // Changed to GET since we're passing parameters in URL
+            mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
+            redirect: 'follow'
+        });
+        
+        // Note: Due to 'no-cors' mode, we won't be able to read the response
+        // We'll assume it was successful if no error was thrown
+        
+        return true;
+    } catch (error) {
+        console.error('Error deleting subscription from Google Sheet:', error);
+        throw error;
+    }
+}
+
+// Setup subscription delete buttons
+function setupSubscriptionDeleteButtons() {
+    const deleteButtons = document.querySelectorAll('.subscription-card .delete-btn');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.stopPropagation();
+            const rowIndex = this.getAttribute('data-row-index');
+            const card = this.closest('.subscription-card');
+            
+            // Get subscription details for confirmation
+            const service = card.getAttribute('data-service');
+            const account = card.getAttribute('data-account');
+            const price = card.getAttribute('data-price');
+            const billingCycle = card.getAttribute('data-billing');
+            const category = card.getAttribute('data-category');
+            const nextPayment = card.getAttribute('data-next-payment');
+            const paymentMethod = card.getAttribute('data-payment');
+            
+            showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
+        });
+    });
+}
+
+// Show delete subscription confirmation modal
+function showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod) {
+    // Use a simple confirm dialog instead of complex modal
+    const confirmed = confirm(`Are you sure you want to delete the ${service} subscription?`);
+    
+    if (confirmed) {
+        deleteSubscriptionFromSheet(rowIndex)
+            .then(() => {
+                // Show success message
+                document.getElementById('status-message').textContent = 'Deleted!';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+                
+                // Refresh the data
+                return fetchSubscriptionData();
+            })
+            .catch(error => {
+                console.error('Error deleting subscription:', error);
+                document.getElementById('status-message').textContent = 'Error deleting';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            });
+    }
+}
+
+// Setup subscription modal
+function setupSubscriptionModal() {
+    const modal = document.getElementById('subscription-modal');
+    const addButton = document.getElementById('add-subscription-btn');
+    const closeButton = document.querySelector('.close-subscription-modal');
+    const cancelButton = document.getElementById('cancel-subscription');
+    const form = document.getElementById('subscription-form');
+    
+    // Open modal when clicking the add button
+    addButton.addEventListener('click', function() {
+        modal.style.display = 'block';
+        // Set default date to today
+        document.getElementById('subscription-next-payment').valueAsDate = new Date();
+    });
+    
+    // Close modal functions
+    function closeModal() {
+        modal.style.display = 'none';
+        form.reset();
+    }
+    
+    closeButton.addEventListener('click', closeModal);
+    cancelButton.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside - use a named function that we can remove later
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            closeModal();
+            // Remove this event listener when modal is closed
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    // Add the event listener for outside clicks
+    window.addEventListener('click', outsideClickHandler);
+    
+    // Form submission
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Get form values
+        const service = document.getElementById('subscription-service').value;
+        const account = document.getElementById('subscription-account').value;
+        const price = document.getElementById('subscription-price').value;
+        const billingCycle = document.getElementById('subscription-billing').value;
+        const category = document.getElementById('subscription-category').value;
+        const nextPaymentDate = document.getElementById('subscription-next-payment').value;
+        const paymentMethod = document.getElementById('subscription-payment').value;
+        const description = document.getElementById('subscription-description').value;
+        
+        try {
+            // Show loading status
+            document.getElementById('status-message').textContent = 'Adding...';
+            
+            // Add subscription to Google Sheet
+            await addSubscriptionToSheet(
+                service,
+                account,
+                price,
+                billingCycle,
+                category,
+                nextPaymentDate,
+                paymentMethod,
+                description
+            );
+            
+            // Close the modal
+            closeModal();
+            
+            // Refresh the data
+            await fetchSubscriptionData();
+            
+            // Show success message
+            document.getElementById('status-message').textContent = 'Added!';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        } catch (error) {
+            console.error('Error adding subscription:', error);
+            document.getElementById('status-message').textContent = 'Error adding';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        }
+    });
+}
+
+// Setup subscription delete mode
+function setupSubscriptionDeleteMode() {
+    const deleteButton = document.getElementById('delete-subscription-btn');
+    
+    deleteButton.addEventListener('click', function() {
+        isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
+        
+        // Toggle delete button appearance
+        if (isSubscriptionDeleteMode) {
+            deleteButton.classList.add('active');
+        } else {
+            deleteButton.classList.remove('active');
+        }
+        
+        // Toggle delete overlay visibility on cards
+        const cards = document.querySelectorAll('.subscription-card');
+        cards.forEach(card => {
+            const deleteOverlay = card.querySelector('.delete-overlay');
+            if (isSubscriptionDeleteMode) {
+                deleteOverlay.classList.add('visible');
+            } else {
+                deleteOverlay.classList.remove('visible');
+            }
+        });
+        
+        // Setup delete buttons if in delete mode
+        if (isSubscriptionDeleteMode) {
+            setupSubscriptionDeleteButtons();
+        }
+    });
+}
+
+// Show subscription details modal
+function showSubscriptionDetails(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
+    const modal = document.getElementById('subscription-details-modal');
+    const detailsContainer = document.getElementById('subscription-detail-content');
+    
+    // Format price for display
+    const priceValue = parseFloat(price);
+    const displayPrice = !isNaN(priceValue) ? `$${priceValue.toFixed(2)}` : `$${price}`;
+    
+    // Format date for display
+    let displayNextPayment = nextPayment;
+    try {
+        const dateObj = new Date(nextPayment);
+        if (!isNaN(dateObj.getTime())) {
+            displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+    } catch (e) {
+        console.warn('Date parsing error:', e);
+    }
+    
+    // Determine if the service has an icon
+    const serviceLower = service.toLowerCase();
+    let serviceIcon = 'fas fa-calendar-alt';
+    
+    // Map common services to Font Awesome icons
+    const serviceIcons = {
+        'google': 'fab fa-google',
+        'netflix': 'fab fa-netflix',
+        'spotify': 'fab fa-spotify',
+        'apple': 'fab fa-apple',
+        'amazon': 'fab fa-amazon',
+        'youtube': 'fab fa-youtube',
+        'disney': 'fab fa-disney',
+        'hulu': 'fas fa-tv',
+        'dropbox': 'fab fa-dropbox',
+        'microsoft': 'fab fa-microsoft',
+        'github': 'fab fa-github',
+        'slack': 'fab fa-slack',
+        'adobe': 'fab fa-adobe',
+        'paypal': 'fab fa-paypal',
+        'twitter': 'fab fa-twitter',
+        'facebook': 'fab fa-facebook',
+        'instagram': 'fab fa-instagram',
+        'linkedin': 'fab fa-linkedin'
+    };
+    
+    // Try to find a matching icon
+    for (const [key, icon] of Object.entries(serviceIcons)) {
+        if (serviceLower.includes(key)) {
+            serviceIcon = icon;
+            break;
+        }
+    }
+    
+    // Display subscription details in the modal
+    detailsContainer.innerHTML = `
+        <div class="service-tag">
+            <i class="${serviceIcon}"></i> ${category}
+        </div>
+        <div class="service-name">${service}</div>
+        <div class="price">${displayPrice}/${billingCycle}</div>
+        
+        <div class="detail-group">
+            <div class="detail-item">
+                <i class="fas fa-user"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Account</div>
+                    <div class="detail-value">${account}</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <i class="far fa-calendar-alt"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Next Payment</div>
+                    <div class="detail-value">${displayNextPayment}</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <i class="fas fa-credit-card"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Payment Method</div>
+                    <div class="detail-value">${paymentMethod}</div>
+                </div>
+            </div>
+            
+            ${description ? `
+            <div class="detail-item">
+                <i class="fas fa-info-circle"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value">${description}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Setup close button
+    const closeButton = modal.querySelector('.close-details-modal');
+    closeButton.onclick = function() {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Re-enable scrolling
+    };
+    
+    // Setup delete button
+    const deleteButton = document.getElementById('delete-subscription-detail-btn');
+    deleteButton.onclick = function() {
+        // Close the details modal
+        modal.style.display = 'none';
+        
+        // Show delete confirmation
+        showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
+    };
+    
+    // Setup edit button
+    const editButton = document.getElementById('edit-subscription-btn');
+    editButton.onclick = function() {
+        // Close the details modal
+        modal.style.display = 'none';
+        
+        // Open the edit modal and populate with subscription details
+        openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex);
+    };
+    
+    // Setup resubscribe button
+    const resubscribeButton = document.getElementById('resubscribe-btn');
+    resubscribeButton.onclick = function() {
+        // Calculate new payment date based on billing cycle
+        let newPaymentDate = calculateNextPaymentDate(nextPayment, billingCycle);
+        
+        // Show confirmation
+        const confirmed = confirm(`Resubscribe to ${service} for another ${billingCycle} cycle?\nNew payment date: ${formatDateForDisplay(newPaymentDate)}`);
+        
+        if (confirmed) {
+            // Close the details modal
+            modal.style.display = 'none';
+            
+            // Update the subscription with the new payment date
+            updateSubscriptionFromSheet(
+                rowIndex,
+                service,
+                account,
+                price,
+                billingCycle,
+                category,
+                newPaymentDate,
+                paymentMethod,
+                description
+            ).then(() => {
+                // Refresh the data
+                fetchSubscriptionData();
+                
+                // Show success message
+                document.getElementById('status-message').textContent = 'Resubscribed!';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            }).catch(error => {
+                console.error('Error resubscribing:', error);
+                document.getElementById('status-message').textContent = 'Error resubscribing';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            });
+        }
+    };
+    
+    // Close modal when clicking outside - use a named function that we can remove later
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Re-enable scrolling
+            // Remove this event listener when modal is closed
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    // Add the event listener
+    window.addEventListener('click', outsideClickHandler);
+}
+
+// Setup edit subscription modal
+function openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
+    const modal = document.getElementById('edit-subscription-modal');
+    
+    // Populate form fields with current values
+    document.getElementById('edit-subscription-service').value = service;
+    document.getElementById('edit-subscription-account').value = account;
+    document.getElementById('edit-subscription-price').value = parseFloat(price);
+    document.getElementById('edit-subscription-billing').value = billingCycle;
+    document.getElementById('edit-subscription-category').value = category;
+    
+    // Format date for input field (YYYY-MM-DD)
+    let formattedDate = nextPayment;
+    try {
+        const dateObj = new Date(nextPayment);
+        if (!isNaN(dateObj.getTime())) {
+            formattedDate = dateObj.toISOString().split('T')[0];
+        }
+    } catch (e) {
+        console.warn('Date parsing error:', e);
+    }
+    
+    document.getElementById('edit-subscription-next-payment').value = formattedDate;
+    document.getElementById('edit-subscription-payment').value = paymentMethod;
+    document.getElementById('edit-subscription-description').value = description || '';
+    document.getElementById('edit-subscription-row-index').value = rowIndex;
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Setup close button
+    const closeButton = modal.querySelector('.close-edit-subscription-modal');
+    closeButton.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    // Setup cancel button
+    const cancelButton = document.getElementById('cancel-edit-subscription');
+    cancelButton.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    // Setup form submission
+    const form = document.getElementById('edit-subscription-form');
+    form.onsubmit = async function(e) {
+        e.preventDefault();
+        
+        try {
+            // Get form values
+            const updatedService = document.getElementById('edit-subscription-service').value;
+            const updatedAccount = document.getElementById('edit-subscription-account').value;
+            const updatedPrice = document.getElementById('edit-subscription-price').value;
+            const updatedBillingCycle = document.getElementById('edit-subscription-billing').value;
+            const updatedCategory = document.getElementById('edit-subscription-category').value;
+            const updatedNextPayment = document.getElementById('edit-subscription-next-payment').value;
+            const updatedPaymentMethod = document.getElementById('edit-subscription-payment').value;
+            const updatedDescription = document.getElementById('edit-subscription-description').value;
+            const rowIndex = document.getElementById('edit-subscription-row-index').value;
+            
+            // Update subscription in the sheet
+            await updateSubscriptionFromSheet(
+                rowIndex,
+                updatedService,
+                updatedAccount,
+                updatedPrice,
+                updatedBillingCycle,
+                updatedCategory,
+                updatedNextPayment,
+                updatedPaymentMethod,
+                updatedDescription
+            );
+            
+            // Close the modal
+            modal.style.display = 'none';
+            
+            // Refresh the data
+            await fetchSubscriptionData();
+            
+            // Show success message
+            document.getElementById('status-message').textContent = 'Updated!';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        } catch (error) {
+            console.error('Error updating subscription:', error);
+            document.getElementById('status-message').textContent = 'Error updating';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        }
+    };
+    
+    // Close modal when clicking outside
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            // Remove this event listener when modal is closed
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    // Add the event listener
+    window.addEventListener('click', outsideClickHandler);
+}
+
+// Update subscription in the Google Sheet
+async function updateSubscriptionFromSheet(rowIndex, service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
+    try {
+        // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
+        const actualRowIndex = parseInt(rowIndex) + 2;
+        
+        console.log(`Updating subscription at row index: ${actualRowIndex}`);
+        
+        // Prepare the URL with parameters
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.append('action', 'updateSubscription');
+        url.searchParams.append('rowIndex', actualRowIndex);
+        url.searchParams.append('service', service);
+        url.searchParams.append('account', account);
+        url.searchParams.append('price', price);
+        url.searchParams.append('billingCycle', billingCycle);
+        url.searchParams.append('category', category);
+        url.searchParams.append('nextPaymentDate', nextPaymentDate);
+        url.searchParams.append('paymentMethod', paymentMethod);
+        url.searchParams.append('description', description || '');
+        url.searchParams.append('sheetName', 'Subscription');
+        
+        // Make the request
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+        });
+        
+        // Parse the response
+        const result = await response.json();
+        
+        // Check if the operation was successful
+        if (result.status !== 'success') {
+            throw new Error(result.message || 'Failed to update subscription');
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        throw error;
+    }
+}
+
+// Calculate next payment date based on billing cycle
+function calculateNextPaymentDate(currentDate, billingCycle) {
+    try {
+        // Parse the current date
+        const date = new Date(currentDate);
+        
+        // If date is invalid, return today's date
+        if (isNaN(date.getTime())) {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        // Calculate next payment date based on billing cycle
+        switch (billingCycle) {
+            case '月': // Monthly
+                date.setMonth(date.getMonth() + 1);
+                break;
+            case '季': // Quarterly
+                date.setMonth(date.getMonth() + 3);
+                break;
+            case '年': // Yearly
+                date.setFullYear(date.getFullYear() + 1);
+                break;
+            default:
+                // Default to monthly if cycle is unknown
+                date.setMonth(date.getMonth() + 1);
+                break;
+        }
+        
+        // Format as YYYY-MM-DD for input fields
+        return date.toISOString().split('T')[0];
+    } catch (error) {
+        console.error('Error calculating next payment date:', error);
+        // Return today's date as fallback
+        return new Date().toISOString().split('T')[0];
+    }
+}
+
+// Format date for display
+function formatDateForDisplay(dateString) {
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return dateString; // Return original string if invalid date
+        }
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (error) {
+        console.warn('Date formatting error:', error);
+        return dateString;
+    }
 } 

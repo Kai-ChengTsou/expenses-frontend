@@ -252,6 +252,201 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Subscriptions Section -->
+            <section id="subscriptions" class="section fade-in">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Subscriptions</h2>
+                        <div class="transaction-buttons">
+                            <!-- Delete Mode Button -->
+                            <button id="delete-subscription-btn" class="delete-transaction-btn-top">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <!-- Add Subscription Button -->
+                            <button id="add-subscription-btn" class="add-transaction-btn-top">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="subscription-cards-container" id="subscription-cards-container">
+                        <!-- Subscription cards will be inserted here -->
+                        <div class="loading-message">Loading subscription data...</div>
+                    </div>
+                </div>
+                
+                <!-- Add Subscription Modal -->
+                <div id="subscription-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Add New Subscription</h3>
+                            <span class="close-subscription-modal">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="subscription-form">
+                                <div class="form-group">
+                                    <label for="subscription-service">Service</label>
+                                    <input type="text" id="subscription-service" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-account">Account</label>
+                                    <input type="text" id="subscription-account" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-price">Price</label>
+                                    <input type="number" id="subscription-price" step="0.01" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-billing">Billing Cycle</label>
+                                    <select id="subscription-billing" required>
+                                        <option value="">Select Billing Cycle</option>
+                                        <option value="月">Monthly</option>
+                                        <option value="季">Quarterly</option>
+                                        <option value="年">Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-category">Category</label>
+                                    <input type="text" id="subscription-category" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-next-payment">Next Payment Date</label>
+                                    <input type="date" id="subscription-next-payment" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-payment">Payment Method</label>
+                                    <select id="subscription-payment" required>
+                                        <option value="">Select Payment Method</option>
+                                        <option value="Credit Card">Credit Card</option>
+                                        <option value="Debit Card">Debit Card</option>
+                                        <option value="PayPal">PayPal</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Line Pay">Line Pay</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subscription-description">Description</label>
+                                    <input type="text" id="subscription-description">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" id="cancel-subscription" class="btn-secondary">Cancel</button>
+                                    <button type="submit" class="btn-primary">Add Subscription</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delete Subscription Confirmation Modal -->
+                <div id="delete-subscription-confirm-modal" class="modal fullscreen-modal">
+                    <div class="modal-content subscription-detail-modal">
+                        <div class="modal-header">
+                            <span class="close-details-modal">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="subscription-detail-content" id="delete-subscription-details">
+                                <!-- Subscription details will be inserted here -->
+                            </div>
+                            <div class="subscription-actions">
+                                <button id="cancel-delete-subscription" class="btn-secondary action-icon-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <button id="confirm-delete-subscription" class="btn-danger action-icon-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Subscription Details Modal - Full Screen -->
+        <div id="subscription-details-modal" class="modal fullscreen-modal">
+            <div class="modal-content subscription-detail-modal">
+                <div class="modal-header">
+                    <span class="close-details-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="subscription-detail-content" id="subscription-detail-content">
+                        <!-- Subscription details will be inserted here -->
+                    </div>
+                    <div class="subscription-actions">
+                        <button id="resubscribe-btn" class="btn-primary action-icon-btn">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button id="edit-subscription-btn" class="btn-secondary action-icon-btn">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button id="delete-subscription-detail-btn" class="btn-danger action-icon-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Subscription Modal -->
+        <div id="edit-subscription-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Subscription</h3>
+                    <span class="close-edit-subscription-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-subscription-form">
+                        <input type="hidden" id="edit-subscription-row-index">
+                        <div class="form-group">
+                            <label for="edit-subscription-service">Service</label>
+                            <input type="text" id="edit-subscription-service" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-account">Account</label>
+                            <input type="text" id="edit-subscription-account" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-price">Price</label>
+                            <input type="number" id="edit-subscription-price" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-billing">Billing Cycle</label>
+                            <select id="edit-subscription-billing" required>
+                                <option value="">Select Billing Cycle</option>
+                                <option value="月">Monthly</option>
+                                <option value="季">Quarterly</option>
+                                <option value="年">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-category">Category</label>
+                            <input type="text" id="edit-subscription-category" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-next-payment">Next Payment Date</label>
+                            <input type="date" id="edit-subscription-next-payment" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-payment">Payment Method</label>
+                            <select id="edit-subscription-payment" required>
+                                <option value="">Select Payment Method</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Debit Card">Debit Card</option>
+                                <option value="PayPal">PayPal</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Line Pay">Line Pay</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-subscription-description">Description</label>
+                            <input type="text" id="edit-subscription-description">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="cancel-edit-subscription" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">Update Subscription</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
         
         <!-- Bottom Navigation -->
@@ -271,10 +466,10 @@
                 <i class="fas fa-list"></i>
                 <span>Transactions</span>
             </a>
-            <a href="#settings" class="nav-item" data-section="settings">
+            <a href="#subscriptions" class="nav-item" data-section="subscriptions">
                 <span class="nav-indicator"></span>
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
+                <i class="fas fa-calendar-alt"></i>
+                <span>Subscriptions</span>
             </a>
         </nav>
     </div>
