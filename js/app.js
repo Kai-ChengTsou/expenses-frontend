@@ -1,7 +1,9 @@
 // Google Sheet ID from the URL
 const SPREADSHEET_ID = '1YztC7lJq9mg2GEt92TdPWAfhH_UmFvXFQW8hKLKL798';
 const SHEET_NAME = 'Expenses'; // Changed to match the Apple Shortcuts script
+const INCOME_SHEET_NAME = 'Income'; // New sheet for Income
 const RANGE = 'A1:F1000'; // Adjust range as needed
+const INCOME_RANGE = 'A1:F1000'; // Adjust range as needed
 
 // Subscription sheet constants
 const SUBSCRIPTION_SHEET_NAME = 'Subscription';
@@ -16,43 +18,201 @@ const APP_VERSION = Date.now();
 // Global variables for delete functionality
 let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
+let incomeData = []; // Store income data
+let isIncomeDeleteMode = false;
 let isSubscriptionDeleteMode = false;
 let subscriptionData = []; // Store subscription data for deletion
+let deleteCallback = null; // Store the function to call when delete is confirmed
+
+// Calculator Logic Variables
+let currentCalcAmount = '0';
+let currentCalcType = 'expense'; // 'expense' or 'income'
+let currentCalcDate = new Date();
+let selectedCategoryId = null;
+
+// Categories Config
+const EXPENSE_CATEGORIES = [
+    { id: 'food', label: '食物', icon: 'fas fa-utensils' },
+    { id: 'rent', label: '租房', icon: 'fas fa-home' },
+    { id: 'transport', label: '交通', icon: 'fas fa-bus' },
+    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check' },
+    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket' },
+    { id: 'cat', label: '貓咪', icon: 'fas fa-paw' },
+    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad' },
+    { id: 'gf', label: '女友', icon: 'fas fa-heart' },
+    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag' },
+    { id: 'other', label: '其他', icon: 'fas fa-box' }
+];
+
+const INCOME_CATEGORIES = [
+    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave' },
+    { id: 'bonus', label: '獎金', icon: 'fas fa-star' },
+    { id: 'invest', label: '投資', icon: 'fas fa-chart-line' },
+    { id: 'gift', label: '禮金', icon: 'fas fa-gift' },
+    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase' },
+    { id: 'other', label: '其他', icon: 'fas fa-box' }
+];
 
 // Function to fetch data from the published Google Sheet
 async function fetchExpenseData() {
     try {
-        // Using the CSV export approach which is more reliable
-        // Add version parameter to bust cache
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}&v=${APP_VERSION}`;
+        // Fetch data from Google Apps Script to ensure we get proper text values
+        // This avoids GVIZ type inference issues where text in mixed columns is dropped
+        const url = `${SCRIPT_URL}?action=getData&sheetName=${SHEET_NAME}&spreadsheetId=${SPREADSHEET_ID}&v=${Date.now()}`;
         
         // Show loading status
-        document.getElementById('status-message').textContent = 'Loading...';
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Loading...';
         
         const response = await fetch(url, {
-            cache: 'no-store', // Force fetch from network, not cache
-            headers: {
-                'Pragma': 'no-cache',
-                'Cache-Control': 'no-cache'
+            method: 'GET',
+            redirect: 'follow'
+            // mode: 'cors' is default and required to read body
+        });
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        const resultJson = await response.json();
+        
+        if (resultJson.status !== 'success' || !resultJson.data) {
+            // Check for specific "Invalid action" error which means old script version
+            if (resultJson.message === 'Invalid action specified') {
+                showRedeployWarning();
+            }
+            throw new Error(resultJson.message || 'Failed to load data');
+        }
+        
+        const rows = resultJson.data;
+        
+        // Hide warning if successful
+        hideRedeployWarning();
+        
+        // Store the raw data for deletion purposes
+        // Reset arrays
+        transactionData = [];
+        incomeData = [];
+
+        rows.slice(1).forEach((row, index) => {
+            // Ensure we have enough columns, pad with empty strings if needed
+            const safeRow = [...row]; 
+            while (safeRow.length < 4) safeRow.push('');
+            
+            const amountVal = parseFloat(String(safeRow[1]).replace(/[^0-9.-]/g, ''));
+            const isExpense = amountVal < 0;
+
+            const item = {
+                index: index + 1, // +1 because row 0 is headers
+                date: safeRow[0],
+                amount: safeRow[1],
+                category: safeRow[2],
+                description: safeRow[3],
+                type: isExpense ? 'expense' : 'income'
+            };
+
+            if (isExpense) {
+                transactionData.push(item);
+            } else {
+                incomeData.push(item);
             }
         });
         
-        const csvText = await response.text();
+        // Convert to the format expected by the chart functions
+        // Charts expect { table: { rows: [{ c: [{v: val}, ...] }] } }
+        const chartResult = {
+            table: {
+                cols: rows[0].map(header => ({ label: header })),
+                rows: rows.slice(1).map(row => ({
+                    c: row.map(cell => ({ v: cell }))
+                }))
+            }
+        };
         
-        // Parse CSV data
+        // Process and display the data
+        updateTransactionsList();
+        updateExpenseCharts();
+        
+        // Update balance
+        updateBalance();
+        
+        // Clear loading status
+        if (statusMsg) {
+            statusMsg.textContent = 'Updated';
+            setTimeout(() => {
+                if (statusMsg.textContent === 'Updated') {
+                    statusMsg.textContent = '';
+                }
+            }, 2000);
+        }
+        
+        return Promise.resolve(chartResult);
+    } catch (error) {
+        console.error('Error fetching expense data:', error);
+        
+        // Fallback to CSV method if Script API fails (e.g. not redeployed yet)
+        console.log('Falling back to CSV fetch...');
+        
+        // Only show warning if we aren't already showing it from the specific error above
+        if (!document.getElementById('redeploy-warning')) {
+             // If we are falling back, it implies the backend isn't ready or accessible
+             // We can show a generic "Using offline/backup mode" or just the redeploy warning if it's likely the cause
+             // For now, let's assumes if the API failed, we might be on old version
+             // But we don't want to annoy user if it's just a network glitch.
+             // However, the "Invalid action" check above is the robust one.
+        }
+        
+        return fetchExpenseDataCSV();
+    }
+}
+
+// Function to show redeploy warning
+function showRedeployWarning() {
+    let warningEl = document.getElementById('redeploy-warning');
+    if (!warningEl) {
+        warningEl = document.createElement('div');
+        warningEl.id = 'redeploy-warning';
+        warningEl.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ff3b30; color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; text-align: center; width: 90%; max-width: 400px;';
+        warningEl.innerHTML = '⚠️ System Update Required<br><span style="font-size:12px; opacity:0.9">Please redeploy Google Apps Script (Select "New Version") to see descriptions.</span>';
+        document.body.appendChild(warningEl);
+        
+        // Allow dismissing
+        warningEl.onclick = () => warningEl.remove();
+    }
+}
+
+function hideRedeployWarning() {
+    const warningEl = document.getElementById('redeploy-warning');
+    if (warningEl) warningEl.remove();
+}
+
+// Fallback function using CSV (Old Method)
+async function fetchExpenseDataCSV() {
+    try {
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}&v=${Date.now()}`;
+        
+        const response = await fetch(url, {
+            cache: 'no-store',
+            headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+        });
+        
+        const csvText = await response.text();
         const rows = parseCSV(csvText);
         
-        // Store the raw data for deletion purposes
-        transactionData = rows.slice(1).map((row, index) => ({
-            index: index + 1, // +1 because row 0 is headers
-            date: row[0],
-            amount: row[1],
-            category: row[2],
-            description: row[3],
-            paymentMethod: row[4]
-        }));
+        transactionData = rows.slice(1).map((row, index) => {
+            const safeRow = [...row]; 
+            while (safeRow.length < 4) safeRow.push('');
+            
+            return {
+                index: index + 1,
+                date: safeRow[0],
+                amount: safeRow[1],
+                category: safeRow[2],
+                description: safeRow[3],
+                type: 'expense'
+            };
+        });
         
-        // Convert to the format expected by the rest of the code
         const result = {
             table: {
                 cols: rows[0].map(header => ({ label: header })),
@@ -62,209 +222,366 @@ async function fetchExpenseData() {
             }
         };
         
-        // Show success status
-        document.getElementById('status-message').textContent = 'Updated';
-        setTimeout(() => {
-            document.getElementById('status-message').textContent = '';
-        }, 2000);
-        
-        // Process and display the data
-        await displayExpenseData(result);
+        updateTransactionsList();
+        updateExpenseCharts(result);
+        updateBalance();
         
         return Promise.resolve(result);
     } catch (error) {
-        console.error('Error fetching expense data:', error);
-        document.getElementById('status-message').textContent = 'Connection error';
+        console.error('CSV Fallback failed:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Connection error';
         return Promise.reject(error);
     }
 }
 
-// Helper function to parse CSV
-function parseCSV(text) {
-    const lines = text.split('\n');
-    return lines.map(line => {
-        // Handle quoted values (which might contain commas)
-        const result = [];
-        let inQuotes = false;
-        let currentValue = '';
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                result.push(currentValue);
-                currentValue = '';
-            } else {
-                currentValue += char;
-            }
-        }
-        
-        // Add the last value
-        result.push(currentValue);
-        
-        // Clean up quotes
-        return result.map(value => {
-            if (value.startsWith('"') && value.endsWith('"')) {
-                return value.substring(1, value.length - 1);
-            }
-            return value;
-        });
-    }).filter(row => row.length > 1 || row[0] !== ''); // Filter out empty rows
+// Function to fetch income data from the published Google Sheet
+async function fetchIncomeData() {
+    // Deprecated: Income is now fetched from the main Expenses sheet
+    return Promise.resolve({ rows: [] });
 }
 
-// Function to process and display the expense data
-async function displayExpenseData(data) {
-    if (!data) return;
+// Fallback for Income CSV
+async function fetchIncomeDataCSV() {
+    // Deprecated
+    return Promise.resolve({ rows: [] });
+}
+
+// Helper function to parse CSV (Robust standard compliant)
+function parseCSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentVal = '';
+    let inQuotes = false;
     
-    if (!data || !data.table || !data.table.rows || data.table.rows.length === 0) {
-        document.getElementById('expenses-body').innerHTML = `
-            <tr class="empty-row">
-                <td colspan="6">No transactions found. Click the + button to add your first transaction.</td>
-            </tr>
+    // Remove BOM if present
+    if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
+    }
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i+1];
+        
+        if (inQuotes) {
+            if (char === '"') {
+                if (nextChar === '"') {
+                    currentVal += '"';
+                    i++; // Skip next quote
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                currentVal += char;
+            }
+        } else {
+            if (char === '"') {
+                inQuotes = true;
+            } else if (char === ',') {
+                currentRow.push(currentVal);
+                currentVal = '';
+            } else if (char === '\n' || char === '\r') {
+                // Handle line break
+                if (char === '\r' && nextChar === '\n') i++; // Skip \n in \r\n
+                
+                currentRow.push(currentVal);
+                rows.push(currentRow);
+                currentRow = [];
+                currentVal = '';
+            } else {
+                currentVal += char;
+            }
+        }
+    }
+    
+    // Add last row if there's remaining data
+    if (currentRow.length > 0 || currentVal !== '') {
+        currentRow.push(currentVal);
+        rows.push(currentRow);
+    }
+    
+    // Filter out empty rows (except if they are genuinely empty cells in a row)
+    return rows.filter(row => row.length > 1 || (row.length === 1 && row[0] !== ''));
+}
+
+// Normalize sheet date to local YYYY-MM-DD (avoids UTC shift from Google Sheets JSON)
+function toLocalDateKey(dateVal) {
+    if (dateVal == null || dateVal === '') return '';
+    const s = String(dateVal).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return s;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+// Function to update the unified transaction list
+function updateTransactionsList() {
+    const container = document.getElementById('transaction-list-container');
+    if (!container) return;
+    
+    // Combine expense and income data
+    const allTransactions = [
+        ...transactionData,
+        ...incomeData
+    ];
+    
+    if (allTransactions.length === 0) {
+        container.innerHTML = `
+            <div class="empty-subscriptions" style="text-align:center; padding: 40px; color: var(--text-secondary);">
+                <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                <p>No transactions found.</p>
+            </div>
         `;
-        
-        // Update total amount to zero
-        document.getElementById('total-amount').textContent = '$0.00';
-        
-        // Create empty charts
-        createEmptyCharts();
-        
         return;
     }
     
-    const rows = data.table.rows;
-    const columns = data.table.cols;
+    // Sort by date descending (use local date key for consistent order)
+    allTransactions.sort((a, b) => {
+        const keyA = toLocalDateKey(a.date);
+        const keyB = toLocalDateKey(b.date);
+        if (keyA !== keyB) return keyB.localeCompare(keyA);
+        return 0;
+    });
     
-    // Get column indices
-    const dateIndex = 0;  // Assuming Date is the first column
-    const amountIndex = 1; // Assuming Amount is the second column
-    const categoryIndex = 2; // Assuming Category is the third column
-    const descriptionIndex = 3; // Assuming Description is the fourth column
-    const paymentMethodIndex = 4; // Assuming Payment Method is the fifth column
+    // Group by Date (use local calendar date so sheet date matches display)
+    const grouped = {};
+    allTransactions.forEach(t => {
+        const dateStr = toLocalDateKey(t.date);
+        if (!dateStr) return;
+        if (!grouped[dateStr]) grouped[dateStr] = [];
+        grouped[dateStr].push(t);
+    });
     
-    // Process expense data
+    // Generate HTML
+    let html = '';
+    
+    // Sort keys (dates) descending
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+    
+    sortedDates.forEach(dateKey => {
+        const transactions = grouped[dateKey];
+        
+        // Calculate Daily Total (Income - Expense)
+        let dailyTotal = 0;
+        transactions.forEach(t => {
+            // Clean amount string before parsing
+            const cleanAmount = String(t.amount).replace(/[^0-9.-]+/g, '');
+            const amount = parseFloat(cleanAmount);
+            if (!isNaN(amount)) {
+                // Since expenses are negative and income is positive, just sum them up
+                dailyTotal += amount;
+            }
+        });
+        
+        // Format Date Header (e.g. 2026/02/09 星期一) — parse as local date so it matches sheet
+        const [y, mo, d] = dateKey.split('-').map(Number);
+        const dateObj = new Date(y, mo - 1, d);
+        const dateDisplay = dateObj.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' });
+        
+        // Format Total
+        const fmtMoney = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const totalFormatted = fmtMoney(dailyTotal);
+        
+        const totalClass = dailyTotal >= 0 ? 'positive' : 'negative';
+        
+        html += `
+            <div class="transaction-day-card">
+                <div class="day-header">
+                    <span class="day-date">${dateDisplay}</span>
+                    <span class="day-total ${totalClass}">${totalFormatted}</span>
+                </div>
+                <div class="transaction-list">
+        `;
+        
+        transactions.forEach(t => {
+            const isIncome = t.type === 'income';
+            
+            // Clean amount string before parsing
+            const cleanAmount = String(t.amount).replace(/[^0-9.-]+/g, '');
+            const amountVal = parseFloat(cleanAmount);
+            
+            let amountDisplay;
+            if (isNaN(amountVal)) {
+                amountDisplay = t.amount; // Fallback to original string
+            } else {
+                // Format with sign
+                const sign = isIncome ? '+' : '-';
+                const absVal = Math.abs(amountVal);
+                amountDisplay = `${sign}$${Math.round(absVal).toLocaleString()}`;
+            }
+            
+            const amountStyle = isIncome ? 'color: #4cd964;' : 'color: #000;'; 
+            
+            // Get Icon and Color
+            let iconClass = 'fas fa-question';
+            let catConfig = null;
+            if (isIncome) {
+                catConfig = INCOME_CATEGORIES.find(c => c.label === t.category || c.id === t.category);
+            } else {
+                catConfig = EXPENSE_CATEGORIES.find(c => c.label === t.category || c.id === t.category);
+            }
+            if (catConfig) iconClass = catConfig.icon;
+            
+            // Pick distinct color based on category name
+            // Simple hash function to get consistent color for same category
+            let hash = 0;
+            for (let i = 0; i < t.category.length; i++) {
+                hash = t.category.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const bgIndex = (Math.abs(hash) % 12) + 1; // 1-12
+            
+            // All transactions (Expense AND Income) are now in the same SHEET_NAME ('Expenses')
+            const sheetName = SHEET_NAME;
+            
+            html += `
+                <div class="transaction-item" onclick="/* Open details? */">
+                    <div class="trans-icon-wrapper icon-bg-${bgIndex}">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="trans-content">
+                        <span class="trans-category">${t.category}</span>
+                        ${(t.description && String(t.description).trim() !== '') ? `<span class="trans-desc">${t.description}</span>` : ''}
+                    </div>
+                    <span class="trans-amount" style="${amountStyle}">${amountDisplay}</span>
+                    
+                    <div class="trans-delete-wrapper">
+                        <button class="list-delete-btn" data-row-index="${t.index}" data-sheet="${sheetName}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Apply delete mode class if active
+    if (isDeleteMode) {
+        container.classList.add('delete-mode');
+    } else {
+        container.classList.remove('delete-mode');
+    }
+    
+    setupDeleteButtons();
+}
+
+// Function to update expense charts (Refactored to use local transactionData)
+async function updateExpenseCharts() {
+    // transactionData global already contains the expense items
+    if (!transactionData || transactionData.length === 0) {
+        createEmptyCharts();
+        return;
+    }
+    
     let totalExpense = 0;
     const categoryTotals = {};
     const monthlyExpenses = {};
     
-    const expensesHTML = rows.map((row, rowIndex) => {
-        if (!row.c || row.c.some(cell => !cell)) return ''; // Skip rows with empty cells
+    transactionData.forEach(item => {
+        // item: { date, amount, category, type: 'expense', ... }
+        // Ensure it's an expense just in case
+        if (item.type !== 'expense') return;
         
-        const date = row.c[dateIndex]?.v || 'N/A';
-        const amount = row.c[amountIndex]?.v || '0';
-        const category = row.c[categoryIndex]?.v || 'Uncategorized';
-        const description = row.c[descriptionIndex]?.v || '';
-        const payment = row.c[paymentMethodIndex]?.v || 'N/A';
+        // Clean amount string
+        const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
         
-        // Clean amount string and convert to number
-        const amountValue = parseFloat(String(amount).replace(/[^0-9.-]+/g, ''));
-        
-        if (!isNaN(amountValue)) {
-            totalExpense += amountValue;
+        if (!isNaN(amountVal) && amountVal < 0) {
+            const absAmount = Math.abs(amountVal);
+            totalExpense += absAmount;
             
-            // Aggregate by category
-            categoryTotals[category] = (categoryTotals[category] || 0) + amountValue;
+            // Category
+            const category = item.category || 'Uncategorized';
+            categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
             
-            // Aggregate by month (for the chart)
-            const dateObj = new Date(date);
-            if (!isNaN(dateObj.getTime())) {
+            // Month
+            // Use local date for monthly grouping
+            const dateStr = toLocalDateKey(item.date);
+            if (dateStr) {
+                const [y, mo, d] = dateStr.split('-').map(Number);
+                const dateObj = new Date(y, mo - 1, d);
                 const monthYear = `${dateObj.toLocaleString('default', { month: 'short' })} ${dateObj.getFullYear()}`;
-                monthlyExpenses[monthYear] = (monthlyExpenses[monthYear] || 0) + amountValue;
+                monthlyExpenses[monthYear] = (monthlyExpenses[monthYear] || 0) + absAmount;
             }
         }
-        
-        // Format date for display
-        let displayDate = date;
-        try {
-            const dateObj = new Date(date);
-            if (!isNaN(dateObj.getTime())) {
-                displayDate = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-            }
-        } catch (e) {
-            console.warn('Date parsing error:', e);
-        }
-        
-        // Format amount for display - ensure $ is always shown
-        let displayAmount;
-        if (typeof amountValue === 'number' && !isNaN(amountValue)) {
-            displayAmount = `$${amountValue.toFixed(2)}`;
-        } else {
-            // If for some reason we can't parse it, just show the original
-            displayAmount = amount.toString().startsWith('$') ? amount : `$${amount}`;
-        }
-        
-        // Add data attributes for deletion
-        // For display, we use the array index (0-based)
-        // For sheet operations, we'll calculate the actual sheet row later
-        const dataAttributes = `
-            data-row-index="${rowIndex}"
-            data-date="${date}"
-            data-amount="${amountValue}"
-            data-category="${category}"
-            data-description="${description}"
-            data-payment="${payment}"
-        `;
-        
-        return `
-            <tr ${dataAttributes} class="transaction-row">
-                <td class="delete-column hidden">
-                    <button class="delete-button" data-row-index="${rowIndex}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-                <td>${displayDate}</td>
-                <td>${displayAmount}</td>
-                <td>${category}</td>
-                <td>${description}</td>
-                <td>${payment}</td>
-            </tr>
-        `;
-    }).join('');
+    });
     
-    // Update the expenses table
-    if (expensesHTML) {
-        document.getElementById('expenses-body').innerHTML = expensesHTML;
-    } else {
-        document.getElementById('expenses-body').innerHTML = `
-            <tr class="empty-row">
-                <td colspan="6">No transactions found. Click the + button to add your first transaction.</td>
-            </tr>
-        `;
-    }
-    
-    // Add empty rows if there are few transactions to maintain layout
-    const visibleRows = document.querySelectorAll('#expenses-body tr').length;
-    if (visibleRows > 0 && visibleRows < 5) {
-        // Add some empty spacer rows for better appearance
-        const spacerRows = Array(5 - visibleRows).fill().map(() => `
-            <tr class="spacer-row">
-                <td colspan="6">&nbsp;</td>
-            </tr>
-        `).join('');
-        document.getElementById('expenses-body').innerHTML += spacerRows;
-    }
-    
-    // Update total amount
-    document.getElementById('total-amount').textContent = `$${totalExpense.toFixed(2)}`;
-    
-    // Create the monthly expense chart
+    // Charts only reflect Expenses
     if (Object.keys(monthlyExpenses).length > 0) {
         createMonthlyExpenseChart(monthlyExpenses);
     } else {
         createEmptyMonthlyChart();
     }
     
-    // Create the category expense chart
     if (Object.keys(categoryTotals).length > 0) {
         createCategoryExpenseChart(categoryTotals);
     } else {
         createEmptyCategoryChart();
     }
+}
+
+
+function updateBalance() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
     
-    // Add event listeners to delete buttons
-    setupDeleteButtons();
+    const parseAmount = (str) => {
+        return parseFloat(String(str).replace(/[^0-9.-]+/g, '')) || 0;
+    };
+    
+    const isCurrentMonth = (dateStr) => {
+        try {
+            const key = toLocalDateKey(dateStr);
+            if (!key) return false;
+            const [y, mo] = key.split('-').map(Number);
+            return mo === currentMonth + 1 && y === currentYear;
+        } catch (e) { return false; }
+    };
+    
+    let monthlyExpense = 0;
+    let monthlyIncome = 0;
+
+    // Calculate totals from both transactionData (expenses) and incomeData (income)
+    const allItems = [...transactionData, ...incomeData];
+    
+    allItems.forEach(item => {
+        if (isCurrentMonth(item.date)) {
+            const val = parseAmount(item.amount);
+            if (val < 0) {
+                monthlyExpense += Math.abs(val);
+            } else {
+                monthlyIncome += val;
+            }
+        }
+    });
+    
+    const monthlyLeft = monthlyIncome - monthlyExpense;
+    
+    // Update UI
+    const incomeEl = document.getElementById('total-income');
+    if (incomeEl) incomeEl.textContent = `$${monthlyIncome.toFixed(2)}`;
+    
+    const expenseEl = document.getElementById('total-expenses');
+    if (expenseEl) expenseEl.textContent = `$${monthlyExpense.toFixed(2)}`;
+    
+    // Also update total-amount just in case it's still used somewhere
+    const totalAmountEl = document.getElementById('total-amount');
+    if (totalAmountEl) totalAmountEl.textContent = `$${monthlyExpense.toFixed(2)}`;
+    
+    const balanceEl = document.getElementById('total-balance');
+    if (balanceEl) {
+        balanceEl.textContent = `$${monthlyLeft.toFixed(2)}`;
+        balanceEl.style.color = monthlyLeft >= 0 ? '#4cd964' : '#ff3b30';
+    }
 }
 
 // Function to create empty charts when no data is available
@@ -378,66 +695,121 @@ function createEmptyCategoryChart() {
 
 // Function to setup delete buttons
 function setupDeleteButtons() {
-    const deleteButtons = document.querySelectorAll('.delete-button');
+    // Select both types of delete buttons (old table style if any, and new list style)
+    const deleteButtons = document.querySelectorAll('.delete-button, .list-delete-btn');
     
     // Define the delete handler function
     function handleDeleteClick(e) {
         e.stopPropagation();
         const rowIndex = this.getAttribute('data-row-index');
-        const row = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+        const sheetName = this.getAttribute('data-sheet') || SHEET_NAME; // Get sheet name
         
-        if (row) {
-            // Get transaction details for confirmation
-            const date = row.getAttribute('data-date');
-            const amount = row.getAttribute('data-amount');
-            const category = row.getAttribute('data-category');
-            const description = row.getAttribute('data-description');
-            const payment = row.getAttribute('data-payment');
+        // Find row/item
+        const item = this.closest('.transaction-item') || this.closest('tr');
+        
+        if (item) {
+            let date, amount, category, description;
             
-            // Format date for display
-            let displayDate = date;
-            try {
-                const dateObj = new Date(date);
-                if (!isNaN(dateObj.getTime())) {
-                    displayDate = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                }
-            } catch (e) {
-                console.warn('Date parsing error:', e);
+            if (item.classList.contains('transaction-item')) {
+                // New List View
+                // Date is in the header of the parent card
+                const dayCard = item.closest('.transaction-day-card');
+                date = dayCard ? dayCard.querySelector('.day-date').textContent : 'N/A';
+                amount = item.querySelector('.trans-amount').textContent;
+                category = item.querySelector('.trans-category').textContent;
+                description = item.querySelector('.trans-desc') ? item.querySelector('.trans-desc').textContent : '';
+            } else {
+                // Old Table View
+                const cells = item.querySelectorAll('td');
+                date = cells[1].textContent;
+                amount = cells[2].textContent;
+                category = cells[3].textContent;
+                description = cells[4].textContent;
             }
             
-            // Format amount for display
-            const displayAmount = `$${parseFloat(amount).toFixed(2)}`;
-            
-            // Show simple confirmation
-            const confirmed = confirm(`Delete transaction?\n\nDate: ${displayDate}\nAmount: ${displayAmount}\nCategory: ${category}\nDescription: ${description}`);
-            
-            if (confirmed) {
-                // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
-                const actualRowIndex = parseInt(rowIndex) + 2;
+            // Open the cute delete confirmation modal
+            openDeleteModal({
+                date,
+                amount,
+                category,
+                description
+            }, () => {
+                // The actual delete logic to run when confirmed
                 
-                // Show loading status
-                document.getElementById('status-message').textContent = 'Deleting...';
+                // Optimistic UI: Remove immediately from local view
+                const indexToRemove = parseInt(rowIndex);
+                // Note: The logic for finding the exact item in array based on rowIndex is tricky if not synced.
+                // However, we can simply hide the DOM element and update totals based on the value we parsed.
                 
-                // Delete from Google Sheet
-                deleteTransactionFromSheet(actualRowIndex)
+                // 1. Hide the item visually
+                if (item) {
+                    item.style.transition = 'all 0.3s ease';
+                    item.style.opacity = '0';
+                    item.style.height = '0';
+                    item.style.padding = '0';
+                    item.style.margin = '0';
+                    setTimeout(() => item.remove(), 300);
+                }
+                
+                // 2. Remove from local data to update totals
+                // Use filter to remove by index (approximate match) or exact object ref if possible
+                // Since we don't have object ref here easily, we'll try to find by index
+                // Wait, removing by index is safer if we know the array. 
+                // But transactionData holds both.
+                // Let's just update the array by filtering out this specific item if possible.
+                // Or simpler: Just re-fetch silently. 
+                // BUT user wants smooth UI.
+                
+                // Let's manually subtract the amount from totals?
+                // Actually, filtering transactionData is safer.
+                if (sheetName === SHEET_NAME) { // Expenses sheet
+                     // Try to remove from transactionData or incomeData based on rowIndex
+                     // Note: row indices in data are 1-based (from sheet). 
+                     // item.index stores this.
+                     const idx = parseInt(rowIndex);
+                     // Find and remove
+                     let removed = false;
+                     // Look in transactionData
+                     const tIdx = transactionData.findIndex(t => t.index == idx);
+                     if (tIdx > -1) { transactionData.splice(tIdx, 1); removed = true; }
+                     // Look in incomeData
+                     if (!removed) {
+                         const iIdx = incomeData.findIndex(t => t.index == idx);
+                         if (iIdx > -1) { incomeData.splice(iIdx, 1); }
+                     }
+                     
+                     // Update Charts and Balance with new data
+                     updateBalance();
+                     updateExpenseCharts();
+                }
+
+                // Close modal immediately
+                closeDeleteModal();
+                
+                // Show "Deleting" status quietly
+                const statusMsg = document.getElementById('status-message');
+                if (statusMsg) statusMsg.textContent = 'Deleting...';
+                
+                // Calculate the actual row index in the spreadsheet (add 1 for header row)
+                const actualRowIndex = parseInt(rowIndex) + 1;
+                
+                // Delete from Google Sheet in background
+                deleteTransactionFromSheet(actualRowIndex, sheetName)
                     .then(() => {
-                        // Show success message
-                        document.getElementById('status-message').textContent = 'Deleted!';
+                        if (statusMsg) statusMsg.textContent = 'Deleted';
                         setTimeout(() => {
-                            document.getElementById('status-message').textContent = '';
+                            if (statusMsg && statusMsg.textContent === 'Deleted') statusMsg.textContent = '';
                         }, 2000);
                         
-                        // Refresh data to update charts and totals
+                        // Sync real state
                         fetchExpenseData();
                     })
                     .catch(error => {
                         console.error('Error deleting transaction:', error);
-                        document.getElementById('status-message').textContent = 'Error deleting';
-                        setTimeout(() => {
-                            document.getElementById('status-message').textContent = '';
-                        }, 2000);
+                        if (statusMsg) statusMsg.textContent = 'Error deleting';
+                        alert('Failed to delete from sheet. Please refresh.');
                     });
-            }
+            });
         }
     }
     
@@ -452,8 +824,59 @@ function setupDeleteButtons() {
     });
 }
 
-// Function to delete transaction from Google Sheet
-async function deleteTransactionFromSheet(rowIndex) {
+// Function to setup and handle the Delete Modal
+function setupDeleteModal() {
+    const modal = document.getElementById('delete-modal');
+    const cancelBtn = document.getElementById('cancel-delete-btn');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeDeleteModal);
+    }
+    
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            if (deleteCallback && typeof deleteCallback === 'function') {
+                deleteCallback();
+            }
+        });
+    }
+    
+    // Close on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeDeleteModal();
+        }
+    });
+}
+
+function openDeleteModal(data, onConfirm) {
+    const modal = document.getElementById('delete-modal');
+    if (!modal) return;
+    
+    // Note: We removed the detail fields (del-date, del-amount, etc.) 
+    // based on the request for a simpler pop-up. 
+    // We only need to store the callback now.
+    
+    // Store callback
+    deleteCallback = onConfirm;
+    
+    // Show modal
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('delete-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    deleteCallback = null;
+}
+
+// Function to delete transaction from Google Sheet (modified to accept sheetName)
+async function deleteTransactionFromSheet(rowIndex, sheetName = SHEET_NAME) {
     // Check if we have a deployed Google Apps Script Web App URL
     if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
         console.warn('No Google Apps Script Web App URL configured. Transaction will not be deleted from Google Sheet.');
@@ -466,7 +889,7 @@ async function deleteTransactionFromSheet(rowIndex) {
         console.log('Deleting transaction at row:', rowIndex);
         
         // Build URL with all parameters since no-cors mode doesn't properly send JSON body
-        const url = `${SCRIPT_URL}?action=delete&rowIndex=${rowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SHEET_NAME}&v=${Date.now()}`;
+        const url = `${SCRIPT_URL}?action=delete&rowIndex=${rowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${sheetName}&v=${Date.now()}`;
         
         // Send the request to Google Apps Script Web App
         const response = await fetch(url, {
@@ -789,13 +1212,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Initializing app...');
         
-        // Hide any visible modals that might be stuck
+        // Hide all modals
         document.querySelectorAll('.modal').forEach(modal => {
             modal.style.display = 'none';
         });
         
         // Initialize sections
         initializeSections();
+        
+        // Setup delete modal
+        setupDeleteModal();
         
         // Setup navigation
         setupNavigation();
@@ -805,20 +1231,43 @@ window.addEventListener('DOMContentLoaded', async () => {
             button.addEventListener('click', createRipple);
         });
         
-        // Setup transaction modal
-        setupTransactionModal();
+        // Setup transaction modal (New Calculator)
+        setupCalculatorModal();
         
-        // Setup subscription modal
-        setupSubscriptionModal();
+        // Replace old button listeners
+        const addTransBtn = document.getElementById('add-transaction-btn');
+        if (addTransBtn) {
+            // Clone to remove old listeners
+            const newBtn = addTransBtn.cloneNode(true);
+            addTransBtn.parentNode.replaceChild(newBtn, addTransBtn);
+            newBtn.addEventListener('click', () => openCalculatorModal('expense'));
+        }
+        
+        // Add Income Button (Removed from UI but keeping check just in case)
+        const addIncomeBtn = document.getElementById('add-income-btn');
+        if (addIncomeBtn) {
+            const newBtn = addIncomeBtn.cloneNode(true);
+            addIncomeBtn.parentNode.replaceChild(newBtn, addIncomeBtn);
+            newBtn.addEventListener('click', () => openCalculatorModal('income'));
+        }
+        
+        // Setup subscription modal (Removed)
+        // setupSubscriptionModal();
         
         // Setup delete mode
         setupDeleteMode();
         
-        // Setup subscription delete mode
-        setupSubscriptionDeleteMode();
+        // Setup subscription delete mode (Removed)
+        // setupSubscriptionDeleteMode();
         
         // Setup refresh button
         setupRefreshButton();
+        
+        // Setup Quick Add Buttons
+        setupQuickAdd();
+        
+        // Setup Budget Logic
+        setupBudgetSection();
         
         // Create empty charts initially
         createEmptyCharts();
@@ -826,13 +1275,410 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Fetch expense data from Google Sheet
         await fetchExpenseData();
         
-        // Fetch subscription data from Google Sheet
-        await fetchSubscriptionData();
+        // Fetch income data
+        await fetchIncomeData();
+        
+        // Fetch subscription data from Google Sheet (Removed)
+        // await fetchSubscriptionData();
         
     } catch (error) {
         console.error('Error initializing app:', error);
     }
 });
+
+// --- Budget Page Logic ---
+
+function setupBudgetSection() {
+    // Load budget from localStorage
+    let monthlyBudget = parseFloat(localStorage.getItem('monthlyBudget')) || 0;
+    updateBudgetUI(monthlyBudget);
+    
+    // Setup Edit Button
+    const editBtn = document.getElementById('edit-budget-btn');
+    const modal = document.getElementById('budget-modal');
+    const closeBtn = document.querySelector('.close-budget-modal');
+    const saveBtn = document.getElementById('save-budget-btn');
+    const budgetInput = document.getElementById('budget-input');
+    
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            budgetInput.value = monthlyBudget;
+            modal.style.display = 'block';
+        });
+    }
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    
+    // Close on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const newBudget = parseFloat(budgetInput.value);
+            if (!isNaN(newBudget) && newBudget >= 0) {
+                monthlyBudget = newBudget;
+                localStorage.setItem('monthlyBudget', monthlyBudget);
+                updateBudgetUI(monthlyBudget);
+                modal.style.display = 'none';
+            } else {
+                alert('Please enter a valid budget amount.');
+            }
+        });
+    }
+}
+
+function updateBudgetUI(budget) {
+    // Calculate Total Spent for current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    let totalSpent = 0;
+    
+    // Use transactionData (which contains expenses as negative values)
+    if (transactionData) {
+        transactionData.forEach(item => {
+            // Check if it's an expense and in current month
+            // Note: toLocalDateKey handles the date string
+            const dateStr = toLocalDateKey(item.date);
+            if (!dateStr) return;
+            
+            const [y, mo, d] = dateStr.split('-').map(Number);
+            // Check if same month/year
+            if (y === currentYear && mo === currentMonth + 1) {
+                 const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
+                 if (!isNaN(amountVal) && amountVal < 0) {
+                     totalSpent += Math.abs(amountVal);
+                 }
+            }
+        });
+    }
+    
+    const remaining = budget - totalSpent;
+    const percentage = budget > 0 ? Math.min((remaining / budget) * 100, 100) : 0;
+    const spentPercentage = budget > 0 ? Math.min((totalSpent / budget) * 100, 100) : 0;
+    
+    // Update Text
+    const budgetDisplay = document.getElementById('total-budget-display');
+    const spentDisplay = document.getElementById('total-spent-display');
+    const remainingDisplay = document.getElementById('budget-remaining');
+    
+    if (budgetDisplay) budgetDisplay.textContent = `$${budget.toLocaleString()}`;
+    if (spentDisplay) spentDisplay.textContent = `$${totalSpent.toLocaleString()}`;
+    if (remainingDisplay) {
+        remainingDisplay.textContent = `$${remaining.toLocaleString()}`;
+        remainingDisplay.style.color = remaining >= 0 ? '#4cd964' : '#ff3b30';
+    }
+    
+    // Update Circle Progress
+    const circle = document.getElementById('budget-progress-circle');
+    if (circle) {
+        // Calculate stroke-dasharray
+        // 100 is full circle
+        // We want to show REMAINING percentage? Or SPENT?
+        // Usually budget circles show how much is LEFT or how much is SPENT.
+        // Let's show SPENT as the progress (filling up), and color changes if over budget.
+        
+        // Actually, user asked for "Budget Left".
+        // Let's make the circle full (100) and reduce it as you spend? 
+        // Or start empty and fill up as you spend?
+        // Let's fill up as you spend.
+        
+        circle.setAttribute('stroke-dasharray', `${spentPercentage}, 100`);
+        
+        if (remaining < 0) {
+            circle.style.stroke = '#ff3b30'; // Red if over budget
+        } else if (spentPercentage > 80) {
+            circle.style.stroke = '#ff9500'; // Orange if near limit
+        } else {
+            circle.style.stroke = '#4cd964'; // Green otherwise
+        }
+    }
+}
+
+// Hook into updateBalance/fetchData to refresh budget UI when data changes
+const originalUpdateBalance = updateBalance;
+updateBalance = function() {
+    originalUpdateBalance();
+    const budget = parseFloat(localStorage.getItem('monthlyBudget')) || 0;
+    updateBudgetUI(budget);
+};
+
+// --- End Budget Page Logic ---
+
+// Setup Calculator Modal
+function setupCalculatorModal() {
+    const modal = document.getElementById('add-modal');
+    const closeBtn = document.querySelector('.close-add-modal');
+    
+    // Toggle Buttons
+    const typeBtns = document.querySelectorAll('.type-btn');
+    typeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            switchCalcType(type);
+        });
+    });
+
+    // Keypad Logic
+    const keypadBtns = document.querySelectorAll('.keypad-btn');
+    keypadBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => handleKeypadClick(e, btn));
+    });
+
+    // Date Navigation
+    const prevDayBtn = document.getElementById('prev-day');
+    const nextDayBtn = document.getElementById('next-day');
+    if (prevDayBtn) prevDayBtn.addEventListener('click', () => changeDate(-1));
+    if (nextDayBtn) nextDayBtn.addEventListener('click', () => changeDate(1));
+    
+    // Date Display Click (to pick date)
+    const dateDisplay = document.getElementById('calc-date-display');
+    const dateInput = document.getElementById('calc-date-input');
+    
+    if (dateDisplay && dateInput) {
+        dateDisplay.addEventListener('click', () => {
+            dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
+        });
+        
+        dateInput.addEventListener('change', (e) => {
+            if(e.target.valueAsDate) {
+                currentCalcDate = e.target.valueAsDate;
+                updateDateDisplay();
+            }
+        });
+    }
+
+    // Close handlers
+    if (closeBtn) closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    });
+}
+
+function openCalculatorModal(type = 'expense') {
+    const modal = document.getElementById('add-modal');
+    modal.style.display = 'flex'; // Use flex to center/align
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Reset State
+    currentCalcAmount = '0';
+    currentCalcDate = new Date();
+    document.getElementById('calc-description').value = '';
+    updateAmountDisplay();
+    updateDateDisplay();
+    
+    // Switch Type
+    switchCalcType(type);
+    
+    // Select default category
+    const defaultCat = type === 'expense' ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0];
+    selectCategory(defaultCat);
+}
+
+function switchCalcType(type) {
+    currentCalcType = type;
+    
+    // Update Toggle UI
+    document.querySelectorAll('.type-btn').forEach(btn => {
+        if (btn.dataset.type === type) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    // Render Categories
+    renderCategories(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES);
+    
+    // Select first category by default if none selected or invalid
+    const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    selectCategory(categories[0]);
+}
+
+function renderCategories(categories) {
+    const grid = document.getElementById('category-grid');
+    grid.innerHTML = categories.map(cat => `
+        <div class="category-option" onclick="handleCategorySelect('${cat.id}')" data-id="${cat.id}">
+            <div class="cat-icon-circle">
+                <i class="${cat.icon}"></i>
+            </div>
+            <div class="cat-label">${cat.label}</div>
+        </div>
+    `).join('');
+}
+
+function handleCategorySelect(id) {
+    const categories = currentCalcType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    const category = categories.find(c => c.id === id);
+    if (category) selectCategory(category);
+}
+// Exporting handleCategorySelect to window for onclick handlers in HTML
+window.handleCategorySelect = handleCategorySelect;
+
+function selectCategory(category) {
+    selectedCategoryId = category.id;
+    
+    // Update UI
+    document.querySelectorAll('.category-option').forEach(el => {
+        if (el.dataset.id === category.id) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+    
+    // Update Input Display Icon
+    document.getElementById('selected-icon').className = category.icon;
+    document.getElementById('selected-category-name').textContent = category.label;
+}
+
+function handleKeypadClick(e, btn) {
+    // Ripple effect
+    createRipple(e);
+
+    const val = btn.dataset.val;
+    const action = btn.id;
+
+    if (action === 'btn-submit') {
+        submitTransaction();
+        return;
+    }
+
+    if (action === 'btn-ac') {
+        currentCalcAmount = '0';
+    } else if (action === 'btn-backspace') {
+        if (currentCalcAmount.length > 1) {
+            currentCalcAmount = currentCalcAmount.slice(0, -1);
+        } else {
+            currentCalcAmount = '0';
+        }
+    } else if (val) {
+        // Handle numbers and operators (simple appending for now, can extend to eval)
+        if (['+', '-', '*', '/'].includes(val)) {
+            // Simple evaluation logic if user pressed operator?
+            // For now, let's just allow typing numbers. 
+            // If the user wants to calculate, we can add evaluation later.
+            // The request was "something like this", usually implies the look.
+            // Let's ignore operators for now or treat them as no-op to avoid eval errors
+            return; 
+        }
+
+        if (currentCalcAmount === '0' && val !== '.') {
+            currentCalcAmount = val;
+        } else {
+            // Prevent multiple decimals
+            if (val === '.' && currentCalcAmount.includes('.')) return;
+            // Max length check
+            if (currentCalcAmount.length < 10) {
+                currentCalcAmount += val;
+            }
+        }
+    }
+    updateAmountDisplay();
+}
+
+function updateAmountDisplay() {
+    document.getElementById('display-amount').textContent = currentCalcAmount;
+}
+
+function changeDate(days) {
+    const newDate = new Date(currentCalcDate);
+    newDate.setDate(newDate.getDate() + days);
+    currentCalcDate = newDate;
+    updateDateDisplay();
+}
+
+function updateDateDisplay() {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' };
+    // Format: 2026/02/09 Mon
+    const dateStr = currentCalcDate.toLocaleDateString('zh-TW', options); 
+    document.getElementById('calc-date-display').textContent = dateStr;
+    
+    // Sync hidden input
+    document.getElementById('calc-date-input').valueAsDate = currentCalcDate;
+}
+
+async function submitTransaction() {
+    let amount = parseFloat(currentCalcAmount);
+    if (amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
+    const description = document.getElementById('calc-description').value;
+    const categories = currentCalcType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    const categoryObj = categories.find(c => c.id === selectedCategoryId);
+    const categoryLabel = categoryObj ? categoryObj.label : 'Uncategorized';
+    
+    // Adjust sign based on type
+    if (currentCalcType === 'expense') {
+        amount = -Math.abs(amount); // Ensure expense is negative
+    } else {
+        amount = Math.abs(amount); // Ensure income is positive
+    }
+    
+    // Optimistic UI Update: Immediately add to local state
+    const newItem = {
+        index: -1, // Temporary index, will be fixed on next sync
+        date: toLocalDateKey(currentCalcDate), // Use local date helper
+        amount: amount,
+        category: categoryLabel,
+        description: description,
+        type: currentCalcType
+    };
+    
+    if (currentCalcType === 'expense') {
+        transactionData.push(newItem);
+    } else {
+        incomeData.push(newItem);
+    }
+    
+    // Update UI components immediately
+    updateTransactionsList();
+    updateBalance();
+    updateExpenseCharts();
+    
+    // Close modal immediately
+    document.getElementById('add-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    
+    // Show quiet "Saving..." message
+    const statusMsg = document.getElementById('status-message');
+    if (statusMsg) statusMsg.textContent = 'Saving...';
+
+    // Submit to backend in background
+    try {
+        await addTransactionToSheet(
+            currentCalcDate, 
+            amount, 
+            categoryLabel, 
+            description,
+            SHEET_NAME 
+        );
+        
+        if (statusMsg) {
+            statusMsg.textContent = 'Saved';
+            setTimeout(() => { if (statusMsg.textContent === 'Saved') statusMsg.textContent = ''; }, 2000);
+        }
+        
+        // Silent sync to update row indices
+        fetchExpenseData(); 
+        
+    } catch (error) {
+        console.error(error);
+        alert('Error syncing transaction to sheet. Please check connection.');
+        // Optionally revert local change here if needed, but for now we assume it eventually syncs or user refreshes
+    }
+}
 
 // Function to initialize sections
 function initializeSections() {
@@ -914,122 +1760,8 @@ function createRipple(event) {
     }, 600);
 }
 
-// Function to setup transaction modal
-function setupTransactionModal() {
-    const addTransactionBtn = document.getElementById('add-transaction-btn');
-    const transactionModal = document.getElementById('transaction-modal');
-    const closeModalBtn = document.querySelector('.close-modal');
-    const cancelTransactionBtn = document.getElementById('cancel-transaction');
-    const transactionForm = document.getElementById('transaction-form');
-    
-    // Set default date to today
-    document.getElementById('transaction-date').valueAsDate = new Date();
-    
-    // Show modal when add button is clicked
-    addTransactionBtn.addEventListener('click', () => {
-        transactionModal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
-    });
-    
-    // Close modal functions
-    function closeModal() {
-        transactionModal.style.display = 'none';
-        document.body.style.overflow = ''; // Re-enable scrolling
-        transactionForm.reset();
-        document.getElementById('transaction-date').valueAsDate = new Date(); // Reset date to today
-    }
-    
-    // Close modal when X is clicked
-    closeModalBtn.addEventListener('click', closeModal);
-    
-    // Close modal when Cancel button is clicked
-    cancelTransactionBtn.addEventListener('click', closeModal);
-    
-    // Close modal when clicking outside of it
-    window.addEventListener('click', (event) => {
-        if (event.target === transactionModal) {
-            closeModal();
-        }
-    });
-    
-    // Handle form submission
-    transactionForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        
-        // Show loading status
-        document.getElementById('status-message').textContent = 'Adding transaction...';
-        
-        // Get form values
-        const date = document.getElementById('transaction-date').value;
-        const amount = document.getElementById('transaction-amount').value;
-        const category = document.getElementById('transaction-category').value;
-        const description = document.getElementById('transaction-description').value;
-        const paymentMethod = document.getElementById('transaction-payment').value;
-        
-        // Format date for display
-        const dateObj = new Date(date);
-        const displayDate = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        
-        // Format amount for display - ensure $ is always shown
-        const numericAmount = parseFloat(amount);
-        const displayAmount = `$${numericAmount.toFixed(2)}`;
-        
-        try {
-            // Send data to Google Sheet
-            await addTransactionToSheet(date, amount, category, description, paymentMethod);
-            
-            // Create new row for the table
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${displayDate}</td>
-                <td>${displayAmount}</td>
-                <td>${category}</td>
-                <td>${description}</td>
-                <td>${paymentMethod}</td>
-            `;
-            
-            // Add the new row to the table
-            const expensesBody = document.getElementById('expenses-body');
-            
-            // If there's a "no data" message, clear it first
-            if (expensesBody.innerHTML.includes('No expense data available') || 
-                expensesBody.innerHTML.includes('Loading expense data...')) {
-                expensesBody.innerHTML = '';
-            }
-            
-            // Add the new row at the top of the table
-            expensesBody.insertBefore(newRow, expensesBody.firstChild);
-            
-            // Update total amount
-            const currentTotal = parseFloat(document.getElementById('total-amount').textContent.replace('$', ''));
-            const newTotal = currentTotal + numericAmount;
-            document.getElementById('total-amount').textContent = `$${newTotal.toFixed(2)}`;
-            
-            // Show success message
-            document.getElementById('status-message').textContent = 'Transaction added';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-            
-            // Close the modal
-            closeModal();
-            
-            // Optional: Refresh data to update charts
-            // Uncomment the line below if you want to refresh all data after adding a transaction
-            // await fetchExpenseData();
-            
-        } catch (error) {
-            console.error('Error adding transaction:', error);
-            document.getElementById('status-message').textContent = 'Error adding transaction';
-            
-            // Show error message to user
-            alert('Failed to add transaction to Google Sheet. Please try again.');
-        }
-    });
-}
-
 // Function to add transaction to Google Sheet
-async function addTransactionToSheet(date, amount, category, description, paymentMethod) {
+async function addTransactionToSheet(date, amount, category, description, sheetName = SHEET_NAME) {
     // Check if we have a deployed Google Apps Script Web App URL
     if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
         console.warn('No Google Apps Script Web App URL configured. Transaction will only be added to UI.');
@@ -1039,22 +1771,28 @@ async function addTransactionToSheet(date, amount, category, description, paymen
     }
     
     try {
-        // Format the date to YYYY-MM-DD for consistency
-        const formattedDate = new Date(date).toISOString().split('T')[0];
+        // Format the date to YYYY-MM-DD in LOCAL time (avoid UTC shift)
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
         
         // Convert amount to a number to ensure proper formatting
         const numericAmount = parseFloat(amount);
         
         // Build URL with parameters
         const url = new URL(SCRIPT_URL);
+        
+        // Determine action based on sheet name
         url.searchParams.append('action', 'addTransaction');
+        
         url.searchParams.append('date', formattedDate);
         url.searchParams.append('amount', numericAmount);
         url.searchParams.append('category', category);
         url.searchParams.append('description', description || '');
-        url.searchParams.append('paymentMethod', paymentMethod);
         url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
-        url.searchParams.append('sheetName', SHEET_NAME);
+        url.searchParams.append('sheetName', sheetName);
         url.searchParams.append('v', Date.now());
         
         // Send the request to Google Apps Script Web App
@@ -1084,75 +1822,90 @@ async function addTransactionToSheet(date, amount, category, description, paymen
 function setupDeleteMode() {
     const deleteModeBtn = document.getElementById('delete-mode-btn');
     
-    deleteModeBtn.addEventListener('click', function() {
-        // Toggle delete mode
-        isDeleteMode = !isDeleteMode;
-        
-        // Toggle active class on button
-        if (isDeleteMode) {
-            deleteModeBtn.classList.add('active');
-        } else {
-            deleteModeBtn.classList.remove('active');
-        }
-        
-        // Show/hide delete column
-        const deleteColumns = document.querySelectorAll('.delete-column');
-        deleteColumns.forEach(cell => {
+    if (deleteModeBtn) {
+        deleteModeBtn.addEventListener('click', function() {
+            // Toggle delete mode
+            isDeleteMode = !isDeleteMode;
+            
+            // Toggle active class on button
             if (isDeleteMode) {
-                cell.classList.remove('hidden');
+                deleteModeBtn.classList.add('active');
             } else {
-                cell.classList.add('hidden');
+                deleteModeBtn.classList.remove('active');
+            }
+            
+            // Show/hide delete buttons in new list view
+            const container = document.getElementById('transaction-list-container');
+            if (container) {
+                if (isDeleteMode) {
+                    container.classList.add('delete-mode');
+                } else {
+                    container.classList.remove('delete-mode');
+                }
+            }
+            
+            // Show/hide delete column in old table view (if it still exists anywhere)
+            const deleteColumns = document.querySelectorAll('.delete-column');
+            deleteColumns.forEach(cell => {
+                if (isDeleteMode) {
+                    cell.classList.remove('hidden');
+                } else {
+                    cell.classList.add('hidden');
+                }
+            });
+            
+            // Setup delete buttons if in delete mode
+            if (isDeleteMode) {
+                setupDeleteButtons();
             }
         });
-        
-        // Setup delete buttons if in delete mode
-        if (isDeleteMode) {
-            setupDeleteButtons();
-        }
-    });
+    }
 }
 
 // Function to setup refresh button
 function setupRefreshButton() {
     const refreshButton = document.getElementById('refresh-btn');
     
-    refreshButton.addEventListener('click', async function() {
-        try {
-            // Show loading animation
-            refreshButton.classList.add('rotating');
-            
-            // Fetch expense data
-            await fetchExpenseData();
-            
-            // Fetch subscription data
-            await fetchSubscriptionData();
-            
-            // Show success message
-            document.getElementById('status-message').textContent = 'Refreshed!';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            document.getElementById('status-message').textContent = 'Error refreshing';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        } finally {
-            // Remove loading animation
-            refreshButton.classList.remove('rotating');
-        }
-    });
+    if (refreshButton) {
+        refreshButton.addEventListener('click', async function() {
+            try {
+                // Show loading animation
+                refreshButton.classList.add('rotating');
+                
+                // Fetch expense data
+                await fetchExpenseData();
+                
+                // Fetch income data
+                await fetchIncomeData();
+                
+                // Fetch subscription data
+                await fetchSubscriptionData();
+                
+                // Show success message
+                document.getElementById('status-message').textContent = 'Refreshed!';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                document.getElementById('status-message').textContent = 'Error refreshing';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            } finally {
+                // Remove loading animation
+                refreshButton.classList.remove('rotating');
+            }
+        });
+    }
 }
 
 // Function to fetch subscription data from the Google Sheet
 async function fetchSubscriptionData() {
     try {
         // Using the CSV export approach which is more reliable
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}&v=${APP_VERSION}`;
-        
-        // Show loading status
-        document.getElementById('status-message').textContent = 'Loading...';
+        // Add current timestamp to bust cache effectively
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}&v=${Date.now()}`;
         
         const response = await fetch(url, {
             cache: 'no-store', // Force fetch from network, not cache
@@ -1190,19 +1943,12 @@ async function fetchSubscriptionData() {
             }
         };
         
-        // Show success status
-        document.getElementById('status-message').textContent = 'Updated';
-        setTimeout(() => {
-            document.getElementById('status-message').textContent = '';
-        }, 2000);
-        
         // Process and display the data
         await displaySubscriptionData(result);
         
         return Promise.resolve(result);
     } catch (error) {
         console.error('Error fetching subscription data:', error);
-        document.getElementById('status-message').textContent = 'Connection error';
         return Promise.reject(error);
     }
 }
@@ -1273,8 +2019,6 @@ async function displaySubscriptionData(data) {
         }
         
         // Add data attributes for details and deletion
-        // For display, we use the array index (0-based)
-        // For sheet operations, we'll calculate the actual sheet row later
         const dataAttributes = `
             data-row-index="${rowIndex}"
             data-service="${service}"
@@ -1287,11 +2031,10 @@ async function displaySubscriptionData(data) {
             data-description="${description}"
         `;
         
-        // Determine if the service has an icon or use the first letter
+        // Determine if the service has an icon
         const serviceFirstLetter = service.charAt(0).toUpperCase();
         let serviceIcon;
         
-        // Map common services to Font Awesome icons
         const serviceIcons = {
             'google': 'fab fa-google',
             'netflix': 'fab fa-netflix',
@@ -1313,7 +2056,6 @@ async function displaySubscriptionData(data) {
             'linkedin': 'fab fa-linkedin'
         };
         
-        // Try to find a matching icon
         const serviceLower = service.toLowerCase();
         for (const [key, icon] of Object.entries(serviceIcons)) {
             if (serviceLower.includes(key)) {
@@ -1322,12 +2064,10 @@ async function displaySubscriptionData(data) {
             }
         }
         
-        // If no icon found, use a default
         if (!serviceIcon) {
             serviceIcon = 'fas fa-calendar-alt';
         }
         
-        // Generate HTML for the card - only showing service, price and next payment date
         return `
             <div class="subscription-card" ${dataAttributes}>
                 <div class="service-name">${service}</div>
@@ -1345,7 +2085,6 @@ async function displaySubscriptionData(data) {
         `;
     }).join('');
     
-    // Update the container
     container.innerHTML = subscriptionsHTML || `
         <div class="empty-subscriptions">
             <i class="fas fa-calendar-alt"></i>
@@ -1388,19 +2127,13 @@ async function addSubscriptionToSheet(service, account, price, billingCycle, cat
     // Check if we have a deployed Google Apps Script Web App URL
     if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
         console.warn('No Google Apps Script Web App URL configured. Subscription will only be added to UI.');
-        
-        // For demo purposes, we'll just simulate a successful API call
         return new Promise(resolve => setTimeout(resolve, 500));
     }
     
     try {
-        // Format the next payment date to YYYY-MM-DD for consistency
         const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
-        
-        // Convert price to a number to ensure proper formatting
         const numericPrice = parseFloat(price);
         
-        // Build URL with parameters
         const url = new URL(SCRIPT_URL);
         url.searchParams.append('action', 'addSubscription');
         url.searchParams.append('service', service);
@@ -1415,9 +2148,8 @@ async function addSubscriptionToSheet(service, account, price, billingCycle, cat
         url.searchParams.append('sheetName', SUBSCRIPTION_SHEET_NAME);
         url.searchParams.append('v', Date.now());
         
-        // Send the request to Google Apps Script Web App
         const response = await fetch(url.toString(), {
-            method: 'GET', // Using GET with URL parameters
+            method: 'GET',
             mode: 'no-cors',
             cache: 'no-store',
             headers: {
@@ -1428,9 +2160,6 @@ async function addSubscriptionToSheet(service, account, price, billingCycle, cat
             redirect: 'follow'
         });
         
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
-        
         return true;
     } catch (error) {
         console.error('Error adding subscription to Google Sheet:', error);
@@ -1440,27 +2169,20 @@ async function addSubscriptionToSheet(service, account, price, billingCycle, cat
 
 // Function to delete subscription from Google Sheet
 async function deleteSubscriptionFromSheet(rowIndex) {
-    // Check if we have a deployed Google Apps Script Web App URL
     if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Subscription will not be deleted from Google Sheet.');
-        
-        // For demo purposes, we'll just simulate a successful API call
+        console.warn('No Google Apps Script Web App URL configured.');
         return new Promise(resolve => setTimeout(resolve, 500));
     }
     
     try {
-        // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
-        const actualRowIndex = parseInt(rowIndex) + 2;
-        
+        const actualRowIndex = parseInt(rowIndex) + 1;
         console.log('Deleting subscription at row:', actualRowIndex);
         
-        // Build URL with all parameters since no-cors mode doesn't properly send JSON body
         const url = `${SCRIPT_URL}?action=deleteSubscription&rowIndex=${actualRowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SUBSCRIPTION_SHEET_NAME}&v=${Date.now()}`;
         
-        // Send the request to Google Apps Script Web App
         const response = await fetch(url, {
-            method: 'GET', // Changed to GET since we're passing parameters in URL
-            mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
+            method: 'GET',
+            mode: 'no-cors',
             cache: 'no-store',
             headers: {
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -1469,9 +2191,6 @@ async function deleteSubscriptionFromSheet(rowIndex) {
             },
             redirect: 'follow'
         });
-        
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
         
         return true;
     } catch (error) {
@@ -1490,7 +2209,6 @@ function setupSubscriptionDeleteButtons() {
             const rowIndex = this.getAttribute('data-row-index');
             const card = this.closest('.subscription-card');
             
-            // Get subscription details for confirmation
             const service = card.getAttribute('data-service');
             const account = card.getAttribute('data-account');
             const price = card.getAttribute('data-price');
@@ -1506,19 +2224,16 @@ function setupSubscriptionDeleteButtons() {
 
 // Show delete subscription confirmation modal
 function showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod) {
-    // Use a simple confirm dialog instead of complex modal
     const confirmed = confirm(`Are you sure you want to delete the ${service} subscription?`);
     
     if (confirmed) {
         deleteSubscriptionFromSheet(rowIndex)
             .then(() => {
-                // Show success message
                 document.getElementById('status-message').textContent = 'Deleted!';
                 setTimeout(() => {
                     document.getElementById('status-message').textContent = '';
                 }, 2000);
                 
-                // Refresh the data
                 return fetchSubscriptionData();
             })
             .catch(error => {
@@ -1539,39 +2254,33 @@ function setupSubscriptionModal() {
     const cancelButton = document.getElementById('cancel-subscription');
     const form = document.getElementById('subscription-form');
     
-    // Open modal when clicking the add button
-    addButton.addEventListener('click', function() {
-        modal.style.display = 'block';
-        // Set default date to today
-        document.getElementById('subscription-next-payment').valueAsDate = new Date();
-    });
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+            document.getElementById('subscription-next-payment').valueAsDate = new Date();
+        });
+    }
     
-    // Close modal functions
     function closeModal() {
         modal.style.display = 'none';
         form.reset();
     }
     
-    closeButton.addEventListener('click', closeModal);
-    cancelButton.addEventListener('click', closeModal);
+    if (closeButton) closeButton.addEventListener('click', closeModal);
+    if (cancelButton) cancelButton.addEventListener('click', closeModal);
     
-    // Close modal when clicking outside - use a named function that we can remove later
     const outsideClickHandler = function(event) {
         if (event.target === modal) {
             closeModal();
-            // Remove this event listener when modal is closed
             window.removeEventListener('click', outsideClickHandler);
         }
     };
     
-    // Add the event listener for outside clicks
     window.addEventListener('click', outsideClickHandler);
     
-    // Form submission
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
         
-        // Get form values
         const service = document.getElementById('subscription-service').value;
         const account = document.getElementById('subscription-account').value;
         const price = document.getElementById('subscription-price').value;
@@ -1582,10 +2291,8 @@ function setupSubscriptionModal() {
         const description = document.getElementById('subscription-description').value;
         
         try {
-            // Show loading status
             document.getElementById('status-message').textContent = 'Adding...';
             
-            // Add subscription to Google Sheet
             await addSubscriptionToSheet(
                 service,
                 account,
@@ -1597,13 +2304,10 @@ function setupSubscriptionModal() {
                 description
             );
             
-            // Close the modal
             closeModal();
             
-            // Refresh the data
             await fetchSubscriptionData();
             
-            // Show success message
             document.getElementById('status-message').textContent = 'Added!';
             setTimeout(() => {
                 document.getElementById('status-message').textContent = '';
@@ -1622,32 +2326,31 @@ function setupSubscriptionModal() {
 function setupSubscriptionDeleteMode() {
     const deleteButton = document.getElementById('delete-subscription-btn');
     
-    deleteButton.addEventListener('click', function() {
-        isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
-        
-        // Toggle delete button appearance
-        if (isSubscriptionDeleteMode) {
-            deleteButton.classList.add('active');
-        } else {
-            deleteButton.classList.remove('active');
-        }
-        
-        // Toggle delete overlay visibility on cards
-        const cards = document.querySelectorAll('.subscription-card');
-        cards.forEach(card => {
-            const deleteOverlay = card.querySelector('.delete-overlay');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', function() {
+            isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
+            
             if (isSubscriptionDeleteMode) {
-                deleteOverlay.classList.add('visible');
+                deleteButton.classList.add('active');
             } else {
-                deleteOverlay.classList.remove('visible');
+                deleteButton.classList.remove('active');
+            }
+            
+            const cards = document.querySelectorAll('.subscription-card');
+            cards.forEach(card => {
+                const deleteOverlay = card.querySelector('.delete-overlay');
+                if (isSubscriptionDeleteMode) {
+                    deleteOverlay.classList.add('visible');
+                } else {
+                    deleteOverlay.classList.remove('visible');
+                }
+            });
+            
+            if (isSubscriptionDeleteMode) {
+                setupSubscriptionDeleteButtons();
             }
         });
-        
-        // Setup delete buttons if in delete mode
-        if (isSubscriptionDeleteMode) {
-            setupSubscriptionDeleteButtons();
-        }
-    });
+    }
 }
 
 // Show subscription details modal
@@ -1655,11 +2358,9 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
     const modal = document.getElementById('subscription-details-modal');
     const detailsContainer = document.getElementById('subscription-detail-content');
     
-    // Format price for display
     const priceValue = parseFloat(price);
     const displayPrice = !isNaN(priceValue) ? `$${priceValue.toFixed(2)}` : `$${price}`;
     
-    // Format date for display
     let displayNextPayment = nextPayment;
     try {
         const dateObj = new Date(nextPayment);
@@ -1670,11 +2371,9 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
         console.warn('Date parsing error:', e);
     }
     
-    // Determine if the service has an icon
     const serviceLower = service.toLowerCase();
     let serviceIcon = 'fas fa-calendar-alt';
     
-    // Map common services to Font Awesome icons
     const serviceIcons = {
         'google': 'fab fa-google',
         'netflix': 'fab fa-netflix',
@@ -1696,7 +2395,6 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
         'linkedin': 'fab fa-linkedin'
     };
     
-    // Try to find a matching icon
     for (const [key, icon] of Object.entries(serviceIcons)) {
         if (serviceLower.includes(key)) {
             serviceIcon = icon;
@@ -1704,7 +2402,6 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
         }
     }
     
-    // Display subscription details in the modal
     detailsContainer.innerHTML = `
         <div class="service-tag">
             <i class="${serviceIcon}"></i> ${category}
@@ -1749,50 +2446,35 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
         </div>
     `;
     
-    // Show the modal
     modal.style.display = 'block';
     
-    // Setup close button
     const closeButton = modal.querySelector('.close-details-modal');
     closeButton.onclick = function() {
         modal.style.display = 'none';
-        document.body.style.overflow = ''; // Re-enable scrolling
+        document.body.style.overflow = ''; 
     };
     
-    // Setup delete button
     const deleteButton = document.getElementById('delete-subscription-detail-btn');
     deleteButton.onclick = function() {
-        // Close the details modal
         modal.style.display = 'none';
-        
-        // Show delete confirmation
         showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
     };
     
-    // Setup edit button
     const editButton = document.getElementById('edit-subscription-btn');
     editButton.onclick = function() {
-        // Close the details modal
         modal.style.display = 'none';
-        
-        // Open the edit modal and populate with subscription details
         openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex);
     };
     
-    // Setup resubscribe button
     const resubscribeButton = document.getElementById('resubscribe-btn');
     resubscribeButton.onclick = function() {
-        // Calculate new payment date based on billing cycle
         let newPaymentDate = calculateNextPaymentDate(nextPayment, billingCycle);
         
-        // Show confirmation
         const confirmed = confirm(`Resubscribe to ${service} for another ${billingCycle} cycle?\nNew payment date: ${formatDateForDisplay(newPaymentDate)}`);
         
         if (confirmed) {
-            // Close the details modal
             modal.style.display = 'none';
             
-            // Update the subscription with the new payment date
             updateSubscriptionFromSheet(
                 rowIndex,
                 service,
@@ -1804,10 +2486,8 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
                 paymentMethod,
                 description
             ).then(() => {
-                // Refresh the data
                 fetchSubscriptionData();
                 
-                // Show success message
                 document.getElementById('status-message').textContent = 'Resubscribed!';
                 setTimeout(() => {
                     document.getElementById('status-message').textContent = '';
@@ -1822,17 +2502,14 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
         }
     };
     
-    // Close modal when clicking outside - use a named function that we can remove later
     const outsideClickHandler = function(event) {
         if (event.target === modal) {
             modal.style.display = 'none';
-            document.body.style.overflow = ''; // Re-enable scrolling
-            // Remove this event listener when modal is closed
+            document.body.style.overflow = ''; 
             window.removeEventListener('click', outsideClickHandler);
         }
     };
     
-    // Add the event listener
     window.addEventListener('click', outsideClickHandler);
 }
 
@@ -1840,14 +2517,12 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
 function openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
     const modal = document.getElementById('edit-subscription-modal');
     
-    // Populate form fields with current values
     document.getElementById('edit-subscription-service').value = service;
     document.getElementById('edit-subscription-account').value = account;
     document.getElementById('edit-subscription-price').value = parseFloat(price);
     document.getElementById('edit-subscription-billing').value = billingCycle;
     document.getElementById('edit-subscription-category').value = category;
     
-    // Format date for input field (YYYY-MM-DD)
     let formattedDate = nextPayment;
     try {
         const dateObj = new Date(nextPayment);
@@ -1863,28 +2538,23 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
     document.getElementById('edit-subscription-description').value = description || '';
     document.getElementById('edit-subscription-row-index').value = rowIndex;
     
-    // Show the modal
     modal.style.display = 'block';
     
-    // Setup close button
     const closeButton = modal.querySelector('.close-edit-subscription-modal');
     closeButton.onclick = function() {
         modal.style.display = 'none';
     };
     
-    // Setup cancel button
     const cancelButton = document.getElementById('cancel-edit-subscription');
     cancelButton.onclick = function() {
         modal.style.display = 'none';
     };
     
-    // Setup form submission
     const form = document.getElementById('edit-subscription-form');
     form.onsubmit = async function(e) {
         e.preventDefault();
         
         try {
-            // Get form values
             const updatedService = document.getElementById('edit-subscription-service').value;
             const updatedAccount = document.getElementById('edit-subscription-account').value;
             const updatedPrice = document.getElementById('edit-subscription-price').value;
@@ -1895,7 +2565,6 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
             const updatedDescription = document.getElementById('edit-subscription-description').value;
             const rowIndex = document.getElementById('edit-subscription-row-index').value;
             
-            // Update subscription in the sheet
             await updateSubscriptionFromSheet(
                 rowIndex,
                 updatedService,
@@ -1908,13 +2577,10 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
                 updatedDescription
             );
             
-            // Close the modal
             modal.style.display = 'none';
             
-            // Refresh the data
             await fetchSubscriptionData();
             
-            // Show success message
             document.getElementById('status-message').textContent = 'Updated!';
             setTimeout(() => {
                 document.getElementById('status-message').textContent = '';
@@ -1928,28 +2594,23 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
         }
     };
     
-    // Close modal when clicking outside
     const outsideClickHandler = function(event) {
         if (event.target === modal) {
             modal.style.display = 'none';
-            // Remove this event listener when modal is closed
             window.removeEventListener('click', outsideClickHandler);
         }
     };
     
-    // Add the event listener
     window.addEventListener('click', outsideClickHandler);
 }
 
 // Update subscription in the Google Sheet
 async function updateSubscriptionFromSheet(rowIndex, service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
     try {
-        // Calculate the actual row index in the spreadsheet (add 2 for header row and 1-based indexing)
-        const actualRowIndex = parseInt(rowIndex) + 2;
+        const actualRowIndex = parseInt(rowIndex) + 1;
         
         console.log(`Updating subscription at row index: ${actualRowIndex}`);
         
-        // Prepare the URL with parameters
         const url = new URL(SCRIPT_URL);
         url.searchParams.append('action', 'updateSubscription');
         url.searchParams.append('rowIndex', actualRowIndex);
@@ -1963,16 +2624,13 @@ async function updateSubscriptionFromSheet(rowIndex, service, account, price, bi
         url.searchParams.append('description', description || '');
         url.searchParams.append('sheetName', 'Subscription');
         
-        // Make the request
         const response = await fetch(url, {
             method: 'GET',
             mode: 'cors',
         });
         
-        // Parse the response
         const result = await response.json();
         
-        // Check if the operation was successful
         if (result.status !== 'success') {
             throw new Error(result.message || 'Failed to update subscription');
         }
@@ -1987,36 +2645,30 @@ async function updateSubscriptionFromSheet(rowIndex, service, account, price, bi
 // Calculate next payment date based on billing cycle
 function calculateNextPaymentDate(currentDate, billingCycle) {
     try {
-        // Parse the current date
         const date = new Date(currentDate);
         
-        // If date is invalid, return today's date
         if (isNaN(date.getTime())) {
             return new Date().toISOString().split('T')[0];
         }
         
-        // Calculate next payment date based on billing cycle
         switch (billingCycle) {
-            case '月': // Monthly
+            case '月': 
                 date.setMonth(date.getMonth() + 1);
                 break;
-            case '季': // Quarterly
+            case '季': 
                 date.setMonth(date.getMonth() + 3);
                 break;
-            case '年': // Yearly
+            case '年': 
                 date.setFullYear(date.getFullYear() + 1);
                 break;
             default:
-                // Default to monthly if cycle is unknown
                 date.setMonth(date.getMonth() + 1);
                 break;
         }
         
-        // Format as YYYY-MM-DD for input fields
         return date.toISOString().split('T')[0];
     } catch (error) {
         console.error('Error calculating next payment date:', error);
-        // Return today's date as fallback
         return new Date().toISOString().split('T')[0];
     }
 }
@@ -2026,11 +2678,233 @@ function formatDateForDisplay(dateString) {
     try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) {
-            return dateString; // Return original string if invalid date
+            return dateString; 
         }
         return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     } catch (error) {
         console.warn('Date formatting error:', error);
         return dateString;
     }
-} 
+}
+
+// --- Quick Add Functionality ---
+
+// Default Quick Add Configuration
+const DEFAULT_QUICK_ADDS = [
+    { id: 1, label: 'Food', category: '食物', icon: 'fas fa-utensils', payment: 'Line Pay', description: 'Lunch' },
+    { id: 2, label: 'Cat', category: '貓咪', icon: 'fas fa-paw', payment: 'Line Pay', description: 'Cat Food' },
+    { id: 3, label: 'Transport', category: '交通', icon: 'fas fa-bus', payment: 'Line Pay', description: 'MRT/Bus' },
+    { id: 4, label: 'Shopping', category: '購物', icon: 'fas fa-shopping-bag', payment: 'Credit Card', description: 'Online' }
+];
+
+// Load Quick Add settings from localStorage
+function getQuickAddSettings() {
+    const saved = localStorage.getItem('quickAddSettings');
+    if (saved) {
+        try {
+            let settings = JSON.parse(saved);
+            
+            // Basic validation
+            if (!Array.isArray(settings) || settings.length === 0) {
+                return DEFAULT_QUICK_ADDS;
+            }
+
+            // Migration: Ensure IDs match the 1, 2, 3, 4 sequence
+            // This fixes the issue where old IDs were strings like 'transport'
+            let needsUpdate = false;
+            settings = settings.map((item, index) => {
+                const expectedId = index + 1;
+                if (item.id != expectedId) {
+                    item.id = expectedId;
+                    needsUpdate = true;
+                }
+                return item;
+            });
+            
+            if (needsUpdate) {
+                localStorage.setItem('quickAddSettings', JSON.stringify(settings));
+            }
+            
+            return settings;
+        } catch (e) {
+            console.error('Error parsing quick add settings:', e);
+            return DEFAULT_QUICK_ADDS;
+        }
+    }
+    return DEFAULT_QUICK_ADDS;
+}
+
+// Save Quick Add settings to localStorage
+function saveQuickAddSettings(settings) {
+    localStorage.setItem('quickAddSettings', JSON.stringify(settings));
+}
+
+// Setup Quick Add
+function setupQuickAdd() {
+    renderQuickAddButtons();
+    setupQuickAddConfig();
+    
+    // Override Quick Add Click to open new Calculator Modal with preset
+    window.handleQuickAddClick = function(id) {
+        // Convert to number if it's a numeric string
+        // This handles cases where ID is "1" vs 1
+        let lookupId = id;
+        if (!isNaN(parseInt(id)) && typeof id !== 'number') {
+             // Try looking up as string first, if not found, try as number
+             // Or just normalize everything to string for comparison?
+             // Best to just check both
+        }
+
+        const settings = getQuickAddSettings();
+        // Loose equality check (==) allows "1" to match 1
+        const btnConfig = settings.find(b => b.id == id);
+        
+        if (btnConfig) {
+            openCalculatorModal('expense'); // Quick add is usually for expense
+            
+            // Pre-select category if possible
+            const cat = EXPENSE_CATEGORIES.find(c => c.label === btnConfig.category);
+            if (cat) selectCategory(cat);
+            
+            // Pre-fill description
+            if (btnConfig.description) {
+                document.getElementById('calc-description').value = btnConfig.description;
+            }
+            
+            // Note: Payment method logic is simplified in calculator view
+        }
+    };
+}
+
+// Render Quick Add Buttons
+function renderQuickAddButtons() {
+    const container = document.getElementById('quick-add-buttons-container');
+    const settings = getQuickAddSettings();
+    
+    container.innerHTML = settings.map(btn => `
+        <div class="quick-add-btn" data-id="${btn.id}" onclick="handleQuickAddClick('${btn.id}')">
+            <i class="${btn.icon || 'fas fa-plus'}"></i>
+            <span>${btn.label}</span>
+        </div>
+    `).join('');
+}
+
+// Setup Quick Add Configuration Modal
+function setupQuickAddConfig() {
+    const modal = document.getElementById('quick-add-config-modal');
+    const editBtn = document.getElementById('edit-quick-add-btn');
+    const closeBtn = document.querySelector('.close-quick-add-config');
+    const cancelBtn = document.getElementById('cancel-quick-add-config');
+    const form = document.getElementById('quick-add-config-form');
+    const tabBtns = document.querySelectorAll('.quick-add-tabs .tab-btn');
+    
+    // Open modal
+    editBtn.addEventListener('click', () => {
+        modal.style.display = 'block';
+        loadQuickAddConfig(1); // Load first button by default
+        setActiveTab(1);
+    });
+    
+    // Close modal functions
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Close on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    
+    // Tab switching
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.tab);
+            setActiveTab(id);
+            loadQuickAddConfig(id);
+        });
+    });
+    
+    function setActiveTab(id) {
+        tabBtns.forEach(btn => {
+            if (parseInt(btn.dataset.tab) === id) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    // Form submission
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const id = parseInt(document.getElementById('quick-add-id').value);
+        const label = document.getElementById('qa-label').value;
+        const category = document.getElementById('qa-category').value;
+        const description = document.getElementById('qa-description').value;
+        const payment = document.getElementById('qa-payment').value;
+        
+        // Get icon based on category (simple logic for now)
+        let icon = 'fas fa-star';
+        if (category === '食物') icon = 'fas fa-utensils';
+        else if (category === '租房') icon = 'fas fa-home';
+        else if (category === '交通') icon = 'fas fa-bus';
+        else if (category === '訂閱') icon = 'fas fa-calendar-check';
+        else if (category === '日常用品') icon = 'fas fa-shopping-basket';
+        else if (category === '貓咪') icon = 'fas fa-paw';
+        else if (category === '娛樂') icon = 'fas fa-gamepad';
+        else if (category === '女友') icon = 'fas fa-heart';
+        else if (category === '購物') icon = 'fas fa-shopping-bag';
+        else if (category === '其他') icon = 'fas fa-box';
+        
+        // Update settings
+        const settings = getQuickAddSettings();
+        const index = settings.findIndex(b => b.id === id);
+        
+        if (index !== -1) {
+            settings[index] = { id, label, category, description, payment, icon };
+            saveQuickAddSettings(settings);
+            renderQuickAddButtons();
+            
+            // Show feedback
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Saved!';
+            setTimeout(() => {
+                submitBtn.textContent = originalText;
+            }, 1000);
+        }
+    });
+}
+
+// Load config for a specific button into the form
+function loadQuickAddConfig(id) {
+    const settings = getQuickAddSettings();
+    const config = settings.find(b => b.id === id);
+    
+    if (config) {
+        document.getElementById('quick-add-id').value = config.id;
+        document.getElementById('qa-label').value = config.label || '';
+        document.getElementById('qa-category').value = config.category || '';
+        document.getElementById('qa-description').value = config.description || '';
+        document.getElementById('qa-payment').value = config.payment || '';
+    }
+}
+
+// Function to setup income modal (Deprecated/Removed)
+function setupIncomeModal() {
+    // Functionality moved to unified calculator modal
+}
+
+// Function to setup income delete buttons (Deprecated/Removed)
+function setupIncomeDeleteButtons() {
+    // Income section removed
+}
+
+// Function to setup income delete mode (Deprecated/Removed)
+function setupIncomeDeleteMode() {
+    // Income section removed
+}

@@ -6,17 +6,17 @@
 }
 
 :root {
-    --primary-color: #0ea5e9;
-    --accent-color: #06b6d4;
-    --text-color: #ffffff;
-    --text-secondary: #a1a1aa;
-    --background-color: #0f1115;
-    --card-background: #1c1f26;
-    --button-background: #0284c7;
+    --primary-color: #4169e1;
+    --accent-color: #2b4bb8;
+    --text-color: #3d2b1f;
+    --text-secondary: #796b63;
+    --background-color: #fdfbf7;
+    --card-background: #ffffff;
+    --button-background: #4169e1;
     --button-text: #ffffff;
-    --shadow-color: rgba(0, 0, 0, 0.25);
-    --highlight-color: rgba(255, 255, 255, 0.05);
-    --border-color: rgba(255, 255, 255, 0.05);
+    --shadow-color: rgba(61, 43, 31, 0.15);
+    --highlight-color: rgba(61, 43, 31, 0.05);
+    --border-color: rgba(61, 43, 31, 0.1);
 }
 
 @font-face {
@@ -50,8 +50,8 @@ header {
     background-color: var(--card-background);
     border-radius: 16px;
     box-shadow: 
-        8px 8px 16px rgba(0, 0, 0, 0.2),
-        -8px -8px 16px rgba(255, 255, 255, 0.02);
+        8px 8px 16px var(--shadow-color),
+        -8px -8px 16px #ffffff;
 }
 
 .logo {
@@ -76,7 +76,7 @@ header {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(145deg, var(--card-background), rgba(28, 31, 38, 0.8));
+    background: linear-gradient(145deg, var(--card-background), #f0e6d2);
     color: var(--primary-color);
     border: none;
     font-size: 16px;
@@ -86,8 +86,8 @@ header {
     margin-left: 12px;
     cursor: pointer;
     box-shadow: 
-        2px 2px 5px rgba(0, 0, 0, 0.2),
-        -2px -2px 5px rgba(255, 255, 255, 0.02);
+        2px 2px 5px var(--shadow-color),
+        -2px -2px 5px #ffffff;
     transition: all 0.3s ease;
 }
 
@@ -95,15 +95,15 @@ header {
     color: var(--accent-color);
     transform: translateY(-2px);
     box-shadow: 
-        3px 3px 8px rgba(0, 0, 0, 0.25),
-        -3px -3px 8px rgba(255, 255, 255, 0.03);
+        3px 3px 8px var(--shadow-color),
+        -3px -3px 8px #ffffff;
 }
 
 .refresh-btn:active {
     transform: translateY(0);
     box-shadow: 
-        inset 2px 2px 5px rgba(0, 0, 0, 0.2),
-        inset -2px -2px 5px rgba(255, 255, 255, 0.02);
+        inset 2px 2px 5px var(--shadow-color),
+        inset -2px -2px 5px #ffffff;
 }
 
 .refresh-btn.refreshing i {
@@ -119,7 +119,7 @@ header {
     font-size: 0.8rem;
     padding: 5px 12px;
     border-radius: 20px;
-    background-color: rgba(14, 165, 233, 0.1);
+    background-color: rgba(65, 105, 225, 0.1);
     color: var(--primary-color);
 }
 
@@ -137,8 +137,8 @@ header {
     border-radius: 16px;
     padding: 16px;
     box-shadow: 
-        8px 8px 16px rgba(0, 0, 0, 0.2),
-        -8px -8px 16px rgba(255, 255, 255, 0.02);
+        8px 8px 16px var(--shadow-color),
+        -8px -8px 16px #ffffff;
     margin-bottom: 12px;
     position: relative;
     overflow: hidden;
@@ -148,8 +148,8 @@ header {
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 
-        10px 10px 20px rgba(0, 0, 0, 0.25),
-        -10px -10px 20px rgba(255, 255, 255, 0.03);
+        10px 10px 20px var(--shadow-color),
+        -10px -10px 20px #ffffff;
 }
 
 .card h2 {
@@ -169,6 +169,108 @@ header {
     height: 1px;
     background: linear-gradient(to right, var(--primary-color), var(--accent-color), transparent);
     margin-left: 10px;
+}
+
+/* Quick Add Styles */
+.quick-actions-card {
+    margin-bottom: 16px;
+    padding-bottom: 20px;
+}
+
+.quick-add-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.quick-add-btn {
+    background: linear-gradient(145deg, #ffffff, #fdfbf7);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 2px 2px 5px var(--shadow-color), -2px -2px 5px #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 8px var(--shadow-color), -4px -4px 8px #ffffff;
+    border-color: var(--primary-color);
+}
+
+.quick-add-btn:active {
+    transform: translateY(0);
+    box-shadow: inset 2px 2px 5px var(--shadow-color), inset -2px -2px 5px #ffffff;
+}
+
+.quick-add-btn i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+}
+
+.quick-add-btn span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.edit-quick-add-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.edit-quick-add-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--primary-color);
+}
+
+/* Quick Add Configuration Modal */
+.quick-add-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: var(--card-background);
+    color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 480px) {
+    .quick-add-buttons {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 /* Card Header for Transactions */
@@ -272,7 +374,7 @@ header {
     margin: 0 auto;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 4px 10px var(--shadow-color);
 }
 
 .delete-button:hover {
@@ -360,7 +462,7 @@ header {
 /* Summary Card */
 .summary-card {
     text-align: center;
-    background: linear-gradient(145deg, #1a1d24, #1e2229);
+    background: linear-gradient(145deg, #ffffff, #fdfbf7);
 }
 
 .total-amount {
@@ -385,7 +487,7 @@ header {
 
 /* Expenses Card */
 .expenses-card {
-    overflow-x: auto;
+    overflow-x: hidden;
     margin-bottom: 24px;
     min-height: 400px;
     display: flex;
@@ -399,133 +501,152 @@ header {
     flex-grow: 1;
 }
 
-.expenses-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    height: 100%;
+/* REMOVED: Old Table Styles */
+/* Kept basic table styles just in case needed elsewhere, but mostly repurposed */
+
+/* New Transaction List Styles */
+.transaction-list-container {
+    padding: 0 4px;
+    padding-bottom: 80px; /* Space for bottom nav */
 }
 
-.expenses-table th,
-.expenses-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+.transaction-day-card {
+    background: #fff;
+    border: 2px solid #000;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
 }
 
-/* Set consistent height for transaction rows */
-.expenses-table tbody tr {
-    height: 72px;
-    box-sizing: border-box;
+.day-header {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #000;
+    font-weight: 700;
+    font-size: 16px;
 }
 
-.expenses-table tbody tr.spacer-row {
-    height: 72px;
+.day-date {
+    color: #000;
 }
 
-.expenses-table th {
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    height: 48px;
+.day-total {
+    font-weight: 700;
 }
 
-.expenses-table tr:last-child td {
+.day-total.negative {
+    color: #FFB347; /* Warm Orange/Yellow like the image */
+}
+
+.day-total.positive {
+    color: #6CB4EE; /* Light Blue like the image */
+}
+
+.transaction-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.transaction-item:last-child {
     border-bottom: none;
 }
 
-.expenses-table tr:hover td {
-    background-color: rgba(14, 165, 233, 0.05);
+.transaction-item:active {
+    background-color: #f9f9f9;
 }
 
-/* Ensure consistent vertical alignment */
-.expenses-table td {
-    vertical-align: middle;
+.trans-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px; /* Rounded square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 18px;
+    color: #000;
+    border: 2px solid #000;
+    flex-shrink: 0;
 }
 
-/* Ensure consistent font size */
-.expenses-table td {
+/* Random-ish background colors for icons - Expanded Palette */
+.icon-bg-1 { background-color: #AEC6CF; } /* Pastel Blue */
+.icon-bg-2 { background-color: #FFB347; } /* Pastel Orange */
+.icon-bg-3 { background-color: #FF6961; } /* Pastel Red */
+.icon-bg-4 { background-color: #77DD77; } /* Pastel Green */
+.icon-bg-5 { background-color: #FDFD96; } /* Pastel Yellow */
+.icon-bg-6 { background-color: #CFCFC4; } /* Pastel Grey */
+.icon-bg-7 { background-color: #B39EB5; } /* Pastel Purple */
+.icon-bg-8 { background-color: #FFB7B2; } /* Pastel Pink */
+.icon-bg-9 { background-color: #C1E1C1; } /* Pastel Mint */
+.icon-bg-10 { background-color: #F7C69F; } /* Pastel Apricot */
+.icon-bg-11 { background-color: #A0C4FF; } /* Pastel Sky */
+.icon-bg-12 { background-color: #B9D9EB; } /* Pastel Periwinkle */
+
+.trans-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.trans-category {
+    font-weight: 600;
     font-size: 15px;
+    color: #000;
 }
 
-/* Date column width */
-.expenses-table th:nth-child(2),
-.expenses-table td:nth-child(2) {
-    width: 80px;
+.trans-desc {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Amount column width */
-.expenses-table th:nth-child(3),
-.expenses-table td:nth-child(3) {
-    width: 100px;
+.trans-amount {
+    font-weight: 700;
+    font-size: 16px;
+    color: #000;
+    text-align: right;
+    margin-left: 8px;
 }
 
-/* Add empty state for transactions */
-.expenses-table tbody tr.empty-row td {
-    padding: 30px 0;
-    text-align: center;
-    color: var(--text-secondary);
-    font-style: italic;
+/* Delete Button in List */
+.trans-delete-wrapper {
+    margin-left: 12px;
+    display: none;
 }
 
-/* Add a subtle background pattern to empty space */
-.expenses-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background-image: 
-        radial-gradient(
-            circle at 10px 10px, 
-            rgba(255, 255, 255, 0.03) 2px, 
-            transparent 2px
-        );
-    background-size: 20px 20px;
-    background-position: 0 0;
-    z-index: 0;
-    opacity: 0.3;
-    pointer-events: none;
-}
-
-/* Add bottom padding to last row for better spacing */
-.expenses-table tbody tr:last-child td {
-    padding-bottom: 20px;
-}
-
-/* Add subtle animation for row transitions */
-.expenses-table tbody tr {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* Add a subtle border to the bottom of the table */
-.expenses-table::after {
-    content: '';
+.delete-mode .trans-delete-wrapper {
     display: block;
-    height: 1px;
-    background: linear-gradient(to right, var(--primary-color), var(--accent-color), transparent);
-    opacity: 0.2;
-    margin-top: 20px;
 }
 
-/* Ensure the expenses section maintains a consistent height */
-#transactions.section {
-    min-height: 500px;
+.list-delete-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ff6b6b;
+    color: white;
+    border: none;
     display: flex;
-    flex-direction: column;
-}
-
-#transactions .card {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Ensure tbody fills available space */
-.expenses-table tbody {
-    min-height: 300px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
 }
 
 /* Responsive Styles */
@@ -553,12 +674,6 @@ header {
         font-size: 20px;
     }
     
-    .expenses-table th,
-    .expenses-table td {
-        padding: 10px;
-        font-size: 0.9rem;
-    }
-    
     .total-amount {
         font-size: 2rem;
     }
@@ -572,13 +687,6 @@ header {
         padding-bottom: max(16px, env(safe-area-inset-bottom));
         padding-left: max(16px, env(safe-area-inset-left));
         padding-right: max(16px, env(safe-area-inset-right));
-    }
-    
-    /* Improved touch targets for iOS */
-    .expenses-table th,
-    .expenses-table td {
-        padding-top: 14px;
-        padding-bottom: 14px;
     }
 }
 
@@ -615,7 +723,7 @@ header {
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px var(--shadow-color);
     cursor: pointer;
     z-index: 1000;
     font-size: 24px;
@@ -633,13 +741,13 @@ header {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(145deg, #1c1f2c, #232839);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(145deg, #ffffff, #fdfbf7);
+    box-shadow: 0 -4px 20px var(--shadow-color);
   display: flex;
   justify-content: space-around;
   padding: 12px 0;
   z-index: 1000;
-  border-top: 1px solid rgba(79, 199, 255, 0.1);
+  border-top: 1px solid var(--border-color);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
@@ -649,7 +757,7 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #7a8194;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   position: relative;
@@ -665,7 +773,7 @@ header {
   left: 0;
   right: 0;
   height: 0;
-  background: linear-gradient(180deg, rgba(79, 199, 255, 0.15), transparent);
+  background: linear-gradient(180deg, rgba(65, 105, 225, 0.15), transparent);
   transition: height 0.3s ease;
   z-index: -1;
   border-radius: 14px;
@@ -676,10 +784,10 @@ header {
 }
 
 .nav-item.active {
-  color: #4fc7ff;
-  background: #1a1d2a;
-  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2),
-              inset -3px -3px 6px rgba(40, 50, 80, 0.1);
+  color: var(--primary-color);
+  background: #f0e6d2;
+  box-shadow: inset 3px 3px 6px rgba(61, 43, 31, 0.15),
+              inset -3px -3px 6px rgba(255, 255, 255, 0.9);
   transform: translateY(-5px);
 }
 
@@ -693,7 +801,7 @@ header {
   height: 6px;
   background: #4fc7ff;
   border-radius: 50%;
-  box-shadow: 0 0 10px #4fc7ff, 0 0 20px #4fc7ff;
+    box-shadow: 0 0 10px #4169e1, 0 0 20px #4169e1;
 }
 
 .nav-item i {
@@ -705,7 +813,7 @@ header {
 
 .nav-item.active i {
   transform: translateY(-2px) scale(1.1);
-  text-shadow: 0 0 10px rgba(79, 199, 255, 0.5);
+  text-shadow: 0 0 10px rgba(65, 105, 225, 0.5);
 }
 
 .nav-item span {
@@ -726,7 +834,7 @@ header {
   transform: translateX(-50%);
   width: 25px;
   height: 3px;
-  background: linear-gradient(90deg, #4fc7ff, #3a95c7);
+    background: linear-gradient(90deg, #4169e1, #2b4bb8);
   border-radius: 3px;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -784,10 +892,10 @@ section h2 {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: linear-gradient(145deg, #1a1d2a, #1e2130);
+  background: linear-gradient(145deg, #ffffff, #fdfbf7);
   border-radius: 12px;
-  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2),
-              -4px -4px 8px rgba(40, 50, 80, 0.1);
+    box-shadow: 4px 4px 8px var(--shadow-color),
+                -4px -4px 8px #ffffff;
 }
 
 .setting-label {
@@ -796,13 +904,13 @@ section h2 {
 }
 
 .setting-value {
-  color: #4fc7ff;
+    color: #4169e1;
   font-weight: 600;
   padding: 6px 12px;
-  background: #1a1d2a;
+    background: #fdfbf7;
   border-radius: 6px;
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2),
-              inset -2px -2px 5px rgba(40, 50, 80, 0.1);
+    box-shadow: inset 2px 2px 5px var(--shadow-color),
+                inset -2px -2px 5px #ffffff;
 }
 
 /* Sections */
@@ -848,17 +956,17 @@ section h2 {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(145deg, #1a1d2a, #1e2130);
+  background: linear-gradient(145deg, #ffffff, #fdfbf7);
   border-radius: 10px;
-  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.15),
-              -3px -3px 6px rgba(40, 50, 80, 0.1);
+    box-shadow: 3px 3px 6px var(--shadow-color),
+                -3px -3px 6px #ffffff;
   transition: all 0.3s ease;
 }
 
 .category-item:hover {
   transform: translateY(-2px);
-  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2),
-              -4px -4px 8px rgba(40, 50, 80, 0.15);
+    box-shadow: 4px 4px 8px var(--shadow-color),
+                -4px -4px 8px #ffffff;
 }
 
 .category-info {
@@ -875,12 +983,12 @@ section h2 {
 
 .category-name {
   font-weight: 500;
-  color: #e2e8f0;
+  color: #3b3e41;
 }
 
 .category-amount {
   font-weight: 600;
-  color: #4fc7ff;
+    color: #4169e1;
 }
 
 .category-percentage {
@@ -902,10 +1010,10 @@ section h2 {
   align-items: center;
   gap: 14px;
   padding: 16px;
-  background: linear-gradient(145deg, #1a1d2a, #1e2130);
+  background: linear-gradient(145deg, #ffffff, #fdfbf7);
   border-radius: 12px;
-  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.15),
-              -3px -3px 6px rgba(40, 50, 80, 0.1);
+    box-shadow: 3px 3px 6px var(--shadow-color),
+                -3px -3px 6px #ffffff;
 }
 
 .insight-icon {
@@ -915,14 +1023,14 @@ section h2 {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: linear-gradient(145deg, #1e2130, #232839);
-  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2),
-              -3px -3px 6px rgba(40, 50, 80, 0.1);
+    background: linear-gradient(145deg, #f0e6d2, #ffffff);
+    box-shadow: 3px 3px 6px var(--shadow-color),
+                -3px -3px 6px #ffffff;
 }
 
 .insight-icon i {
   font-size: 1.2rem;
-  color: #4fc7ff;
+    color: #4169e1;
 }
 
 .insight-content {
@@ -938,7 +1046,7 @@ section h2 {
 .insight-value {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #262729;
 }
 
 /* Loading state */
@@ -951,7 +1059,7 @@ section h2 {
 /* Ripple effect for nav items */
 .ripple {
   position: absolute;
-  background: rgba(79, 199, 255, 0.3);
+  background: rgba(65, 105, 225, 0.3);
   border-radius: 50%;
   transform: scale(0);
   animation: ripple 0.6s linear;
@@ -1007,11 +1115,11 @@ section h2 {
 /* Enhance the nav item hover state */
 .nav-item:hover:not(.active) i {
   transform: translateY(-3px);
-  color: rgba(79, 199, 255, 0.7);
+  color: rgba(65, 105, 225, 0.7);
 }
 
 .nav-item:hover:not(.active) span {
-  color: rgba(79, 199, 255, 0.7);
+  color: rgba(65, 105, 225, 0.7);
 }
 
 /* Add a subtle pulse animation to the active nav indicator */
@@ -1020,40 +1128,9 @@ section h2 {
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 5px rgba(79, 199, 255, 0.5); }
-  50% { box-shadow: 0 0 10px rgba(79, 199, 255, 0.8); }
-  100% { box-shadow: 0 0 5px rgba(79, 199, 255, 0.5); }
-}
-
-/* Remove the old floating button styles */
-.add-transaction-btn {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, var(--primary-color), var(--accent-color));
-    color: white;
-    border: none;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    z-index: 100;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.add-transaction-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-
-.add-transaction-btn:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  0% { box-shadow: 0 0 5px rgba(65, 105, 225, 0.5); }
+  50% { box-shadow: 0 0 10px rgba(65, 105, 225, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(65, 105, 225, 0.5); }
 }
 
 /* Modal Styles */
@@ -1066,7 +1143,7 @@ section h2 {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(255, 255, 255, 0.606);
     animation: modalFadeIn 0.3s ease;
     padding-bottom: 80px; /* Added padding at the bottom to avoid nav bar */
 }
@@ -1077,8 +1154,8 @@ section h2 {
     max-width: 500px;
     margin: 30px auto;
     box-shadow: 
-        8px 8px 16px rgba(0, 0, 0, 0.3),
-        -8px -8px 16px rgba(255, 255, 255, 0.03);
+        8px 8px 16px var(--shadow-color),
+        -8px -8px 16px #ffffff;
     overflow: hidden;
     animation: modalFadeIn 0.3s ease;
 }
@@ -1157,7 +1234,7 @@ section h2 {
 .form-group select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    box-shadow: 0 0 0 2px rgba(65, 105, 225, 0.2);
 }
 
 .form-actions {
@@ -1253,13 +1330,13 @@ section h2 {
 
 #subscriptions .expenses-table th {
     font-weight: 600;
-    color: #8e9aaf;
+    color: var(--text-secondary);
     font-size: 0.85rem;
     text-transform: uppercase;
 }
 
 #subscriptions .expenses-table td {
-    color: #e4e6eb;
+    color: var(--text-color);
     font-size: 0.95rem;
 }
 
@@ -1329,12 +1406,12 @@ section h2 {
 
 /* Subscription card */
 .subscription-card {
-    background: #1a1e24;
+    background: #fdfbf7;
     border-radius: 16px;
     padding: 20px;
     position: relative;
     cursor: pointer;
-    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -8px -8px 16px rgba(255, 255, 255, 0.05);
+    box-shadow: 8px 8px 16px var(--shadow-color), -8px -8px 16px #ffffff;
     transition: all 0.3s ease;
     overflow: hidden;
     display: flex;
@@ -1344,14 +1421,14 @@ section h2 {
 
 .subscription-card:hover {
     transform: translateY(-5px);
-    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.4), -10px -10px 20px rgba(255, 255, 255, 0.07);
+    box-shadow: 10px 10px 20px var(--shadow-color), -10px -10px 20px #ffffff;
 }
 
 .subscription-card .service-name {
     font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 10px;
-    color: #ffffff;
+    color: var(--text-color);
     line-height: 1.3;
 }
 
@@ -1359,18 +1436,18 @@ section h2 {
     font-size: 1.6rem;
     font-weight: 700;
     margin-bottom: 15px;
-    color: #e4e6eb;
+    color: var(--primary-color);
     line-height: 1.2;
 }
 
 .subscription-card .billing-cycle {
     font-size: 0.9rem;
     font-weight: 500;
-    color: #8e9aaf;
+    color: var(--text-secondary);
 }
 
 .subscription-card .next-payment {
-    color: #e4e6eb;
+    color: var(--text-secondary);
     font-size: 0.95rem;
     margin-top: auto;
     display: flex;
@@ -1378,7 +1455,7 @@ section h2 {
 }
 
 .subscription-card .next-payment i {
-    color: #4fc7ff;
+    color: #4169e1;
     margin-right: 8px;
     font-size: 0.9rem;
 }
@@ -1408,9 +1485,9 @@ section h2 {
     margin: 0 auto;
     margin-bottom: 80px; /* Increased from 70px to 80px to avoid nav bar */
     border-radius: 20px;
-    background: #1a1e24;
+    background: #fdfbf7;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 30px var(--shadow-color);
     display: flex;
     flex-direction: column;
 }
@@ -1461,7 +1538,7 @@ section h2 {
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 12px;
-    background: linear-gradient(145deg, #4fc7ff, #4673ff);
+    background: linear-gradient(145deg, #4169e1, #2b4bb8);
     color: white;
     align-self: flex-start;
 }
@@ -1470,14 +1547,14 @@ section h2 {
     font-size: 1.8rem; /* Reduced from 2rem */
     font-weight: 700;
     margin-bottom: 6px; /* Reduced from 8px */
-    color: #ffffff;
+    color: var(--text-color);
 }
 
 .subscription-detail-content .price {
     font-size: 2rem; /* Reduced from 2.2rem */
     font-weight: 700;
     margin-bottom: 15px; /* Reduced from 25px */
-    background: linear-gradient(145deg, #4fc7ff, #4673ff);
+    background: linear-gradient(145deg, #4169e1, #2b4bb8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
@@ -1501,8 +1578,8 @@ section h2 {
     width: 36px; /* Reduced from 42px */
     height: 36px; /* Reduced from 42px */
     margin-right: 12px; /* Reduced from 15px */
-    color: #4fc7ff;
-    background: rgba(79, 199, 255, 0.1);
+    color: var(--primary-color);
+    background: rgba(65, 105, 225, 0.1);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1528,7 +1605,7 @@ section h2 {
 }
 
 .subscription-detail-content .detail-value {
-    color: #e4e6eb;
+    color: var(--text-color);
     font-size: 1.1rem; /* Reduced from 1.2rem */
     word-break: break-word;
 }
@@ -1608,7 +1685,7 @@ section h2 {
     align-items: center;
     font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 4px 10px var(--shadow-color);
     transition: all 0.3s ease;
 }
 
@@ -1631,4 +1708,4 @@ section h2 {
 .action-icon-btn i {
     margin: 0 !important;
     font-size: 1.2rem;
-} 
+}

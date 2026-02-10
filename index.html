@@ -36,6 +36,9 @@
     
     <title>Tommy Expense</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.1">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.1">
+    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.1">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,6 +46,79 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Unified Add Transaction/Income Modal (Calculator Style) -->
+        <div id="add-modal" class="modal calculator-modal">
+            <div class="modal-content calculator-content">
+                <!-- Top Toggle -->
+                <div class="modal-header calculator-header">
+                    <div class="type-toggle">
+                        <button class="type-btn active" data-type="expense">Expense</button>
+                        <button class="type-btn" data-type="income">Income</button>
+                    </div>
+                    <span class="close-add-modal">&times;</span>
+                </div>
+
+                <!-- Category Grid -->
+                <div class="category-grid-container">
+                    <div class="category-grid" id="category-grid">
+                        <!-- Categories will be injected here via JS -->
+                    </div>
+                </div>
+
+                <!-- Input Display Area -->
+                <div class="input-display-area">
+                    <div class="selected-category-icon">
+                        <i class="fas fa-question" id="selected-icon"></i>
+                        <span id="selected-category-name">Select</span>
+                    </div>
+                    <div class="amount-display">
+                        <span class="currency-symbol">$</span>
+                        <span id="display-amount">0</span>
+                    </div>
+                    <div class="note-input-container">
+                        <input type="text" id="calc-description" placeholder="Add a note...">
+                    </div>
+                </div>
+
+                <!-- Date Bar -->
+                <div class="date-bar">
+                    <button class="date-nav-btn" id="prev-day"><i class="fas fa-chevron-left"></i></button>
+                    <div class="current-date-display" id="calc-date-display">Today</div>
+                    <input type="date" id="calc-date-input" style="display: none;"> <!-- Hidden input for logic -->
+                    <button class="date-nav-btn" id="next-day"><i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <!-- Numeric Keypad -->
+                <div class="keypad-area">
+                    <div class="keypad-grid">
+                        <button class="keypad-btn number" data-val="7">7</button>
+                        <button class="keypad-btn number" data-val="8">8</button>
+                        <button class="keypad-btn number" data-val="9">9</button>
+                        <button class="keypad-btn operator" data-val="/">÷</button>
+                        
+                        <button class="keypad-btn number" data-val="4">4</button>
+                        <button class="keypad-btn number" data-val="5">5</button>
+                        <button class="keypad-btn number" data-val="6">6</button>
+                        <button class="keypad-btn operator" data-val="*">×</button>
+                        
+                        <button class="keypad-btn number" data-val="1">1</button>
+                        <button class="keypad-btn number" data-val="2">2</button>
+                        <button class="keypad-btn number" data-val="3">3</button>
+                        <button class="keypad-btn operator" data-val="+">+</button>
+                        
+                        <button class="keypad-btn number" data-val="00">00</button>
+                        <button class="keypad-btn number" data-val="0">0</button>
+                        <button class="keypad-btn number" data-val=".">.</button>
+                        <button class="keypad-btn operator" data-val="-">-</button>
+                        
+                        <button class="keypad-btn action" id="btn-ac">AC</button>
+                        <button class="keypad-btn action" id="btn-backspace"><i class="fas fa-backspace"></i></button>
+                        <button class="keypad-btn submit-btn" id="btn-submit">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <header>
             <div class="logo">
                 <h1>Tommy Expense</h1>
@@ -58,10 +134,21 @@
             <section id="dashboard" class="section active fade-in">
                 <div class="dashboard">
                     <div class="card summary-card">
-                        <h2>Total Expenses</h2>
-                        <div class="total-amount" id="total-amount">$0.00</div>
+                        <h2>Left This Month</h2>
+                        <div class="total-amount" id="total-balance">$0.00</div>
                     </div>
                     
+                    <div class="summary-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
+                        <div class="card summary-card income-card">
+                            <h2 style="font-size: 16px;">Income (Mo)</h2>
+                            <div class="total-amount" id="total-income" style="font-size: 1.5rem; color: #4cd964; -webkit-text-fill-color: #4cd964;">$0.00</div>
+                        </div>
+                        <div class="card summary-card expense-card">
+                            <h2 style="font-size: 16px;">Expense (Mo)</h2>
+                            <div class="total-amount" id="total-expenses" style="font-size: 1.5rem; color: #ff3b30; -webkit-text-fill-color: #ff3b30;">$0.00</div>
+                        </div>
+                    </div>
+
                     <div class="card chart-card">
                         <h2>Monthly Trends</h2>
                         <div class="chart-container">
@@ -121,8 +208,24 @@
                 </div>
             </section>
 
+            <!-- Income Section (Removed) -->
+            <!-- <section id="income" class="section fade-in"> ... </section> -->
+
             <!-- Transactions Section -->
             <section id="transactions" class="section fade-in">
+                <!-- Quick Add Card -->
+                <div class="card quick-actions-card">
+                    <div class="card-header">
+                        <h2>Quick Add</h2>
+                        <button id="edit-quick-add-btn" class="edit-quick-add-btn" title="Configure Quick Add Buttons">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                    <div class="quick-add-buttons" id="quick-add-buttons-container">
+                        <!-- Buttons will be generated by JS -->
+                    </div>
+                </div>
+
                 <div class="card expenses-card">
                     <div class="card-header">
                         <h2>Transactions</h2>
@@ -137,63 +240,58 @@
                             </button>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table class="expenses-table">
-                            <thead>
-                                <tr>
-                                    <th class="delete-column hidden">Delete</th>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Category</th>
-                                    <th>Description</th>
-                                    <th>Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody id="expenses-body">
-                                <tr>
-                                    <td colspan="6">Loading expense data...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="transaction-list-container" class="transaction-list-container">
+                        <div class="loading-message">Loading transactions...</div>
                     </div>
                 </div>
                 
-                <!-- Add Transaction Modal -->
-                <div id="transaction-modal" class="modal">
+                <!-- Unified Add Transaction/Income Modal (Calculator Style) -->
+                <!-- Moved to top of app-container -->
+                <!-- <div id="add-modal" class="modal calculator-modal"> ... </div> -->
+
+                <!-- Delete Confirmation Modal -->
+                <div id="quick-add-config-modal" class="modal">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>Add New Transaction</h3>
-                            <span class="close-modal">&times;</span>
+                            <h3>Configure Quick Add</h3>
+                            <span class="close-quick-add-config">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <form id="transaction-form">
+                            <div class="quick-add-tabs">
+                                <button class="tab-btn active" data-tab="1">Button 1</button>
+                                <button class="tab-btn" data-tab="2">Button 2</button>
+                                <button class="tab-btn" data-tab="3">Button 3</button>
+                                <button class="tab-btn" data-tab="4">Button 4</button>
+                            </div>
+                            <form id="quick-add-config-form">
+                                <input type="hidden" id="quick-add-id" value="1">
                                 <div class="form-group">
-                                    <label for="transaction-date">Date</label>
-                                    <input type="date" id="transaction-date" required>
+                                    <label for="qa-label">Button Label</label>
+                                    <input type="text" id="qa-label" placeholder="e.g. Lunch" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="transaction-amount">Amount</label>
-                                    <input type="number" id="transaction-amount" step="0.01" min="0" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="transaction-category">Category</label>
-                                    <select id="transaction-category" required>
+                                    <label for="qa-category">Category</label>
+                                    <select id="qa-category" required>
                                         <option value="">Select Category</option>
                                         <option value="食物">食物</option>
-                                        <option value="穿著">穿著</option>
-                                        <option value="生活用品">生活用品</option>
-                                        <option value="禮物">禮物</option>
-                                        <option value="網路購物">網路購物</option>
-                                        <option value="小雜碎">小雜碎</option>
+                                        <option value="租房">租房</option>
+                                        <option value="交通">交通</option>
+                                        <option value="訂閱">訂閱</option>
+                                        <option value="日常用品">日常用品</option>
+                                        <option value="貓咪">貓咪</option>
+                                        <option value="娛樂">娛樂</option>
+                                        <option value="女友">女友</option>
+                                        <option value="購物">購物</option>
+                                        <option value="其他">其他</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="transaction-description">Description</label>
-                                    <input type="text" id="transaction-description" required>
+                                    <label for="qa-description">Default Description (Optional)</label>
+                                    <input type="text" id="qa-description" placeholder="e.g. Lunch">
                                 </div>
                                 <div class="form-group">
-                                    <label for="transaction-payment">Payment Method</label>
-                                    <select id="transaction-payment" required>
+                                    <label for="qa-payment">Default Payment (Optional)</label>
+                                    <select id="qa-payment">
                                         <option value="">Select Payment Method</option>
                                         <option value="紙錢">紙錢</option>
                                         <option value="熊大">熊大</option>
@@ -203,8 +301,8 @@
                                     </select>
                                 </div>
                                 <div class="form-actions">
-                                    <button type="button" id="cancel-transaction" class="btn-secondary">Cancel</button>
-                                    <button type="submit" class="btn-primary">Add Transaction</button>
+                                    <button type="button" id="cancel-quick-add-config" class="btn-secondary">Cancel</button>
+                                    <button type="submit" class="btn-primary">Save Button</button>
                                 </div>
                             </form>
                         </div>
@@ -212,24 +310,31 @@
                 </div>
                 
                 <!-- Delete Confirmation Modal -->
-                <div id="delete-confirm-modal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3>Confirm Delete</h3>
-                            <span class="close-modal-delete">&times;</span>
-                        </div>
-                        <div class="modal-body">
-                            <p>Are you sure you want to delete this transaction?</p>
-                            <div class="transaction-details" id="delete-transaction-details">
-                                <!-- Transaction details will be inserted here -->
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" id="confirm-delete" class="btn-danger">Delete</button>
-                                <button type="button" id="cancel-delete" class="btn-secondary">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
+    <div id="delete-modal" class="modal delete-modal">
+        <div class="modal-content delete-modal-content cute-popup">
+            <!-- Decoration -->
+            <div class="popup-star"><i class="fas fa-star"></i></div>
+            
+            <div class="popup-header-row">
+                <div class="popup-icon bell-style">
+                    <i class="fas fa-trash-alt"></i>
                 </div>
+                <h3>Delete</h3>
+                <div class="popup-icon check-style">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+            </div>
+            
+            <div class="popup-body">
+                <p>Remove this item?</p>
+            </div>
+            
+            <div class="modal-actions simple-actions">
+                <button id="cancel-delete-btn" class="btn-cute btn-close">Close</button>
+                <button id="confirm-delete-btn" class="btn-cute btn-open">Delete</button>
+            </div>
+        </div>
+    </div>
             </section>
             
             <!-- Settings Section -->
@@ -253,107 +358,55 @@
                 </div>
             </section>
 
-            <!-- Subscriptions Section -->
-            <section id="subscriptions" class="section fade-in">
+            <!-- Budget Section -->
+            <section id="budget" class="section fade-in">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Subscriptions</h2>
-                        <div class="transaction-buttons">
-                            <!-- Delete Mode Button -->
-                            <button id="delete-subscription-btn" class="delete-transaction-btn-top">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <!-- Add Subscription Button -->
-                            <button id="add-subscription-btn" class="add-transaction-btn-top">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
+                        <h2>Monthly Budget</h2>
+                        <button id="edit-budget-btn" class="edit-quick-add-btn">
+                            <i class="fas fa-pen"></i>
+                        </button>
                     </div>
-                    <div class="subscription-cards-container" id="subscription-cards-container">
-                        <!-- Subscription cards will be inserted here -->
-                        <div class="loading-message">Loading subscription data...</div>
+                    
+                    <div class="budget-overview">
+                        <div class="budget-circle-container">
+                            <svg class="budget-circle" viewBox="0 0 36 36">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle-progress" id="budget-progress-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="budget-circle-content">
+                                <span class="budget-label">Remaining</span>
+                                <span class="budget-value" id="budget-remaining">$0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="budget-stats">
+                            <div class="budget-stat-item">
+                                <span class="stat-label">Total Budget</span>
+                                <span class="stat-value" id="total-budget-display">$0</span>
+                            </div>
+                            <div class="budget-stat-item">
+                                <span class="stat-label">Total Spent</span>
+                                <span class="stat-value spent" id="total-spent-display">$0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Add Subscription Modal -->
-                <div id="subscription-modal" class="modal">
+                <!-- Budget Edit Modal -->
+                <div id="budget-modal" class="modal">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>Add New Subscription</h3>
-                            <span class="close-subscription-modal">&times;</span>
+                            <h3>Set Monthly Budget</h3>
+                            <span class="close-budget-modal">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <form id="subscription-form">
-                                <div class="form-group">
-                                    <label for="subscription-service">Service</label>
-                                    <input type="text" id="subscription-service" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-account">Account</label>
-                                    <input type="text" id="subscription-account" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-price">Price</label>
-                                    <input type="number" id="subscription-price" step="0.01" min="0" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-billing">Billing Cycle</label>
-                                    <select id="subscription-billing" required>
-                                        <option value="">Select Billing Cycle</option>
-                                        <option value="月">Monthly</option>
-                                        <option value="季">Quarterly</option>
-                                        <option value="年">Yearly</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-category">Category</label>
-                                    <input type="text" id="subscription-category" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-next-payment">Next Payment Date</label>
-                                    <input type="date" id="subscription-next-payment" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-payment">Payment Method</label>
-                                    <select id="subscription-payment" required>
-                                        <option value="">Select Payment Method</option>
-                                        <option value="Credit Card">Credit Card</option>
-                                        <option value="Debit Card">Debit Card</option>
-                                        <option value="PayPal">PayPal</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
-                                        <option value="Line Pay">Line Pay</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="subscription-description">Description</label>
-                                    <input type="text" id="subscription-description">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" id="cancel-subscription" class="btn-secondary">Cancel</button>
-                                    <button type="submit" class="btn-primary">Add Subscription</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Delete Subscription Confirmation Modal -->
-                <div id="delete-subscription-confirm-modal" class="modal fullscreen-modal">
-                    <div class="modal-content subscription-detail-modal">
-                        <div class="modal-header">
-                            <span class="close-details-modal">&times;</span>
-                        </div>
-                        <div class="modal-body">
-                            <div class="subscription-detail-content" id="delete-subscription-details">
-                                <!-- Subscription details will be inserted here -->
+                            <div class="form-group">
+                                <label for="budget-input">Budget Amount ($)</label>
+                                <input type="number" id="budget-input" placeholder="e.g. 2000" min="0" step="1">
                             </div>
-                            <div class="subscription-actions">
-                                <button id="cancel-delete-subscription" class="btn-secondary action-icon-btn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <button id="confirm-delete-subscription" class="btn-danger action-icon-btn">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="form-actions">
+                                <button id="save-budget-btn" class="btn-primary">Save Budget</button>
                             </div>
                         </div>
                     </div>
@@ -361,115 +414,30 @@
             </section>
         </div>
         
-        <!-- Subscription Details Modal - Full Screen -->
-        <div id="subscription-details-modal" class="modal fullscreen-modal">
-            <div class="modal-content subscription-detail-modal">
-                <div class="modal-header">
-                    <span class="close-details-modal">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <div class="subscription-detail-content" id="subscription-detail-content">
-                        <!-- Subscription details will be inserted here -->
-                    </div>
-                    <div class="subscription-actions">
-                        <button id="resubscribe-btn" class="btn-primary action-icon-btn">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button id="edit-subscription-btn" class="btn-secondary action-icon-btn">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button id="delete-subscription-detail-btn" class="btn-danger action-icon-btn">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Edit Subscription Modal -->
-        <div id="edit-subscription-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Edit Subscription</h3>
-                    <span class="close-edit-subscription-modal">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-subscription-form">
-                        <input type="hidden" id="edit-subscription-row-index">
-                        <div class="form-group">
-                            <label for="edit-subscription-service">Service</label>
-                            <input type="text" id="edit-subscription-service" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-account">Account</label>
-                            <input type="text" id="edit-subscription-account" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-price">Price</label>
-                            <input type="number" id="edit-subscription-price" step="0.01" min="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-billing">Billing Cycle</label>
-                            <select id="edit-subscription-billing" required>
-                                <option value="">Select Billing Cycle</option>
-                                <option value="月">Monthly</option>
-                                <option value="季">Quarterly</option>
-                                <option value="年">Yearly</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-category">Category</label>
-                            <input type="text" id="edit-subscription-category" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-next-payment">Next Payment Date</label>
-                            <input type="date" id="edit-subscription-next-payment" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-payment">Payment Method</label>
-                            <select id="edit-subscription-payment" required>
-                                <option value="">Select Payment Method</option>
-                                <option value="Credit Card">Credit Card</option>
-                                <option value="Debit Card">Debit Card</option>
-                                <option value="PayPal">PayPal</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Line Pay">Line Pay</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-subscription-description">Description</label>
-                            <input type="text" id="edit-subscription-description">
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" id="cancel-edit-subscription" class="btn-secondary">Cancel</button>
-                            <button type="submit" class="btn-primary">Update Subscription</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+        <!-- Subscription Details Modal - Full Screen (Removed) -->
+        <!-- Edit Subscription Modal (Removed) -->
         
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <a href="#dashboard" class="nav-item active" data-section="dashboard">
                 <span class="nav-indicator"></span>
                 <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#categories" class="nav-item" data-section="categories">
-                <span class="nav-indicator"></span>
-                <i class="fas fa-chart-pie"></i>
-                <span>Categories</span>
+                <span>Home</span>
             </a>
             <a href="#transactions" class="nav-item" data-section="transactions">
                 <span class="nav-indicator"></span>
                 <i class="fas fa-list"></i>
-                <span>Transactions</span>
+                <span>Expenses</span>
             </a>
-            <a href="#subscriptions" class="nav-item" data-section="subscriptions">
+            <a href="#categories" class="nav-item" data-section="categories">
                 <span class="nav-indicator"></span>
-                <i class="fas fa-calendar-alt"></i>
-                <span>Subscriptions</span>
+                <i class="fas fa-chart-pie"></i>
+                <span>Stats</span>
+            </a>
+            <a href="#budget" class="nav-item" data-section="budget">
+                <span class="nav-indicator"></span>
+                <i class="fas fa-wallet"></i>
+                <span>Budget</span>
             </a>
         </nav>
     </div>
