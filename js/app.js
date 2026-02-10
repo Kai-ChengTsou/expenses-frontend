@@ -34,6 +34,7 @@ let selectedCategoryId = null;
 const EXPENSE_CATEGORIES = [
     { id: 'food', label: '食物', icon: 'fas fa-utensils' },
     { id: 'rent', label: '租房', icon: 'fas fa-home' },
+    { id: 'mortgage', label: '房貸', icon: 'fas fa-building' },
     { id: 'transport', label: '交通', icon: 'fas fa-bus' },
     { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check' },
     { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket' },
@@ -1289,48 +1290,107 @@ window.addEventListener('DOMContentLoaded', async () => {
 // --- Budget Page Logic ---
 
 function setupBudgetSection() {
-    // Load category budgets from localStorage
-    // Format: { 'food': 500, 'transport': 200 }
     let categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
     updateBudgetUI(categoryBudgets);
     
-    // Setup Edit Button
     const editBtn = document.getElementById('edit-budget-btn');
     const modal = document.getElementById('budget-modal');
     const closeBtn = document.querySelector('.close-budget-modal');
-    const saveBtn = document.getElementById('save-budget-btn');
-    const listContainer = document.getElementById('budget-categories-list');
+    const gridView = document.getElementById('budget-grid-view');
+    const inputView = document.getElementById('budget-input-view');
+    const modalTitle = document.getElementById('budget-modal-title');
+    const selectedIcon = document.getElementById('selected-budget-icon');
+    const selectedName = document.getElementById('selected-budget-name');
+    const amountInput = document.getElementById('single-budget-input');
+    const backBtn = document.getElementById('back-to-grid-btn');
+    const saveBtn = document.getElementById('save-single-budget-btn');
+    
+    let currentEditingId = null;
+    
+    function showGridView() {
+        gridView.style.display = 'grid';
+        inputView.style.display = 'none';
+        modalTitle.textContent = 'Tap to set budget';
+    }
+    
+    function showInputView(cat) {
+        gridView.style.display = 'none';
+        inputView.style.display = 'flex';
+        modalTitle.textContent = 'Edit Budget';
+        currentEditingId = cat.id;
+        
+        selectedName.textContent = cat.label;
+        let hash = 0;
+        for (let i = 0; i < cat.label.length; i++) {
+            hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const bgIndex = (Math.abs(hash) % 12) + 1;
+        selectedIcon.className = `selected-budget-icon icon-bg-${bgIndex}`;
+        selectedIcon.innerHTML = `<i class="${cat.icon}"></i>`;
+        
+        amountInput.value = categoryBudgets[cat.id] || '';
+        amountInput.focus();
+    }
+    
+    function renderBudgetGrid() {
+        categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+        
+        gridView.innerHTML = EXPENSE_CATEGORIES.map(cat => {
+            const hasBudget = categoryBudgets[cat.id] > 0;
+            let hash = 0;
+            for (let i = 0; i < cat.label.length; i++) {
+                hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const bgIndex = (Math.abs(hash) % 12) + 1;
+            
+            return `
+                <div class="budget-grid-item" data-id="${cat.id}">
+                    <div class="budget-grid-icon icon-bg-${bgIndex}">
+                        <i class="${cat.icon}"></i>
+                        ${hasBudget ? '<span class="budget-grid-badge">✓</span>' : ''}
+                    </div>
+                    <span class="budget-grid-label">${cat.label}</span>
+                </div>
+            `;
+        }).join('');
+        
+        document.querySelectorAll('.budget-grid-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const cat = EXPENSE_CATEGORIES.find(c => c.id === item.dataset.id);
+                if (cat) showInputView(cat);
+            });
+        });
+    }
     
     if (editBtn) {
         editBtn.addEventListener('click', () => {
-            // Populate modal with all expense categories
-            listContainer.innerHTML = EXPENSE_CATEGORIES.map(cat => {
-                const currentBudget = categoryBudgets[cat.id] || 0;
-                
-                // Get color
-                let hash = 0;
-                for (let i = 0; i < cat.label.length; i++) {
-                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+            renderBudgetGrid();
+            showGridView();
+            modal.style.display = 'flex';
+        });
+    }
+    
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            renderBudgetGrid();
+            showGridView();
+        });
+    }
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (currentEditingId) {
+                const val = parseFloat(amountInput.value);
+                if (!isNaN(val) && val > 0) {
+                    categoryBudgets[currentEditingId] = val;
+                } else {
+                    delete categoryBudgets[currentEditingId];
                 }
-                const bgIndex = (Math.abs(hash) % 12) + 1;
-                
-                return `
-                    <div class="budget-input-row">
-                        <div class="budget-input-icon icon-bg-${bgIndex}">
-                            <i class="${cat.icon}"></i>
-                        </div>
-                        <div class="budget-input-details">
-                            <label>${cat.label}</label>
-                            <input type="number" class="cat-budget-input" 
-                                data-id="${cat.id}" 
-                                value="${currentBudget > 0 ? currentBudget : ''}" 
-                                placeholder="No Limit">
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            modal.style.display = 'block';
+                localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+                updateBudgetUI(categoryBudgets);
+                renderBudgetGrid();
+                showGridView();
+            }
         });
     }
     
@@ -1340,30 +1400,11 @@ function setupBudgetSection() {
         });
     }
     
-    // Close on outside click
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.style.display = 'none';
         }
     });
-    
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            const inputs = document.querySelectorAll('.cat-budget-input');
-            const newBudgets = {};
-            
-            inputs.forEach(input => {
-                const val = parseFloat(input.value);
-                if (!isNaN(val) && val > 0) {
-                    newBudgets[input.dataset.id] = val;
-                }
-            });
-            
-            localStorage.setItem('categoryBudgets', JSON.stringify(newBudgets));
-            updateBudgetUI(newBudgets);
-            modal.style.display = 'none';
-        });
-    }
 }
 
 function updateBudgetUI(categoryBudgets) {
@@ -2948,6 +2989,7 @@ function setupQuickAddConfig() {
         let icon = 'fas fa-star';
         if (category === '食物') icon = 'fas fa-utensils';
         else if (category === '租房') icon = 'fas fa-home';
+        else if (category === '房貸') icon = 'fas fa-building';
         else if (category === '交通') icon = 'fas fa-bus';
         else if (category === '訂閱') icon = 'fas fa-calendar-check';
         else if (category === '日常用品') icon = 'fas fa-shopping-basket';

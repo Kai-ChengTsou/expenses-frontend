@@ -175,71 +175,172 @@
     background: #ff3b30;
 }
 
-/* Modal List Styles */
-.budget-categories-list {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 5px;
-    margin-bottom: 20px;
+/* Budget Modal - Compact Icon Grid (no scroll) */
+.budget-modal-content {
+    max-width: 340px;
+    padding: 20px;
 }
 
-.budget-input-row {
+.budget-grid-view {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 10px 0;
+    overflow: hidden;
+}
+
+.budget-grid-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: var(--bg-color);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+    gap: 4px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 14px;
+    transition: background 0.2s;
 }
 
-.budget-input-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+.budget-grid-item:active {
+    background: rgba(0,0,0,0.05);
+}
+
+.budget-grid-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 18px;
-    flex-shrink: 0;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: relative;
 }
 
-.budget-input-details {
-    flex: 1;
-}
-
-.budget-input-details label {
-    display: block;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.budget-input-details input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    font-size: 1.1rem;
+.budget-grid-label {
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-primary);
-    padding: 0;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.1;
 }
 
-.budget-input-details input:focus {
+.budget-grid-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #4cd964;
+    color: white;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    line-height: 1;
+}
+
+/* Input view (shown when user taps an icon) */
+.budget-input-view {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 0;
+}
+
+.selected-budget-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 26px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.selected-budget-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 18px;
+}
+
+.budget-amount-input-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+.currency-prefix {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.budget-amount-input {
+    width: 100%;
+    padding: 12px 12px 12px 36px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid #f0f2f5;
+    border-radius: 16px;
+    text-align: center;
+    background: #f9fafb;
+    color: var(--text-primary);
     outline: none;
+}
+
+.budget-amount-input:focus {
+    border-color: var(--primary-color);
+    background: #fff;
+}
+
+.budget-input-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-back {
+    background: #f0f2f5;
+    color: var(--text-secondary);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-save-single {
+    flex: 1;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 14px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 /* Dark Mode Adjustments */
 @media (prefers-color-scheme: dark) {
     .circle-bg {
-        stroke: #2c2c2e;
+        stroke: #5c5b5b;
     }
     .budget-stat-item, .budget-item, .budget-input-row {
-        background: #1c1c1e;
+        background: #cdefff;;
     }
     .budget-progress-bar {
-        background: #2c2c2e;
+        background: #5e5e61;
     }
 }
