@@ -1289,20 +1289,47 @@ window.addEventListener('DOMContentLoaded', async () => {
 // --- Budget Page Logic ---
 
 function setupBudgetSection() {
-    // Load budget from localStorage
-    let monthlyBudget = parseFloat(localStorage.getItem('monthlyBudget')) || 0;
-    updateBudgetUI(monthlyBudget);
+    // Load category budgets from localStorage
+    // Format: { 'food': 500, 'transport': 200 }
+    let categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+    updateBudgetUI(categoryBudgets);
     
     // Setup Edit Button
     const editBtn = document.getElementById('edit-budget-btn');
     const modal = document.getElementById('budget-modal');
     const closeBtn = document.querySelector('.close-budget-modal');
     const saveBtn = document.getElementById('save-budget-btn');
-    const budgetInput = document.getElementById('budget-input');
+    const listContainer = document.getElementById('budget-categories-list');
     
     if (editBtn) {
         editBtn.addEventListener('click', () => {
-            budgetInput.value = monthlyBudget;
+            // Populate modal with all expense categories
+            listContainer.innerHTML = EXPENSE_CATEGORIES.map(cat => {
+                const currentBudget = categoryBudgets[cat.id] || 0;
+                
+                // Get color
+                let hash = 0;
+                for (let i = 0; i < cat.label.length; i++) {
+                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const bgIndex = (Math.abs(hash) % 12) + 1;
+                
+                return `
+                    <div class="budget-input-row">
+                        <div class="budget-input-icon icon-bg-${bgIndex}">
+                            <i class="${cat.icon}"></i>
+                        </div>
+                        <div class="budget-input-details">
+                            <label>${cat.label}</label>
+                            <input type="number" class="cat-budget-input" 
+                                data-id="${cat.id}" 
+                                value="${currentBudget > 0 ? currentBudget : ''}" 
+                                placeholder="No Limit">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
             modal.style.display = 'block';
         });
     }
@@ -1322,32 +1349,40 @@ function setupBudgetSection() {
     
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            const newBudget = parseFloat(budgetInput.value);
-            if (!isNaN(newBudget) && newBudget >= 0) {
-                monthlyBudget = newBudget;
-                localStorage.setItem('monthlyBudget', monthlyBudget);
-                updateBudgetUI(monthlyBudget);
-                modal.style.display = 'none';
-            } else {
-                alert('Please enter a valid budget amount.');
-            }
+            const inputs = document.querySelectorAll('.cat-budget-input');
+            const newBudgets = {};
+            
+            inputs.forEach(input => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val > 0) {
+                    newBudgets[input.dataset.id] = val;
+                }
+            });
+            
+            localStorage.setItem('categoryBudgets', JSON.stringify(newBudgets));
+            updateBudgetUI(newBudgets);
+            modal.style.display = 'none';
         });
     }
 }
 
-function updateBudgetUI(budget) {
-    // Calculate Total Spent for current month
+function updateBudgetUI(categoryBudgets) {
+    if (!categoryBudgets) {
+        categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+    }
+
+    // Calculate Total Spent for current month per category
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     
+    const categorySpent = {};
     let totalSpent = 0;
     
     // Use transactionData (which contains expenses as negative values)
     if (transactionData) {
         transactionData.forEach(item => {
             // Check if it's an expense and in current month
-            // Note: toLocalDateKey handles the date string
             const dateStr = toLocalDateKey(item.date);
             if (!dateStr) return;
             
@@ -1356,22 +1391,36 @@ function updateBudgetUI(budget) {
             if (y === currentYear && mo === currentMonth + 1) {
                  const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
                  if (!isNaN(amountVal) && amountVal < 0) {
-                     totalSpent += Math.abs(amountVal);
+                     const absAmount = Math.abs(amountVal);
+                     totalSpent += absAmount;
+                     
+                     // Find category ID from label
+                     // Note: item.category stores the Label (e.g. "食物"), not ID.
+                     // We need to map label back to ID or just use label if consistent.
+                     // The app uses Labels for display and storage.
+                     // Let's try to match label to ID from EXPENSE_CATEGORIES
+                     const catObj = EXPENSE_CATEGORIES.find(c => c.label === item.category);
+                     const catId = catObj ? catObj.id : 'other';
+                     
+                     categorySpent[catId] = (categorySpent[catId] || 0) + absAmount;
                  }
             }
         });
     }
     
-    const remaining = budget - totalSpent;
-    const percentage = budget > 0 ? Math.min((remaining / budget) * 100, 100) : 0;
-    const spentPercentage = budget > 0 ? Math.min((totalSpent / budget) * 100, 100) : 0;
+    // Calculate Totals
+    let totalBudget = 0;
+    Object.values(categoryBudgets).forEach(val => totalBudget += val);
     
-    // Update Text
+    const remaining = totalBudget - totalSpent;
+    const spentPercentage = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
+    
+    // Update Top Overview
     const budgetDisplay = document.getElementById('total-budget-display');
     const spentDisplay = document.getElementById('total-spent-display');
     const remainingDisplay = document.getElementById('budget-remaining');
     
-    if (budgetDisplay) budgetDisplay.textContent = `$${budget.toLocaleString()}`;
+    if (budgetDisplay) budgetDisplay.textContent = `$${totalBudget.toLocaleString()}`;
     if (spentDisplay) spentDisplay.textContent = `$${totalSpent.toLocaleString()}`;
     if (remainingDisplay) {
         remainingDisplay.textContent = `$${remaining.toLocaleString()}`;
@@ -1381,25 +1430,73 @@ function updateBudgetUI(budget) {
     // Update Circle Progress
     const circle = document.getElementById('budget-progress-circle');
     if (circle) {
-        // Calculate stroke-dasharray
-        // 100 is full circle
-        // We want to show REMAINING percentage? Or SPENT?
-        // Usually budget circles show how much is LEFT or how much is SPENT.
-        // Let's show SPENT as the progress (filling up), and color changes if over budget.
-        
-        // Actually, user asked for "Budget Left".
-        // Let's make the circle full (100) and reduce it as you spend? 
-        // Or start empty and fill up as you spend?
-        // Let's fill up as you spend.
-        
         circle.setAttribute('stroke-dasharray', `${spentPercentage}, 100`);
-        
         if (remaining < 0) {
-            circle.style.stroke = '#ff3b30'; // Red if over budget
+            circle.style.stroke = '#ff3b30'; // Red
         } else if (spentPercentage > 80) {
-            circle.style.stroke = '#ff9500'; // Orange if near limit
+            circle.style.stroke = '#ff9500'; // Orange
         } else {
-            circle.style.stroke = '#4cd964'; // Green otherwise
+            circle.style.stroke = '#4cd964'; // Green
+        }
+    }
+    
+    // Update Category Breakdown List
+    const listContainer = document.getElementById('budget-breakdown');
+    if (listContainer) {
+        // Only show categories that have a budget set OR have spending
+        // Actually, user probably only cares about tracking set budgets here.
+        // Let's show all categories that have a budget set.
+        
+        const budgetKeys = Object.keys(categoryBudgets);
+        
+        if (budgetKeys.length === 0) {
+            listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">No budgets set. Tap the pen icon to start planning!</div>';
+        } else {
+            let html = '';
+            
+            // Sort by highest budget? Or standard order?
+            // Standard order matches input list
+            const sortedCats = EXPENSE_CATEGORIES.filter(c => categoryBudgets[c.id] > 0);
+            
+            sortedCats.forEach(cat => {
+                const budget = categoryBudgets[cat.id];
+                const spent = categorySpent[cat.id] || 0;
+                const percent = Math.min((spent / budget) * 100, 100);
+                const isOver = spent > budget;
+                
+                // Color logic
+                let progressClass = '';
+                if (isOver) progressClass = 'danger';
+                else if (percent > 80) progressClass = 'warning';
+                
+                // Icon color
+                let hash = 0;
+                for (let i = 0; i < cat.label.length; i++) {
+                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const bgIndex = (Math.abs(hash) % 12) + 1;
+                
+                html += `
+                    <div class="budget-item">
+                        <div class="budget-item-header">
+                            <div class="budget-cat-info">
+                                <div class="budget-cat-icon icon-bg-${bgIndex}">
+                                    <i class="${cat.icon}"></i>
+                                </div>
+                                <span class="budget-cat-name">${cat.label}</span>
+                            </div>
+                            <div class="budget-cat-amount">
+                                <strong>$${spent.toLocaleString()}</strong> / $${budget.toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="budget-progress-bar">
+                            <div class="budget-progress-fill ${progressClass}" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            listContainer.innerHTML = html;
         }
     }
 }
@@ -1408,8 +1505,8 @@ function updateBudgetUI(budget) {
 const originalUpdateBalance = updateBalance;
 updateBalance = function() {
     originalUpdateBalance();
-    const budget = parseFloat(localStorage.getItem('monthlyBudget')) || 0;
-    updateBudgetUI(budget);
+    const budgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+    updateBudgetUI(budgets);
 };
 
 // --- End Budget Page Logic ---
