@@ -1,9 +1,16 @@
-/* Cute 3D Pop-up Style */
+/* Cute 3D Pop-up Style - fixed to viewport so it stays centered when scrolling */
 .delete-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
-    /* backdrop-filter: blur(8px); */
+    padding: 20px;
     z-index: 5000;
+}
+
+.delete-modal .modal-content {
+    margin: 0;
 }
 
 .delete-modal-content.cute-popup {

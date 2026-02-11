@@ -30,6 +30,10 @@ let currentCalcType = 'expense'; // 'expense' or 'income'
 let currentCalcDate = new Date();
 let selectedCategoryId = null;
 
+// Expenses view month/year filter
+let viewMonth = new Date().getMonth();
+let viewYear = new Date().getFullYear();
+
 // Categories Config
 const EXPENSE_CATEGORIES = [
     { id: 'food', label: '食物', icon: 'fas fa-utensils' },
@@ -305,6 +309,11 @@ function parseCSV(text) {
     return rows.filter(row => row.length > 1 || (row.length === 1 && row[0] !== ''));
 }
 
+// Format month for display (e.g. "2026年2月")
+function formatMonthLabel(year, month) {
+    return year + '年' + (month + 1) + '月';
+}
+
 // Normalize sheet date to local YYYY-MM-DD (avoids UTC shift from Google Sheets JSON)
 function toLocalDateKey(dateVal) {
     if (dateVal == null || dateVal === '') return '';
@@ -324,16 +333,25 @@ function updateTransactionsList() {
     if (!container) return;
     
     // Combine expense and income data
-    const allTransactions = [
+    let allTransactions = [
         ...transactionData,
         ...incomeData
     ];
     
+    // Filter by selected month/year
+    allTransactions = allTransactions.filter(t => {
+        const key = toLocalDateKey(t.date);
+        if (!key) return false;
+        const [y, mo] = key.split('-').map(Number);
+        return y === viewYear && mo === viewMonth + 1;
+    });
+    
     if (allTransactions.length === 0) {
+        const monthLabel = formatMonthLabel(viewYear, viewMonth);
         container.innerHTML = `
             <div class="empty-subscriptions" style="text-align:center; padding: 40px; color: var(--text-secondary);">
                 <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>No transactions found.</p>
+                <p>No transactions in ${monthLabel}</p>
             </div>
         `;
         return;
@@ -473,6 +491,82 @@ function updateTransactionsList() {
     }
     
     setupDeleteButtons();
+    
+    // Update month selector label
+    updateMonthSelectorLabel();
+}
+
+function updateMonthSelectorLabel() {
+    const label = document.getElementById('month-selector-label');
+    if (label) {
+        label.textContent = formatMonthLabel(viewYear, viewMonth);
+    }
+}
+
+function setupMonthSelector() {
+    const wrap = document.querySelector('.month-selector-wrap');
+    const btn = document.getElementById('month-selector-btn');
+    const dropdown = document.getElementById('month-picker-dropdown');
+    const yearLabel = document.getElementById('month-picker-year-label');
+    const yearPrev = document.getElementById('year-prev');
+    const yearNext = document.getElementById('year-next');
+    const grid = document.getElementById('month-picker-grid');
+    
+    if (!btn || !dropdown || !grid) return;
+    
+    function renderMonthGrid() {
+        grid.innerHTML = '';
+        for (let m = 0; m < 12; m++) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'month-picker-cell' + (m === viewMonth ? ' selected' : '');
+            cell.textContent = (m + 1) + '月';
+            cell.dataset.month = m;
+            cell.addEventListener('click', () => {
+                viewMonth = m;
+                updateMonthSelectorLabel();
+                updateTransactionsList();
+                renderMonthGrid();
+                wrap.classList.remove('expanded');
+            });
+            grid.appendChild(cell);
+        }
+    }
+    
+    function syncYearLabel() {
+        if (yearLabel) yearLabel.textContent = viewYear + '年';
+    }
+    
+    btn.addEventListener('click', () => {
+        wrap.classList.toggle('expanded');
+        if (wrap.classList.contains('expanded')) {
+            renderMonthGrid();
+            syncYearLabel();
+        }
+    });
+    
+    yearPrev.addEventListener('click', () => {
+        viewYear--;
+        syncYearLabel();
+        renderMonthGrid();
+    });
+    
+    yearNext.addEventListener('click', () => {
+        viewYear++;
+        syncYearLabel();
+        renderMonthGrid();
+    });
+    
+    // Close when tapping outside
+    document.addEventListener('click', (e) => {
+        if (wrap.classList.contains('expanded') && !wrap.contains(e.target)) {
+            wrap.classList.remove('expanded');
+        }
+    });
+    
+    renderMonthGrid();
+    syncYearLabel();
+    updateMonthSelectorLabel();
 }
 
 // Function to update expense charts (Refactored to use local transactionData)
@@ -1269,6 +1363,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         
         // Setup Budget Logic
         setupBudgetSection();
+        
+        // Setup month selector for Expenses
+        setupMonthSelector();
         
         // Create empty charts initially
         createEmptyCharts();
