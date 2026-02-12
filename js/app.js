@@ -5,10 +5,6 @@ const INCOME_SHEET_NAME = 'Income'; // New sheet for Income
 const RANGE = 'A1:F1000'; // Adjust range as needed
 const INCOME_RANGE = 'A1:F1000'; // Adjust range as needed
 
-// Subscription sheet constants
-const SUBSCRIPTION_SHEET_NAME = 'Subscription';
-const SUBSCRIPTION_RANGE = 'A1:H1000'; // Include all columns for subscriptions
-
 // Google Apps Script Web App URL with the new script ID
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv9ivlEENtsOGzODQeBNIdlenH85hhpC0qo6RiJRVrPqq5BK0VQ/exec';
 
@@ -20,8 +16,6 @@ let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
 let incomeData = []; // Store income data
 let isIncomeDeleteMode = false;
-let isSubscriptionDeleteMode = false;
-let subscriptionData = []; // Store subscription data for deletion
 let deleteCallback = null; // Store the function to call when delete is confirmed
 
 // Calculator Logic Variables
@@ -314,6 +308,16 @@ function formatMonthLabel(year, month) {
     return year + '年' + (month + 1) + '月';
 }
 
+// Get icon background class for category (租房 = yellow)
+function getCategoryIconBgClass(categoryLabel) {
+    if (categoryLabel === '租房') return 'icon-bg-rent';
+    let hash = 0;
+    for (let i = 0; i < categoryLabel.length; i++) {
+        hash = categoryLabel.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `icon-bg-${(Math.abs(hash) % 12) + 1}`;
+}
+
 // Normalize sheet date to local YYYY-MM-DD (avoids UTC shift from Google Sheets JSON)
 function toLocalDateKey(dateVal) {
     if (dateVal == null || dateVal === '') return '';
@@ -444,20 +448,14 @@ function updateTransactionsList() {
             }
             if (catConfig) iconClass = catConfig.icon;
             
-            // Pick distinct color based on category name
-            // Simple hash function to get consistent color for same category
-            let hash = 0;
-            for (let i = 0; i < t.category.length; i++) {
-                hash = t.category.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const bgIndex = (Math.abs(hash) % 12) + 1; // 1-12
+            const bgClass = getCategoryIconBgClass(t.category);
             
             // All transactions (Expense AND Income) are now in the same SHEET_NAME ('Expenses')
             const sheetName = SHEET_NAME;
             
             html += `
                 <div class="transaction-item" onclick="/* Open details? */">
-                    <div class="trans-icon-wrapper icon-bg-${bgIndex}">
+                    <div class="trans-icon-wrapper ${bgClass}">
                         <i class="${iconClass}"></i>
                     </div>
                     <div class="trans-content">
@@ -497,14 +495,15 @@ function updateTransactionsList() {
 }
 
 function updateMonthSelectorLabel() {
-    const label = document.getElementById('month-selector-label');
-    if (label) {
-        label.textContent = formatMonthLabel(viewYear, viewMonth);
-    }
+    const label = formatMonthLabel(viewYear, viewMonth);
+    const txLabel = document.getElementById('month-selector-label');
+    const statsLabel = document.getElementById('stats-month-selector-label');
+    if (txLabel) txLabel.textContent = label;
+    if (statsLabel) statsLabel.textContent = label;
 }
 
 function setupMonthSelector() {
-    const wrap = document.querySelector('.month-selector-wrap');
+    const wrap = document.querySelector('#transactions .month-selector-wrap');
     const btn = document.getElementById('month-selector-btn');
     const dropdown = document.getElementById('month-picker-dropdown');
     const yearLabel = document.getElementById('month-picker-year-label');
@@ -526,6 +525,7 @@ function setupMonthSelector() {
                 viewMonth = m;
                 updateMonthSelectorLabel();
                 updateTransactionsList();
+                updateExpenseCharts();
                 renderMonthGrid();
                 wrap.classList.remove('expanded');
             });
@@ -549,12 +549,18 @@ function setupMonthSelector() {
         viewYear--;
         syncYearLabel();
         renderMonthGrid();
+        updateMonthSelectorLabel();
+        updateTransactionsList();
+        updateExpenseCharts();
     });
     
     yearNext.addEventListener('click', () => {
         viewYear++;
         syncYearLabel();
         renderMonthGrid();
+        updateMonthSelectorLabel();
+        updateTransactionsList();
+        updateExpenseCharts();
     });
     
     // Close when tapping outside
@@ -569,6 +575,84 @@ function setupMonthSelector() {
     updateMonthSelectorLabel();
 }
 
+function setupStatsMonthSelector() {
+    const wrap = document.querySelector('.stats-month-selector-wrap');
+    const btn = document.getElementById('stats-month-selector-btn');
+    const yearLabel = document.getElementById('stats-month-picker-year-label');
+    const yearPrev = document.getElementById('stats-year-prev');
+    const yearNext = document.getElementById('stats-year-next');
+    const grid = document.getElementById('stats-month-picker-grid');
+    
+    if (!btn || !grid) return;
+    
+    function renderMonthGrid() {
+        grid.innerHTML = '';
+        for (let m = 0; m < 12; m++) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'month-picker-cell' + (m === viewMonth ? ' selected' : '');
+            cell.textContent = (m + 1) + '月';
+            cell.dataset.month = m;
+            cell.addEventListener('click', () => {
+                viewMonth = m;
+                updateMonthSelectorLabel();
+                updateTransactionsList();
+                updateExpenseCharts();
+                renderMonthGrid();
+                if (wrap) wrap.classList.remove('expanded');
+            });
+            grid.appendChild(cell);
+        }
+    }
+    
+    function syncYearLabel() {
+        if (yearLabel) yearLabel.textContent = viewYear + '年';
+    }
+    
+    btn.addEventListener('click', () => {
+        if (wrap) wrap.classList.toggle('expanded');
+        if (wrap && wrap.classList.contains('expanded')) {
+            renderMonthGrid();
+            syncYearLabel();
+        }
+    });
+    
+    if (yearPrev) yearPrev.addEventListener('click', () => {
+        viewYear--;
+        syncYearLabel();
+        renderMonthGrid();
+        updateMonthSelectorLabel();
+        updateTransactionsList();
+        updateExpenseCharts();
+    });
+    
+    if (yearNext) yearNext.addEventListener('click', () => {
+        viewYear++;
+        syncYearLabel();
+        renderMonthGrid();
+        updateMonthSelectorLabel();
+        updateTransactionsList();
+        updateExpenseCharts();
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (wrap && wrap.classList.contains('expanded') && !wrap.contains(e.target)) {
+            wrap.classList.remove('expanded');
+        }
+    });
+    
+    renderMonthGrid();
+    syncYearLabel();
+}
+
+// Helper: is transaction in the currently selected month/year?
+function isInSelectedMonth(dateStr) {
+    const key = toLocalDateKey(dateStr);
+    if (!key) return false;
+    const [y, mo] = key.split('-').map(Number);
+    return y === viewYear && mo === viewMonth + 1;
+}
+
 // Function to update expense charts (Refactored to use local transactionData)
 async function updateExpenseCharts() {
     // transactionData global already contains the expense items
@@ -578,28 +662,27 @@ async function updateExpenseCharts() {
     }
     
     let totalExpense = 0;
-    const categoryTotals = {};
-    const monthlyExpenses = {};
+    const categoryTotals = {};  // Stats: filtered by viewMonth/viewYear
+    const monthlyExpenses = {}; // Dashboard trend: all months
     
     transactionData.forEach(item => {
         // item: { date, amount, category, type: 'expense', ... }
-        // Ensure it's an expense just in case
         if (item.type !== 'expense') return;
         
-        // Clean amount string
         const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
         
         if (!isNaN(amountVal) && amountVal < 0) {
             const absAmount = Math.abs(amountVal);
-            totalExpense += absAmount;
-            
-            // Category
-            const category = item.category || 'Uncategorized';
-            categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
-            
-            // Month
-            // Use local date for monthly grouping
             const dateStr = toLocalDateKey(item.date);
+            
+            // Category totals: only selected month (for Stats section)
+            if (isInSelectedMonth(item.date)) {
+                totalExpense += absAmount;
+                const category = item.category || 'Uncategorized';
+                categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
+            }
+            
+            // Monthly trend: all months (for Dashboard)
             if (dateStr) {
                 const [y, mo, d] = dateStr.split('-').map(Number);
                 const dateObj = new Date(y, mo - 1, d);
@@ -1366,6 +1449,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         
         // Setup month selector for Expenses
         setupMonthSelector();
+        setupStatsMonthSelector();
         
         // Create empty charts initially
         createEmptyCharts();
@@ -1417,12 +1501,7 @@ function setupBudgetSection() {
         currentEditingId = cat.id;
         
         selectedName.textContent = cat.label;
-        let hash = 0;
-        for (let i = 0; i < cat.label.length; i++) {
-            hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const bgIndex = (Math.abs(hash) % 12) + 1;
-        selectedIcon.className = `selected-budget-icon icon-bg-${bgIndex}`;
+        selectedIcon.className = `selected-budget-icon ${getCategoryIconBgClass(cat.label)}`;
         selectedIcon.innerHTML = `<i class="${cat.icon}"></i>`;
         
         amountInput.value = categoryBudgets[cat.id] || '';
@@ -1434,15 +1513,11 @@ function setupBudgetSection() {
         
         gridView.innerHTML = EXPENSE_CATEGORIES.map(cat => {
             const hasBudget = categoryBudgets[cat.id] > 0;
-            let hash = 0;
-            for (let i = 0; i < cat.label.length; i++) {
-                hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const bgIndex = (Math.abs(hash) % 12) + 1;
+            const bgClass = getCategoryIconBgClass(cat.label);
             
             return `
                 <div class="budget-grid-item" data-id="${cat.id}">
-                    <div class="budget-grid-icon icon-bg-${bgIndex}">
+                    <div class="budget-grid-icon ${bgClass}">
                         <i class="${cat.icon}"></i>
                         ${hasBudget ? '<span class="budget-grid-badge">✓</span>' : ''}
                     </div>
@@ -1607,18 +1682,13 @@ function updateBudgetUI(categoryBudgets) {
                 if (isOver) progressClass = 'danger';
                 else if (percent > 80) progressClass = 'warning';
                 
-                // Icon color
-                let hash = 0;
-                for (let i = 0; i < cat.label.length; i++) {
-                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-                }
-                const bgIndex = (Math.abs(hash) % 12) + 1;
+                const bgClass = getCategoryIconBgClass(cat.label);
                 
                 html += `
                     <div class="budget-item">
                         <div class="budget-item-header">
                             <div class="budget-cat-info">
-                                <div class="budget-cat-icon icon-bg-${bgIndex}">
+                                <div class="budget-cat-icon ${bgClass}">
                                     <i class="${cat.icon}"></i>
                                 </div>
                                 <span class="budget-cat-name">${cat.label}</span>
@@ -2113,9 +2183,6 @@ function setupRefreshButton() {
                 // Fetch income data
                 await fetchIncomeData();
                 
-                // Fetch subscription data
-                await fetchSubscriptionData();
-                
                 // Show success message
                 document.getElementById('status-message').textContent = 'Refreshed!';
                 setTimeout(() => {
@@ -2135,794 +2202,19 @@ function setupRefreshButton() {
     }
 }
 
-// Function to fetch subscription data from the Google Sheet
-async function fetchSubscriptionData() {
-    try {
-        // Using the CSV export approach which is more reliable
-        // Add current timestamp to bust cache effectively
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            cache: 'no-store', // Force fetch from network, not cache
-            headers: {
-                'Pragma': 'no-cache',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        
-        const csvText = await response.text();
-        
-        // Parse CSV data
-        const rows = parseCSV(csvText);
-        
-        // Store the raw data for deletion purposes
-        subscriptionData = rows.slice(1).map((row, index) => ({
-            index: index + 1, // +1 because row 0 is headers
-            service: row[0],
-            account: row[1],
-            price: row[2],
-            billingCycle: row[3],
-            category: row[4],
-            nextPaymentDate: row[5],
-            paymentMethod: row[6],
-            description: row[7]
-        }));
-        
-        // Convert to the format expected by the rest of the code
-        const result = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
-        
-        // Process and display the data
-        await displaySubscriptionData(result);
-        
-        return Promise.resolve(result);
-    } catch (error) {
-        console.error('Error fetching subscription data:', error);
-        return Promise.reject(error);
-    }
-}
-
-// Function to display subscription data
-async function displaySubscriptionData(data) {
-    if (!data) return;
-    
-    const container = document.getElementById('subscription-cards-container');
-    
-    if (!data || !data.table || !data.table.rows || data.table.rows.length === 0) {
-        container.innerHTML = `
-            <div class="empty-subscriptions">
-                <i class="fas fa-calendar-alt"></i>
-                <p>No subscriptions found. Click the + button to add your first subscription.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const rows = data.table.rows;
-    const columns = data.table.cols;
-    
-    // Get column indices
-    const serviceIndex = 0;       // Service
-    const accountIndex = 1;       // Account
-    const priceIndex = 2;         // Price
-    const billingCycleIndex = 3;  // Billing Cycle
-    const categoryIndex = 4;      // Category
-    const nextPaymentIndex = 5;   // Next Payment Date
-    const paymentMethodIndex = 6; // Payment Method
-    const descriptionIndex = 7;   // Description (optional)
-    
-    // Process subscription data
-    const subscriptionsHTML = rows.map((row, rowIndex) => {
-        if (!row.c || row.c.some(cell => !cell)) return ''; // Skip rows with empty cells
-        
-        const service = row.c[serviceIndex]?.v || 'N/A';
-        const account = row.c[accountIndex]?.v || 'N/A';
-        const price = row.c[priceIndex]?.v || '0';
-        const billingCycle = row.c[billingCycleIndex]?.v || 'N/A';
-        const category = row.c[categoryIndex]?.v || 'Uncategorized';
-        const nextPayment = row.c[nextPaymentIndex]?.v || 'N/A';
-        const paymentMethod = row.c[paymentMethodIndex]?.v || 'N/A';
-        const description = row.c[descriptionIndex]?.v || '';
-        
-        // Clean price string and convert to number
-        const priceValue = parseFloat(String(price).replace(/[^0-9.-]+/g, ''));
-        
-        // Format price for display - ensure $ is always shown
-        let displayPrice;
-        if (typeof priceValue === 'number' && !isNaN(priceValue)) {
-            displayPrice = `$${priceValue.toFixed(2)}`;
-        } else {
-            // If for some reason we can't parse it, just show the original
-            displayPrice = price.toString().startsWith('$') ? price : `$${price}`;
-        }
-        
-        // Format date for display
-        let displayNextPayment = nextPayment;
-        try {
-            const dateObj = new Date(nextPayment);
-            if (!isNaN(dateObj.getTime())) {
-                displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-            }
-        } catch (e) {
-            console.warn('Date parsing error:', e);
-        }
-        
-        // Add data attributes for details and deletion
-        const dataAttributes = `
-            data-row-index="${rowIndex}"
-            data-service="${service}"
-            data-account="${account}"
-            data-price="${priceValue}"
-            data-billing="${billingCycle}"
-            data-category="${category}"
-            data-next-payment="${nextPayment}"
-            data-payment="${paymentMethod}"
-            data-description="${description}"
-        `;
-        
-        // Determine if the service has an icon
-        const serviceFirstLetter = service.charAt(0).toUpperCase();
-        let serviceIcon;
-        
-        const serviceIcons = {
-            'google': 'fab fa-google',
-            'netflix': 'fab fa-netflix',
-            'spotify': 'fab fa-spotify',
-            'apple': 'fab fa-apple',
-            'amazon': 'fab fa-amazon',
-            'youtube': 'fab fa-youtube',
-            'disney': 'fab fa-disney',
-            'hulu': 'fas fa-tv',
-            'dropbox': 'fab fa-dropbox',
-            'microsoft': 'fab fa-microsoft',
-            'github': 'fab fa-github',
-            'slack': 'fab fa-slack',
-            'adobe': 'fab fa-adobe',
-            'paypal': 'fab fa-paypal',
-            'twitter': 'fab fa-twitter',
-            'facebook': 'fab fa-facebook',
-            'instagram': 'fab fa-instagram',
-            'linkedin': 'fab fa-linkedin'
-        };
-        
-        const serviceLower = service.toLowerCase();
-        for (const [key, icon] of Object.entries(serviceIcons)) {
-            if (serviceLower.includes(key)) {
-                serviceIcon = icon;
-                break;
-            }
-        }
-        
-        if (!serviceIcon) {
-            serviceIcon = 'fas fa-calendar-alt';
-        }
-        
-        return `
-            <div class="subscription-card" ${dataAttributes}>
-                <div class="service-name">${service}</div>
-                <div class="price">${displayPrice}<span class="billing-cycle">/${billingCycle}</span></div>
-                <div class="next-payment">
-                    <i class="far fa-calendar-alt"></i>
-                    ${displayNextPayment}
-                </div>
-                <div class="delete-overlay">
-                    <button class="delete-btn" data-row-index="${rowIndex}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    container.innerHTML = subscriptionsHTML || `
-        <div class="empty-subscriptions">
-            <i class="fas fa-calendar-alt"></i>
-            <p>No subscriptions found. Click the + button to add your first subscription.</p>
-        </div>
-    `;
-    
-    // Add click listeners to cards for showing details
-    const cards = document.querySelectorAll('.subscription-card');
-    cards.forEach(card => {
-        card.addEventListener('click', function(event) {
-            // Don't show details if delete mode is active or if clicking on delete button
-            if (isSubscriptionDeleteMode || event.target.closest('.delete-btn')) {
-                return;
-            }
-            
-            // Show subscription details
-            showSubscriptionDetails(
-                this.getAttribute('data-service'),
-                this.getAttribute('data-account'),
-                this.getAttribute('data-price'),
-                this.getAttribute('data-billing'),
-                this.getAttribute('data-category'),
-                this.getAttribute('data-next-payment'),
-                this.getAttribute('data-payment'),
-                this.getAttribute('data-description'),
-                this.getAttribute('data-row-index')
-            );
-        });
-    });
-    
-    // Setup delete buttons if in delete mode
-    if (isSubscriptionDeleteMode) {
-        setupSubscriptionDeleteButtons();
-    }
-}
-
-// Function to add subscription to Google Sheet
-async function addSubscriptionToSheet(service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Subscription will only be added to UI.');
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    try {
-        const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
-        const numericPrice = parseFloat(price);
-        
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.append('action', 'addSubscription');
-        url.searchParams.append('service', service);
-        url.searchParams.append('account', account);
-        url.searchParams.append('price', numericPrice);
-        url.searchParams.append('billingCycle', billingCycle);
-        url.searchParams.append('category', category);
-        url.searchParams.append('nextPaymentDate', formattedDate);
-        url.searchParams.append('paymentMethod', paymentMethod);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
-        url.searchParams.append('sheetName', SUBSCRIPTION_SHEET_NAME);
-        url.searchParams.append('v', Date.now());
-        
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        return true;
-    } catch (error) {
-        console.error('Error adding subscription to Google Sheet:', error);
-        throw error;
-    }
-}
-
-// Function to delete subscription from Google Sheet
-async function deleteSubscriptionFromSheet(rowIndex) {
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured.');
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    try {
-        const actualRowIndex = parseInt(rowIndex) + 1;
-        console.log('Deleting subscription at row:', actualRowIndex);
-        
-        const url = `${SCRIPT_URL}?action=deleteSubscription&rowIndex=${actualRowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SUBSCRIPTION_SHEET_NAME}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        return true;
-    } catch (error) {
-        console.error('Error deleting subscription from Google Sheet:', error);
-        throw error;
-    }
-}
-
-// Setup subscription delete buttons
-function setupSubscriptionDeleteButtons() {
-    const deleteButtons = document.querySelectorAll('.subscription-card .delete-btn');
-    
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.stopPropagation();
-            const rowIndex = this.getAttribute('data-row-index');
-            const card = this.closest('.subscription-card');
-            
-            const service = card.getAttribute('data-service');
-            const account = card.getAttribute('data-account');
-            const price = card.getAttribute('data-price');
-            const billingCycle = card.getAttribute('data-billing');
-            const category = card.getAttribute('data-category');
-            const nextPayment = card.getAttribute('data-next-payment');
-            const paymentMethod = card.getAttribute('data-payment');
-            
-            showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
-        });
-    });
-}
-
-// Show delete subscription confirmation modal
-function showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod) {
-    const confirmed = confirm(`Are you sure you want to delete the ${service} subscription?`);
-    
-    if (confirmed) {
-        deleteSubscriptionFromSheet(rowIndex)
-            .then(() => {
-                document.getElementById('status-message').textContent = 'Deleted!';
-                setTimeout(() => {
-                    document.getElementById('status-message').textContent = '';
-                }, 2000);
-                
-                return fetchSubscriptionData();
-            })
-            .catch(error => {
-                console.error('Error deleting subscription:', error);
-                document.getElementById('status-message').textContent = 'Error deleting';
-                setTimeout(() => {
-                    document.getElementById('status-message').textContent = '';
-                }, 2000);
-            });
-    }
-}
-
-// Setup subscription modal
-function setupSubscriptionModal() {
-    const modal = document.getElementById('subscription-modal');
-    const addButton = document.getElementById('add-subscription-btn');
-    const closeButton = document.querySelector('.close-subscription-modal');
-    const cancelButton = document.getElementById('cancel-subscription');
-    const form = document.getElementById('subscription-form');
-    
-    if (addButton) {
-        addButton.addEventListener('click', function() {
-            modal.style.display = 'block';
-            document.getElementById('subscription-next-payment').valueAsDate = new Date();
-        });
-    }
-    
-    function closeModal() {
-        modal.style.display = 'none';
-        form.reset();
-    }
-    
-    if (closeButton) closeButton.addEventListener('click', closeModal);
-    if (cancelButton) cancelButton.addEventListener('click', closeModal);
-    
-    const outsideClickHandler = function(event) {
-        if (event.target === modal) {
-            closeModal();
-            window.removeEventListener('click', outsideClickHandler);
-        }
-    };
-    
-    window.addEventListener('click', outsideClickHandler);
-    
-    form.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        
-        const service = document.getElementById('subscription-service').value;
-        const account = document.getElementById('subscription-account').value;
-        const price = document.getElementById('subscription-price').value;
-        const billingCycle = document.getElementById('subscription-billing').value;
-        const category = document.getElementById('subscription-category').value;
-        const nextPaymentDate = document.getElementById('subscription-next-payment').value;
-        const paymentMethod = document.getElementById('subscription-payment').value;
-        const description = document.getElementById('subscription-description').value;
-        
-        try {
-            document.getElementById('status-message').textContent = 'Adding...';
-            
-            await addSubscriptionToSheet(
-                service,
-                account,
-                price,
-                billingCycle,
-                category,
-                nextPaymentDate,
-                paymentMethod,
-                description
-            );
-            
-            closeModal();
-            
-            await fetchSubscriptionData();
-            
-            document.getElementById('status-message').textContent = 'Added!';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        } catch (error) {
-            console.error('Error adding subscription:', error);
-            document.getElementById('status-message').textContent = 'Error adding';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        }
-    });
-}
-
-// Setup subscription delete mode
-function setupSubscriptionDeleteMode() {
-    const deleteButton = document.getElementById('delete-subscription-btn');
-    
-    if (deleteButton) {
-        deleteButton.addEventListener('click', function() {
-            isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
-            
-            if (isSubscriptionDeleteMode) {
-                deleteButton.classList.add('active');
-            } else {
-                deleteButton.classList.remove('active');
-            }
-            
-            const cards = document.querySelectorAll('.subscription-card');
-            cards.forEach(card => {
-                const deleteOverlay = card.querySelector('.delete-overlay');
-                if (isSubscriptionDeleteMode) {
-                    deleteOverlay.classList.add('visible');
-                } else {
-                    deleteOverlay.classList.remove('visible');
-                }
-            });
-            
-            if (isSubscriptionDeleteMode) {
-                setupSubscriptionDeleteButtons();
-            }
-        });
-    }
-}
-
-// Show subscription details modal
-function showSubscriptionDetails(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
-    const modal = document.getElementById('subscription-details-modal');
-    const detailsContainer = document.getElementById('subscription-detail-content');
-    
-    const priceValue = parseFloat(price);
-    const displayPrice = !isNaN(priceValue) ? `$${priceValue.toFixed(2)}` : `$${price}`;
-    
-    let displayNextPayment = nextPayment;
-    try {
-        const dateObj = new Date(nextPayment);
-        if (!isNaN(dateObj.getTime())) {
-            displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-    } catch (e) {
-        console.warn('Date parsing error:', e);
-    }
-    
-    const serviceLower = service.toLowerCase();
-    let serviceIcon = 'fas fa-calendar-alt';
-    
-    const serviceIcons = {
-        'google': 'fab fa-google',
-        'netflix': 'fab fa-netflix',
-        'spotify': 'fab fa-spotify',
-        'apple': 'fab fa-apple',
-        'amazon': 'fab fa-amazon',
-        'youtube': 'fab fa-youtube',
-        'disney': 'fab fa-disney',
-        'hulu': 'fas fa-tv',
-        'dropbox': 'fab fa-dropbox',
-        'microsoft': 'fab fa-microsoft',
-        'github': 'fab fa-github',
-        'slack': 'fab fa-slack',
-        'adobe': 'fab fa-adobe',
-        'paypal': 'fab fa-paypal',
-        'twitter': 'fab fa-twitter',
-        'facebook': 'fab fa-facebook',
-        'instagram': 'fab fa-instagram',
-        'linkedin': 'fab fa-linkedin'
-    };
-    
-    for (const [key, icon] of Object.entries(serviceIcons)) {
-        if (serviceLower.includes(key)) {
-            serviceIcon = icon;
-            break;
-        }
-    }
-    
-    detailsContainer.innerHTML = `
-        <div class="service-tag">
-            <i class="${serviceIcon}"></i> ${category}
-        </div>
-        <div class="service-name">${service}</div>
-        <div class="price">${displayPrice}/${billingCycle}</div>
-        
-        <div class="detail-group">
-            <div class="detail-item">
-                <i class="fas fa-user"></i>
-                <div class="detail-content">
-                    <div class="detail-label">Account</div>
-                    <div class="detail-value">${account}</div>
-                </div>
-            </div>
-            
-            <div class="detail-item">
-                <i class="far fa-calendar-alt"></i>
-                <div class="detail-content">
-                    <div class="detail-label">Next Payment</div>
-                    <div class="detail-value">${displayNextPayment}</div>
-                </div>
-            </div>
-            
-            <div class="detail-item">
-                <i class="fas fa-credit-card"></i>
-                <div class="detail-content">
-                    <div class="detail-label">Payment Method</div>
-                    <div class="detail-value">${paymentMethod}</div>
-                </div>
-            </div>
-            
-            ${description ? `
-            <div class="detail-item">
-                <i class="fas fa-info-circle"></i>
-                <div class="detail-content">
-                    <div class="detail-label">Description</div>
-                    <div class="detail-value">${description}</div>
-                </div>
-            </div>
-            ` : ''}
-        </div>
-    `;
-    
-    modal.style.display = 'block';
-    
-    const closeButton = modal.querySelector('.close-details-modal');
-    closeButton.onclick = function() {
-        modal.style.display = 'none';
-        document.body.style.overflow = ''; 
-    };
-    
-    const deleteButton = document.getElementById('delete-subscription-detail-btn');
-    deleteButton.onclick = function() {
-        modal.style.display = 'none';
-        showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
-    };
-    
-    const editButton = document.getElementById('edit-subscription-btn');
-    editButton.onclick = function() {
-        modal.style.display = 'none';
-        openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex);
-    };
-    
-    const resubscribeButton = document.getElementById('resubscribe-btn');
-    resubscribeButton.onclick = function() {
-        let newPaymentDate = calculateNextPaymentDate(nextPayment, billingCycle);
-        
-        const confirmed = confirm(`Resubscribe to ${service} for another ${billingCycle} cycle?\nNew payment date: ${formatDateForDisplay(newPaymentDate)}`);
-        
-        if (confirmed) {
-            modal.style.display = 'none';
-            
-            updateSubscriptionFromSheet(
-                rowIndex,
-                service,
-                account,
-                price,
-                billingCycle,
-                category,
-                newPaymentDate,
-                paymentMethod,
-                description
-            ).then(() => {
-                fetchSubscriptionData();
-                
-                document.getElementById('status-message').textContent = 'Resubscribed!';
-                setTimeout(() => {
-                    document.getElementById('status-message').textContent = '';
-                }, 2000);
-            }).catch(error => {
-                console.error('Error resubscribing:', error);
-                document.getElementById('status-message').textContent = 'Error resubscribing';
-                setTimeout(() => {
-                    document.getElementById('status-message').textContent = '';
-                }, 2000);
-            });
-        }
-    };
-    
-    const outsideClickHandler = function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = ''; 
-            window.removeEventListener('click', outsideClickHandler);
-        }
-    };
-    
-    window.addEventListener('click', outsideClickHandler);
-}
-
-// Setup edit subscription modal
-function openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
-    const modal = document.getElementById('edit-subscription-modal');
-    
-    document.getElementById('edit-subscription-service').value = service;
-    document.getElementById('edit-subscription-account').value = account;
-    document.getElementById('edit-subscription-price').value = parseFloat(price);
-    document.getElementById('edit-subscription-billing').value = billingCycle;
-    document.getElementById('edit-subscription-category').value = category;
-    
-    let formattedDate = nextPayment;
-    try {
-        const dateObj = new Date(nextPayment);
-        if (!isNaN(dateObj.getTime())) {
-            formattedDate = dateObj.toISOString().split('T')[0];
-        }
-    } catch (e) {
-        console.warn('Date parsing error:', e);
-    }
-    
-    document.getElementById('edit-subscription-next-payment').value = formattedDate;
-    document.getElementById('edit-subscription-payment').value = paymentMethod;
-    document.getElementById('edit-subscription-description').value = description || '';
-    document.getElementById('edit-subscription-row-index').value = rowIndex;
-    
-    modal.style.display = 'block';
-    
-    const closeButton = modal.querySelector('.close-edit-subscription-modal');
-    closeButton.onclick = function() {
-        modal.style.display = 'none';
-    };
-    
-    const cancelButton = document.getElementById('cancel-edit-subscription');
-    cancelButton.onclick = function() {
-        modal.style.display = 'none';
-    };
-    
-    const form = document.getElementById('edit-subscription-form');
-    form.onsubmit = async function(e) {
-        e.preventDefault();
-        
-        try {
-            const updatedService = document.getElementById('edit-subscription-service').value;
-            const updatedAccount = document.getElementById('edit-subscription-account').value;
-            const updatedPrice = document.getElementById('edit-subscription-price').value;
-            const updatedBillingCycle = document.getElementById('edit-subscription-billing').value;
-            const updatedCategory = document.getElementById('edit-subscription-category').value;
-            const updatedNextPayment = document.getElementById('edit-subscription-next-payment').value;
-            const updatedPaymentMethod = document.getElementById('edit-subscription-payment').value;
-            const updatedDescription = document.getElementById('edit-subscription-description').value;
-            const rowIndex = document.getElementById('edit-subscription-row-index').value;
-            
-            await updateSubscriptionFromSheet(
-                rowIndex,
-                updatedService,
-                updatedAccount,
-                updatedPrice,
-                updatedBillingCycle,
-                updatedCategory,
-                updatedNextPayment,
-                updatedPaymentMethod,
-                updatedDescription
-            );
-            
-            modal.style.display = 'none';
-            
-            await fetchSubscriptionData();
-            
-            document.getElementById('status-message').textContent = 'Updated!';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        } catch (error) {
-            console.error('Error updating subscription:', error);
-            document.getElementById('status-message').textContent = 'Error updating';
-            setTimeout(() => {
-                document.getElementById('status-message').textContent = '';
-            }, 2000);
-        }
-    };
-    
-    const outsideClickHandler = function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-            window.removeEventListener('click', outsideClickHandler);
-        }
-    };
-    
-    window.addEventListener('click', outsideClickHandler);
-}
-
-// Update subscription in the Google Sheet
-async function updateSubscriptionFromSheet(rowIndex, service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
-    try {
-        const actualRowIndex = parseInt(rowIndex) + 1;
-        
-        console.log(`Updating subscription at row index: ${actualRowIndex}`);
-        
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.append('action', 'updateSubscription');
-        url.searchParams.append('rowIndex', actualRowIndex);
-        url.searchParams.append('service', service);
-        url.searchParams.append('account', account);
-        url.searchParams.append('price', price);
-        url.searchParams.append('billingCycle', billingCycle);
-        url.searchParams.append('category', category);
-        url.searchParams.append('nextPaymentDate', nextPaymentDate);
-        url.searchParams.append('paymentMethod', paymentMethod);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('sheetName', 'Subscription');
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-        });
-        
-        const result = await response.json();
-        
-        if (result.status !== 'success') {
-            throw new Error(result.message || 'Failed to update subscription');
-        }
-        
-        return result;
-    } catch (error) {
-        console.error('Error updating subscription:', error);
-        throw error;
-    }
-}
-
-// Calculate next payment date based on billing cycle
-function calculateNextPaymentDate(currentDate, billingCycle) {
-    try {
-        const date = new Date(currentDate);
-        
-        if (isNaN(date.getTime())) {
-            return new Date().toISOString().split('T')[0];
-        }
-        
-        switch (billingCycle) {
-            case '月': 
-                date.setMonth(date.getMonth() + 1);
-                break;
-            case '季': 
-                date.setMonth(date.getMonth() + 3);
-                break;
-            case '年': 
-                date.setFullYear(date.getFullYear() + 1);
-                break;
-            default:
-                date.setMonth(date.getMonth() + 1);
-                break;
-        }
-        
-        return date.toISOString().split('T')[0];
-    } catch (error) {
-        console.error('Error calculating next payment date:', error);
-        return new Date().toISOString().split('T')[0];
-    }
-}
-
-// Format date for display
-function formatDateForDisplay(dateString) {
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-            return dateString; 
-        }
-        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (error) {
-        console.warn('Date formatting error:', error);
-        return dateString;
-    }
-}
-
 // --- Quick Add Functionality ---
+
+// Get meal type (Breakfast/Lunch/Dinner/Late Night) based on current Taiwan time (UTC+8)
+function getMealTypeByTaiwanTime() {
+    const now = new Date();
+    const hour = (now.getUTCHours() + 8) % 24; // Taiwan = UTC+8
+    
+    if (hour >= 5 && hour < 11) return 'Breakfast';
+    if (hour >= 11 && hour < 15) return 'Lunch';
+    if (hour >= 17 && hour < 22) return 'Dinner';
+    if (hour >= 22 || hour < 5) return 'Late Night';
+    return 'Snack'; // 15:00-16:59 afternoon
+}
 
 // Default Quick Add Configuration
 const DEFAULT_QUICK_ADDS = [
@@ -3001,9 +2293,12 @@ function setupQuickAdd() {
             const cat = EXPENSE_CATEGORIES.find(c => c.label === btnConfig.category);
             if (cat) selectCategory(cat);
             
-            // Pre-fill description
-            if (btnConfig.description) {
-                document.getElementById('calc-description').value = btnConfig.description;
+            // Pre-fill description: Food category uses Taiwan time to auto-detect meal (Breakfast/Lunch/Dinner/Late Night)
+            const descEl = document.getElementById('calc-description');
+            if (btnConfig.category === '食物') {
+                descEl.value = getMealTypeByTaiwanTime();
+            } else if (btnConfig.description) {
+                descEl.value = btnConfig.description;
             }
             
             // Note: Payment method logic is simplified in calculator view
