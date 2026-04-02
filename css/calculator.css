@@ -255,6 +255,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Prevent iOS Safari double-tap zoom when tapping keys quickly (e.g. 0 twice for 100) */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .keypad-btn:active {
