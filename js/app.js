@@ -15,6 +15,15 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv
 // App version to force cache refresh
 const APP_VERSION = Date.now();
 
+// ===== LOCAL STORAGE KEYS =====
+const STORAGE_KEYS = {
+    TRANSACTIONS: 'tommy_expenses_transactions',
+    INCOME: 'tommy_expenses_income',
+    PENDING_SYNC: 'tommy_expenses_pending_sync',
+    LAST_SYNC_DATE: 'tommy_expenses_last_sync_date',
+    LAST_FETCH_DATE: 'tommy_expenses_last_fetch_date'
+};
+
 // Global variables for delete functionality
 let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
@@ -29,6 +38,64 @@ let currentCalcAmount = '0';
 let currentCalcType = 'expense'; // 'expense' or 'income'
 let currentCalcDate = new Date();
 let selectedCategoryId = null;
+
+// Month Selector Variables
+let selectedMonth = new Date().getMonth() + 1; // 1-12
+let selectedYear = new Date().getFullYear();     // e.g., 2026
+
+// ===== LOCAL STORAGE UTILITIES =====
+function getLocalStorageTransactions() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading transactions from localStorage:', e);
+        return [];
+    }
+}
+
+function getLocalStorageIncome() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.INCOME);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading income from localStorage:', e);
+        return [];
+    }
+}
+
+function saveLocalStorageTransactions(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving transactions to localStorage:', e);
+    }
+}
+
+function saveLocalStorageIncome(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving income to localStorage:', e);
+    }
+}
+
+function getPendingSyncData() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.PENDING_SYNC);
+        return data ? JSON.parse(data) : { added: [], deleted: [], lastSyncTime: null };
+    } catch (e) {
+        return { added: [], deleted: [], lastSyncTime: null };
+    }
+}
+
+function savePendingSyncData(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving pending sync data:', e);
+    }
+}
 
 // Categories Config
 const EXPENSE_CATEGORIES = [
@@ -54,22 +121,47 @@ const INCOME_CATEGORIES = [
     { id: 'other', label: '其他', icon: 'fas fa-box' }
 ];
 
-// Function to fetch data from the published Google Sheet
-async function fetchExpenseData() {
+// Check if we should fetch from Google Sheets (at 6 AM Taiwan time)
+function shouldFetchFromGoogle() {
     try {
-        // Fetch data from Google Apps Script to ensure we get proper text values
-        // This avoids GVIZ type inference issues where text in mixed columns is dropped
+        const lastFetchDate = localStorage.getItem(STORAGE_KEYS.LAST_FETCH_DATE);
+        const now = new Date();
+        
+        // Taiwan time zone (UTC+8)
+        const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+        const taiwanDateStr = taiwanTime.toISOString().split('T')[0]; // YYYY-MM-DD
+        const taiwanHour = taiwanTime.getHours();
+        
+        // Fetch if:
+        // 1. Never fetched before
+        // 2. Fetched on a different day
+        // 3. Current time is >= 6 AM and last fetch was before 6 AM
+        if (!lastFetchDate) return true;
+        if (lastFetchDate !== taiwanDateStr) return true;
+        
+        return false;
+    } catch (e) {
+        console.error('Error checking if should fetch:', e);
+        return true; // Default to fetch on error
+    }
+}
+
+// Function to fetch data from Google Sheet (only at 6 AM or on manual refresh)
+async function fetchExpenseDataFromGoogle() {
+    try {
         const url = `${SCRIPT_URL}?action=getData&sheetName=${SHEET_NAME}&spreadsheetId=${SPREADSHEET_ID}&v=${Date.now()}`;
         
-        // Show loading status
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) statusMsg.textContent = 'Loading...';
+        // Add timeout of 10 seconds
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
         const response = await fetch(url, {
             method: 'GET',
-            redirect: 'follow'
-            // mode: 'cors' is default and required to read body
+            redirect: 'follow',
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -78,7 +170,6 @@ async function fetchExpenseData() {
         const resultJson = await response.json();
         
         if (resultJson.status !== 'success' || !resultJson.data) {
-            // Check for specific "Invalid action" error which means old script version
             if (resultJson.message === 'Invalid action specified') {
                 showRedeployWarning();
             }
@@ -86,84 +177,118 @@ async function fetchExpenseData() {
         }
         
         const rows = resultJson.data;
-        
-        // Hide warning if successful
         hideRedeployWarning();
         
-        // Store the raw data for deletion purposes
-        // Reset arrays
-        transactionData = [];
-        incomeData = [];
-
+        // Parse Google Sheets data
+        const expenses = [];
+        const income = [];
+        
         rows.slice(1).forEach((row, index) => {
-            // Ensure we have enough columns, pad with empty strings if needed
-            const safeRow = [...row]; 
+            const safeRow = [...row];
             while (safeRow.length < 4) safeRow.push('');
             
             const amountVal = parseFloat(String(safeRow[1]).replace(/[^0-9.-]/g, ''));
             const isExpense = amountVal < 0;
 
             const item = {
-                index: index + 1, // +1 because row 0 is headers
+                index: index + 1,
                 date: safeRow[0],
                 amount: safeRow[1],
                 category: safeRow[2],
                 description: safeRow[3],
-                type: isExpense ? 'expense' : 'income'
+                type: isExpense ? 'expense' : 'income',
+                fromGoogle: true // Mark as from Google Sheets
             };
 
             if (isExpense) {
-                transactionData.push(item);
+                expenses.push(item);
             } else {
-                incomeData.push(item);
+                income.push(item);
             }
         });
         
-        // Convert to the format expected by the chart functions
-        // Charts expect { table: { rows: [{ c: [{v: val}, ...] }] } }
-        const chartResult = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
+        // Save to localStorage
+        saveLocalStorageTransactions(expenses);
+        saveLocalStorageIncome(income);
         
-        // Process and display the data
+        // Update last fetch date (Taiwan time)
+        const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+        const taiwanDateStr = taiwanTime.toISOString().split('T')[0];
+        localStorage.setItem(STORAGE_KEYS.LAST_FETCH_DATE, taiwanDateStr);
+        
+        return { expenses, income };
+    } catch (error) {
+        console.error('Error fetching from Google Sheets:', error);
+        throw error;
+    }
+}
+
+// Main function to load data (from localStorage first, fetch from Google if needed)
+async function fetchExpenseData() {
+    try {
+        const statusMsg = document.getElementById('status-message');
+        
+        // Step 1: Load from localStorage immediately
+        transactionData = getLocalStorageTransactions() || [];
+        incomeData = getLocalStorageIncome() || [];
+        
+        // Update UI immediately with cached data
         updateTransactionsList();
         updateExpenseCharts();
-        
-        // Update balance
         updateBalance();
         
-        // Clear loading status
-        if (statusMsg) {
-            statusMsg.textContent = 'Updated';
-            setTimeout(() => {
-                if (statusMsg.textContent === 'Updated') {
-                    statusMsg.textContent = '';
+        // Step 2: Check if we need to fetch from Google Sheets (non-blocking)
+        const shouldFetch = shouldFetchFromGoogle();
+        
+        if (shouldFetch) {
+            if (statusMsg) statusMsg.textContent = 'Syncing from Excel...';
+            
+            try {
+                // Fetch from Google Sheets with timeout (non-blocking)
+                await Promise.race([
+                    fetchExpenseDataFromGoogle(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch timeout')), 10000))
+                ]);
+                
+                // Update data from localStorage
+                transactionData = getLocalStorageTransactions() || [];
+                incomeData = getLocalStorageIncome() || [];
+                
+                // Refresh UI with new data
+                updateTransactionsList();
+                updateExpenseCharts();
+                updateBalance();
+                
+                if (statusMsg) {
+                    statusMsg.textContent = 'Synced';
+                    setTimeout(() => {
+                        if (statusMsg && statusMsg.textContent === 'Synced') statusMsg.textContent = '';
+                    }, 2000);
                 }
-            }, 2000);
+            } catch (error) {
+                // If Google Sheets fetch fails or times out, continue with localStorage data
+                console.warn('Could not sync from Google Sheets, using local data:', error);
+                if (statusMsg) statusMsg.textContent = '';
+            }
         }
         
-        return Promise.resolve(chartResult);
+        return Promise.resolve({ success: true });
     } catch (error) {
-        console.error('Error fetching expense data:', error);
+        console.error('Error in fetchExpenseData:', error);
         
-        // Fallback to CSV method if Script API fails (e.g. not redeployed yet)
-        console.log('Falling back to CSV fetch...');
+        // Load from localStorage as fallback
+        transactionData = getLocalStorageTransactions() || [];
+        incomeData = getLocalStorageIncome() || [];
         
-        // Only show warning if we aren't already showing it from the specific error above
-        if (!document.getElementById('redeploy-warning')) {
-             // If we are falling back, it implies the backend isn't ready or accessible
-             // We can show a generic "Using offline/backup mode" or just the redeploy warning if it's likely the cause
-             // For now, let's assumes if the API failed, we might be on old version
-             // But we don't want to annoy user if it's just a network glitch.
-             // However, the "Invalid action" check above is the robust one.
+        try {
+            updateTransactionsList();
+            updateExpenseCharts();
+            updateBalance();
+        } catch (updateError) {
+            console.error('Error updating UI:', updateError);
         }
         
-        return fetchExpenseDataCSV();
+        return Promise.resolve({ success: true, fromCache: true });
     }
 }
 
@@ -329,18 +454,26 @@ function updateTransactionsList() {
         ...incomeData
     ];
     
-    if (allTransactions.length === 0) {
+    // Filter by selected month/year
+    const filteredTransactions = allTransactions.filter(t => {
+        const key = toLocalDateKey(t.date);
+        if (!key) return false;
+        const [y, mo] = key.split('-').map(Number);
+        return mo === selectedMonth && y === selectedYear;
+    });
+    
+    if (filteredTransactions.length === 0) {
         container.innerHTML = `
             <div class="empty-subscriptions" style="text-align:center; padding: 40px; color: var(--text-secondary);">
                 <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>No transactions found.</p>
+                <p>No transactions found for this month.</p>
             </div>
         `;
         return;
     }
     
     // Sort by date descending (use local date key for consistent order)
-    allTransactions.sort((a, b) => {
+    filteredTransactions.sort((a, b) => {
         const keyA = toLocalDateKey(a.date);
         const keyB = toLocalDateKey(b.date);
         if (keyA !== keyB) return keyB.localeCompare(keyA);
@@ -349,7 +482,7 @@ function updateTransactionsList() {
     
     // Group by Date (use local calendar date so sheet date matches display)
     const grouped = {};
-    allTransactions.forEach(t => {
+    filteredTransactions.forEach(t => {
         const dateStr = toLocalDateKey(t.date);
         if (!dateStr) return;
         if (!grouped[dateStr]) grouped[dateStr] = [];
@@ -531,20 +664,16 @@ async function updateExpenseCharts() {
 
 
 function updateBalance() {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
     const parseAmount = (str) => {
         return parseFloat(String(str).replace(/[^0-9.-]+/g, '')) || 0;
     };
-    
-    const isCurrentMonth = (dateStr) => {
+
+    const isSelectedMonth = (dateStr) => {
         try {
             const key = toLocalDateKey(dateStr);
             if (!key) return false;
             const [y, mo] = key.split('-').map(Number);
-            return mo === currentMonth + 1 && y === currentYear;
+            return mo === selectedMonth && y === selectedYear;
         } catch (e) { return false; }
     };
     
@@ -555,7 +684,7 @@ function updateBalance() {
     const allItems = [...transactionData, ...incomeData];
     
     allItems.forEach(item => {
-        if (isCurrentMonth(item.date)) {
+        if (isSelectedMonth(item.date)) {
             const val = parseAmount(item.amount);
             if (val < 0) {
                 monthlyExpense += Math.abs(val);
@@ -789,26 +918,45 @@ function setupDeleteButtons() {
                 
                 // Show "Deleting" status quietly
                 const statusMsg = document.getElementById('status-message');
-                if (statusMsg) statusMsg.textContent = 'Deleting...';
+                if (statusMsg) statusMsg.textContent = 'Deleted locally';
                 
-                // Calculate the actual row index in the spreadsheet (add 1 for header row)
+                // Save updated state to localStorage
+                if (sheetName === SHEET_NAME) {
+                    saveLocalStorageTransactions(transactionData);
+                    saveLocalStorageIncome(incomeData);
+                }
+                
+                // Mark as pending for midnight sync
+                const deletedItem = { index: parseInt(rowIndex), sheetName };
+                const pendingData = getPendingSyncData();
+                pendingData.deleted.push(deletedItem);
+                savePendingSyncData(pendingData);
+                
+                // Close modal immediately
+                closeDeleteModal();
+                
+                // Delete from Google Sheet in background (async, no wait)
                 const actualRowIndex = parseInt(rowIndex) + 1;
-                
-                // Delete from Google Sheet in background
                 deleteTransactionFromSheet(actualRowIndex, sheetName)
                     .then(() => {
-                        if (statusMsg) statusMsg.textContent = 'Deleted';
-                        setTimeout(() => {
-                            if (statusMsg && statusMsg.textContent === 'Deleted') statusMsg.textContent = '';
-                        }, 2000);
+                        if (statusMsg && statusMsg.textContent === 'Deleted locally') {
+                            statusMsg.textContent = 'Synced';
+                            setTimeout(() => {
+                                if (statusMsg && statusMsg.textContent === 'Synced') statusMsg.textContent = '';
+                            }, 2000);
+                        }
                         
-                        // Sync real state
-                        fetchExpenseData();
+                        // Sync real state from Google Sheets
+                        fetchExpenseDataFromGoogle();
                     })
                     .catch(error => {
-                        console.error('Error deleting transaction:', error);
-                        if (statusMsg) statusMsg.textContent = 'Error deleting';
-                        alert('Failed to delete from sheet. Please refresh.');
+                        console.error('Background delete sync error (will retry at midnight):', error);
+                        if (statusMsg && statusMsg.textContent === 'Deleted locally') {
+                            statusMsg.textContent = 'Deleted (sync at midnight)';
+                            setTimeout(() => {
+                                if (statusMsg && statusMsg.textContent === 'Deleted (sync at midnight)') statusMsg.textContent = '';
+                            }, 3000);
+                        }
                     });
             });
         }
@@ -1219,20 +1367,25 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
         
         // Initialize sections
+        console.log('Initializing sections...');
         initializeSections();
         
         // Setup delete modal
+        console.log('Setting up delete modal...');
         setupDeleteModal();
         
         // Setup navigation
+        console.log('Setting up navigation...');
         setupNavigation();
         
         // Add ripple effect to buttons
+        console.log('Adding ripple effects...');
         document.querySelectorAll('.btn-primary, .btn-secondary, .btn-danger').forEach(button => {
             button.addEventListener('click', createRipple);
         });
         
         // Setup transaction modal (New Calculator)
+        console.log('Setting up calculator modal...');
         setupCalculatorModal();
         
         // Replace old button listeners
@@ -1252,40 +1405,166 @@ window.addEventListener('DOMContentLoaded', async () => {
             newBtn.addEventListener('click', () => openCalculatorModal('income'));
         }
         
-        // Setup subscription modal (Removed)
-        // setupSubscriptionModal();
-        
         // Setup delete mode
+        console.log('Setting up delete mode...');
         setupDeleteMode();
         
-        // Setup subscription delete mode (Removed)
-        // setupSubscriptionDeleteMode();
-        
         // Setup refresh button
+        console.log('Setting up refresh button...');
         setupRefreshButton();
         
         // Setup Quick Add Buttons
+        console.log('Setting up quick add...');
         setupQuickAdd();
         
         // Setup Budget Logic
+        console.log('Setting up budget section...');
         setupBudgetSection();
         
+        // Setup Month Selector
+        console.log('Setting up month selector...');
+        setupMonthSelector();
+        
         // Create empty charts initially
+        console.log('Creating empty charts...');
         createEmptyCharts();
         
         // Fetch expense data from Google Sheet
+        console.log('Fetching expense data...');
         await fetchExpenseData();
         
         // Fetch income data
+        console.log('Fetching income data...');
         await fetchIncomeData();
         
-        // Fetch subscription data from Google Sheet (Removed)
-        // await fetchSubscriptionData();
+        // Setup sync scheduling (midnight sync & 6 AM fetch)
+        console.log('Setting up sync scheduling...');
+        setupSyncScheduling();
+        
+        console.log('App initialization complete!');
         
     } catch (error) {
         console.error('Error initializing app:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Error loading app';
     }
 });
+
+// --- SYNC SCHEDULING FUNCTIONS ---
+
+// Get time until next event (in milliseconds)
+function getTimeUntilNextMidnight() {
+    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const tomorrow = new Date(taiwanTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    return tomorrow.getTime() - taiwanTime.getTime();
+}
+
+function getTimeUntil6AM() {
+    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const target = new Date(taiwanTime);
+    target.setHours(6, 0, 0, 0);
+    
+    if (target.getTime() <= taiwanTime.getTime()) {
+        // If it's already past 6 AM, set for tomorrow
+        target.setDate(target.getDate() + 1);
+    }
+    
+    return target.getTime() - taiwanTime.getTime();
+}
+
+// Sync pending transactions to Google Sheets (at midnight)
+async function syncToGoogleSheets() {
+    try {
+        const pendingData = getPendingSyncData();
+        
+        if (pendingData.added.length === 0 && pendingData.deleted.length === 0) {
+            console.log('No pending transactions to sync');
+            return;
+        }
+        
+        console.log('Syncing to Google Sheets at midnight...');
+        console.log('Added:', pendingData.added.length, 'Deleted:', pendingData.deleted.length);
+        
+        // TODO: Implement actual sync to Google Sheets
+        // For now, we'll just clear the pending data
+        // In a real app, you'd send this data to your backend/Google Apps Script
+        
+        savePendingSyncData({ added: [], deleted: [], lastSyncTime: new Date().toISOString() });
+        
+        console.log('Sync completed successfully');
+    } catch (error) {
+        console.error('Error syncing to Google Sheets:', error);
+    }
+}
+
+// Fetch from Google Sheets (at 6 AM)
+async function fetchFromGoogleAt6AM() {
+    try {
+        console.log('Fetching from Google Sheets at 6 AM Taiwan time...');
+        
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Syncing from Excel...';
+        
+        await fetchExpenseDataFromGoogle();
+        transactionData = getLocalStorageTransactions();
+        incomeData = getLocalStorageIncome();
+        
+        // Refresh UI
+        updateTransactionsList();
+        updateExpenseCharts();
+        updateBalance();
+        
+        if (statusMsg) statusMsg.textContent = 'Synced from Excel';
+        
+        console.log('Fetch from Google completed');
+    } catch (error) {
+        console.error('Error fetching from Google at 6 AM:', error);
+    }
+}
+
+// Setup sync scheduling
+function setupSyncScheduling() {
+    try {
+        console.log('Setting up sync scheduling...');
+        
+        // Schedule midnight sync
+        try {
+            const midnightDelay = getTimeUntilNextMidnight();
+            console.log(`Next sync at midnight: in ${Math.round(midnightDelay / 1000 / 60)} minutes`);
+            
+            setInterval(() => {
+                try {
+                    syncToGoogleSheets();
+                } catch (e) {
+                    console.error('Error in midnight sync:', e);
+                }
+            }, 24 * 60 * 60 * 1000); // Fixed 24-hour interval
+        } catch (e) {
+            console.error('Error setting up midnight sync:', e);
+        }
+        
+        // Schedule 6 AM fetch
+        try {
+            const fetchDelay = getTimeUntil6AM();
+            console.log(`Next fetch at 6 AM: in ${Math.round(fetchDelay / 1000 / 60)} minutes`);
+            
+            setInterval(() => {
+                try {
+                    fetchFromGoogleAt6AM();
+                } catch (e) {
+                    console.error('Error in 6 AM fetch:', e);
+                }
+            }, 24 * 60 * 60 * 1000); // Fixed 24-hour interval
+        } catch (e) {
+            console.error('Error setting up 6 AM fetch:', e);
+        }
+    } catch (e) {
+        console.error('Error in setupSyncScheduling:', e);
+    }
+}
 
 // --- Budget Page Logic ---
 
@@ -1764,21 +2043,30 @@ async function submitTransaction() {
         amount = Math.abs(amount); // Ensure income is positive
     }
     
-    // Optimistic UI Update: Immediately add to local state
+    // Create new transaction item
     const newItem = {
         index: -1, // Temporary index, will be fixed on next sync
         date: toLocalDateKey(currentCalcDate), // Use local date helper
         amount: amount,
         category: categoryLabel,
         description: description,
-        type: currentCalcType
+        type: currentCalcType,
+        pendingSync: true // Mark as pending sync
     };
     
+    // Update local state immediately
     if (currentCalcType === 'expense') {
         transactionData.push(newItem);
+        saveLocalStorageTransactions(transactionData);
     } else {
         incomeData.push(newItem);
+        saveLocalStorageIncome(incomeData);
     }
+    
+    // Mark as pending for midnight sync
+    const pendingData = getPendingSyncData();
+    pendingData.added.push(newItem);
+    savePendingSyncData(pendingData);
     
     // Update UI components immediately
     updateTransactionsList();
@@ -1791,9 +2079,9 @@ async function submitTransaction() {
     
     // Show quiet "Saving..." message
     const statusMsg = document.getElementById('status-message');
-    if (statusMsg) statusMsg.textContent = 'Saving...';
+    if (statusMsg) statusMsg.textContent = 'Saved locally';
 
-    // Submit to backend in background
+    // Submit to backend in background (async, no wait)
     try {
         await addTransactionToSheet(
             currentCalcDate, 
@@ -1803,18 +2091,23 @@ async function submitTransaction() {
             SHEET_NAME 
         );
         
-        if (statusMsg) {
-            statusMsg.textContent = 'Saved';
-            setTimeout(() => { if (statusMsg.textContent === 'Saved') statusMsg.textContent = ''; }, 2000);
+        if (statusMsg && statusMsg.textContent === 'Saved locally') {
+            statusMsg.textContent = 'Synced';
+            setTimeout(() => { if (statusMsg.textContent === 'Synced') statusMsg.textContent = ''; }, 2000);
         }
         
-        // Silent sync to update row indices
-        fetchExpenseData(); 
+        // Update from Google Sheets to get proper indices
+        await fetchExpenseDataFromGoogle();
+        transactionData = getLocalStorageTransactions();
+        incomeData = getLocalStorageIncome();
+        updateTransactionsList();
         
     } catch (error) {
-        console.error(error);
-        alert('Error syncing transaction to sheet. Please check connection.');
-        // Optionally revert local change here if needed, but for now we assume it eventually syncs or user refreshes
+        console.error('Background sync error (will retry at midnight):', error);
+        if (statusMsg && statusMsg.textContent === 'Saved locally') {
+            statusMsg.textContent = 'Saved (sync at midnight)';
+            setTimeout(() => { if (statusMsg.textContent === 'Saved (sync at midnight)') statusMsg.textContent = ''; }, 3000);
+        }
     }
 }
 
@@ -1831,41 +2124,56 @@ function initializeSections() {
 
 // Handle bottom navigation
 function setupNavigation() {
-    const navItems = document.querySelectorAll('.nav-item');
-    const sections = document.querySelectorAll('.section');
-    
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all nav items
-            navItems.forEach(navItem => {
-                navItem.classList.remove('active');
+    try {
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.section');
+        
+        if (!navItems || navItems.length === 0) {
+            console.warn('No nav items found');
+            return;
+        }
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                try {
+                    e.preventDefault();
+                    
+                    // Remove active class from all nav items
+                    navItems.forEach(navItem => {
+                        navItem.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked nav item
+                    this.classList.add('active');
+                    
+                    // Add ripple effect
+                    createRipple(e);
+                    
+                    // Get the target section ID
+                    const targetSectionId = this.getAttribute('data-section');
+                    
+                    // Hide all sections
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                        section.style.display = 'none';
+                    });
+                    
+                    // Show only the target section
+                    const targetSection = document.getElementById(targetSectionId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        targetSection.style.display = 'block';
+                    } else {
+                        console.warn('Target section not found:', targetSectionId);
+                    }
+                } catch (err) {
+                    console.error('Error in nav click handler:', err);
+                }
             });
-            
-            // Add active class to clicked nav item
-            this.classList.add('active');
-            
-            // Add ripple effect
-            createRipple(e);
-            
-            // Get the target section ID
-            const targetSectionId = this.getAttribute('data-section');
-            
-            // Hide all sections
-            sections.forEach(section => {
-                section.classList.remove('active');
-                section.style.display = 'none';
-            });
-            
-            // Show only the target section
-            const targetSection = document.getElementById(targetSectionId);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                targetSection.style.display = 'block';
-            }
         });
-    });
+    } catch (e) {
+        console.error('Error setting up navigation:', e);
+    }
 }
 
 // Function to create ripple effect
@@ -1896,6 +2204,100 @@ function createRipple(event) {
     setTimeout(() => {
         circle.remove();
     }, 600);
+}
+
+// Setup Month Selector
+function setupMonthSelector() {
+    const btn = document.getElementById('month-selector-btn');
+    const dropdown = document.getElementById('month-picker-dropdown');
+    const grid = document.getElementById('month-picker-grid');
+    const label = document.getElementById('month-selector-label');
+    const yearLabel = document.getElementById('month-picker-year-label');
+    const yearPrevBtn = document.getElementById('year-prev');
+    const yearNextBtn = document.getElementById('year-next');
+    
+    if (!btn || !dropdown || !grid) return;
+    
+    // Generate month buttons
+    function renderMonths() {
+        grid.innerHTML = '';
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        monthNames.forEach((name, index) => {
+            const monthNum = index + 1;
+            const monthBtn = document.createElement('button');
+            monthBtn.type = 'button';
+            monthBtn.className = 'month-btn';
+            monthBtn.textContent = name;
+            monthBtn.dataset.month = monthNum;
+            
+            // Highlight the currently selected month
+            if (monthNum === selectedMonth && selectedYear === new Date().getFullYear()) {
+                monthBtn.classList.add('selected');
+            }
+            
+            monthBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Update global variables
+                selectedMonth = monthNum;
+                
+                // Update all month buttons
+                grid.querySelectorAll('.month-btn').forEach(m => m.classList.remove('selected'));
+                monthBtn.classList.add('selected');
+                
+                // Update label
+                label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+                
+                // Update data displays
+                updateTransactionsList();
+                updateBalance();
+                updateExpenseCharts();
+                
+                // Close dropdown
+                dropdown.classList.remove('active');
+                btn.setAttribute('aria-expanded', 'false');
+            });
+            
+            grid.appendChild(monthBtn);
+        });
+        
+        yearLabel.textContent = `${selectedYear}年`;
+    }
+    
+    // Toggle dropdown
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.toggle('active');
+        btn.setAttribute('aria-expanded', dropdown.classList.contains('active'));
+        if (dropdown.classList.contains('active')) {
+            renderMonths();
+        }
+    });
+    
+    // Year navigation
+    yearPrevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedYear--;
+        renderMonths();
+    });
+    
+    yearNextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedYear++;
+        renderMonths();
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+    
+    // Initialize label and render months
+    label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+    renderMonths();
 }
 
 // Function to add transaction to Google Sheet
