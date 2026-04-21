@@ -2,29 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0f1115">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Tommy Expense</title>
+
+    <!-- iPhone / iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tommy Expense">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="renderer" content="webkit">
+
+    <!-- Basic app meta -->
+    <meta name="theme-color" content="#0f1115">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Tommy Expense">
     <meta name="description" content="Track and visualize your expenses with Tommy Expense">
 
-    <!-- App Icons -->
+    <!-- Regular icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="images/icons/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icons/apple-touch-icon.png">
-    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="images/icons/apple-touch-icon.png">
 
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- IMPORTANT: make this exactly the icon you want -->
+    <!-- you can replace this URL with your own image URL if you want -->
+    <link rel="apple-touch-icon" href="https://img.icons8.com/plasticine/100/tarot-cards.png">
 
-    <title>Tommy Expense</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.1">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.2">
-    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
-    <link rel="stylesheet" href="css/budget.css?v=1.0.1">
+    <!-- iOS splash screens -->
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+
+    <!-- IMPORTANT: disable manifest first while testing iPhone icon/splash -->
+    <!-- <link rel="manifest" href="manifest.json"> -->
+
+    <link rel="stylesheet" href="css/style.css?v=1.0.2">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.3">
+    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -34,7 +54,6 @@
         <!-- Unified Add Transaction/Income Modal (Calculator Style) -->
         <div id="add-modal" class="modal calculator-modal">
             <div class="modal-content calculator-content">
-                <!-- Top Toggle -->
                 <div class="modal-header calculator-header">
                     <div class="type-toggle">
                         <button class="type-btn active" data-type="expense">Expense</button>
@@ -43,14 +62,10 @@
                     <span class="close-add-modal">&times;</span>
                 </div>
 
-                <!-- Category Grid -->
                 <div class="category-grid-container">
-                    <div class="category-grid" id="category-grid">
-                        <!-- Categories will be injected here via JS -->
-                    </div>
+                    <div class="category-grid" id="category-grid"></div>
                 </div>
 
-                <!-- Input Display Area -->
                 <div class="input-display-area">
                     <div class="selected-category-icon">
                         <i class="fas fa-question" id="selected-icon"></i>
@@ -65,7 +80,6 @@
                     </div>
                 </div>
 
-                <!-- Date Bar -->
                 <div class="date-bar">
                     <button class="date-nav-btn" id="prev-day"><i class="fas fa-chevron-left"></i></button>
                     <div class="current-date-display" id="calc-date-display">Today</div>
@@ -73,7 +87,6 @@
                     <button class="date-nav-btn" id="next-day"><i class="fas fa-chevron-right"></i></button>
                 </div>
 
-                <!-- Numeric Keypad -->
                 <div class="keypad-area">
                     <div class="keypad-grid">
                         <button class="keypad-btn number" data-val="7">7</button>
@@ -104,7 +117,6 @@
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal -->
         <div id="delete-modal" class="modal delete-modal">
             <div class="modal-content delete-modal-content cute-popup">
                 <div class="popup-star"><i class="fas fa-star"></i></div>
@@ -141,7 +153,6 @@
         </header>
 
         <div class="container">
-            <!-- Dashboard Section -->
             <section id="dashboard" class="section active fade-in">
                 <div class="dashboard">
                     <div class="card summary-card">
@@ -169,7 +180,6 @@
                 </div>
             </section>
 
-            <!-- Categories Section -->
             <section id="categories" class="section fade-in">
                 <div class="card chart-card">
                     <h2>Categories</h2>
@@ -219,7 +229,6 @@
                 </div>
             </section>
 
-            <!-- Transactions Section -->
             <section id="transactions" class="section fade-in">
                 <div class="month-selector-wrap">
                     <button type="button" id="month-selector-btn" class="month-selector-btn">
@@ -232,9 +241,7 @@
                             <span id="month-picker-year-label">2026年</span>
                             <button type="button" class="year-nav-btn" id="year-next"><i class="fas fa-chevron-right"></i></button>
                         </div>
-                        <div class="month-picker-grid" id="month-picker-grid">
-                            <!-- 1月-12月 generated by JS -->
-                        </div>
+                        <div class="month-picker-grid" id="month-picker-grid"></div>
                     </div>
                 </div>
 
@@ -245,9 +252,7 @@
                             <i class="fas fa-cog"></i>
                         </button>
                     </div>
-                    <div class="quick-add-buttons" id="quick-add-buttons-container">
-                        <!-- Buttons will be generated by JS -->
-                    </div>
+                    <div class="quick-add-buttons" id="quick-add-buttons-container"></div>
                 </div>
 
                 <div class="card expenses-card">
@@ -328,7 +333,6 @@
                 </div>
             </section>
 
-            <!-- Settings Section -->
             <section id="settings" class="section fade-in">
                 <div class="card">
                     <h2>Settings</h2>
@@ -349,7 +353,6 @@
                 </div>
             </section>
 
-            <!-- Budget Section -->
             <section id="budget" class="section fade-in">
                 <div class="card">
                     <div class="card-header">
@@ -385,9 +388,7 @@
 
                     <div class="budget-breakdown-container">
                         <h3>Category Budgets</h3>
-                        <div id="budget-breakdown" class="budget-breakdown">
-                            <!-- Category progress bars will be inserted here -->
-                        </div>
+                        <div id="budget-breakdown" class="budget-breakdown"></div>
                     </div>
                 </div>
 
@@ -398,9 +399,7 @@
                             <span class="close-budget-modal">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <div id="budget-grid-view" class="budget-grid-view">
-                                <!-- Icons generated by JS -->
-                            </div>
+                            <div id="budget-grid-view" class="budget-grid-view"></div>
                             <div id="budget-input-view" class="budget-input-view">
                                 <div id="selected-budget-icon" class="selected-budget-icon">
                                     <i class="fas fa-utensils"></i>
@@ -421,7 +420,6 @@
             </section>
         </div>
 
-        <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <a href="#dashboard" class="nav-item active" data-section="dashboard">
                 <span class="nav-indicator"></span>
@@ -446,11 +444,14 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.1"></script>
+    <script src="js/app.js?v=1.0.2"></script>
+
+    <!-- TEMP: disable service worker while testing icon/splash -->
+    <!--
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.1')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.2')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
@@ -460,5 +461,6 @@
             });
         }
     </script>
+    -->
 </body>
 </html>
