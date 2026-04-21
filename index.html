@@ -7,43 +7,24 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tommy Expensessss">
+    <meta name="apple-mobile-web-app-title" content="Tommy Expense">
     <meta name="application-name" content="Tommy Expense">
     <meta name="description" content="Track and visualize your expenses with Tommy Expense">
-    
-    <!-- Prevent caching
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0"> -->
-    
-    <!-- Web App Manifest -->
-    <!-- <link rel="manifest" href="manifest.json"> -->
-    
+
     <!-- App Icons -->
-    <!-- <link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="images/icons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="images/icons/apple-touch-icon.png">
     <link rel="apple-touch-icon-precomposed" sizes="180x180" href="images/icons/apple-touch-icon.png">
-    <link rel="mask-icon" href="images/icons/safari-pinned-tab.svg" color="#4fc7ff"> -->
-    
-     <!-- iOS splash screens --> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)"> 
-    <link rel="apple-touch-startup-image" href="https://img.icons8.com/plasticine/100/tarot-cards.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
-    
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+
     <title>Tommy Expense</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.1">
     <link rel="stylesheet" href="css/calculator.css?v=1.0.2">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
     <link rel="stylesheet" href="css/budget.css?v=1.0.1">
-    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -88,7 +69,7 @@
                 <div class="date-bar">
                     <button class="date-nav-btn" id="prev-day"><i class="fas fa-chevron-left"></i></button>
                     <div class="current-date-display" id="calc-date-display">Today</div>
-                    <input type="date" id="calc-date-input" style="display: none;"> <!-- Hidden input for logic -->
+                    <input type="date" id="calc-date-input" style="display: none;">
                     <button class="date-nav-btn" id="next-day"><i class="fas fa-chevron-right"></i></button>
                 </div>
 
@@ -99,22 +80,22 @@
                         <button class="keypad-btn number" data-val="8">8</button>
                         <button class="keypad-btn number" data-val="9">9</button>
                         <button class="keypad-btn operator" data-val="/">÷</button>
-                        
+
                         <button class="keypad-btn number" data-val="4">4</button>
                         <button class="keypad-btn number" data-val="5">5</button>
                         <button class="keypad-btn number" data-val="6">6</button>
                         <button class="keypad-btn operator" data-val="*">×</button>
-                        
+
                         <button class="keypad-btn number" data-val="1">1</button>
                         <button class="keypad-btn number" data-val="2">2</button>
                         <button class="keypad-btn number" data-val="3">3</button>
                         <button class="keypad-btn operator" data-val="+">+</button>
-                        
+
                         <button class="keypad-btn number" data-val="00">00</button>
                         <button class="keypad-btn number" data-val="0">0</button>
                         <button class="keypad-btn number" data-val=".">.</button>
                         <button class="keypad-btn operator" data-val="-">-</button>
-                        
+
                         <button class="keypad-btn action" id="btn-ac">AC</button>
                         <button class="keypad-btn action" id="btn-backspace"><i class="fas fa-backspace"></i></button>
                         <button class="keypad-btn submit-btn" id="btn-submit">OK</button>
@@ -123,12 +104,11 @@
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal (outside section to avoid transform affecting position:fixed) -->
+        <!-- Delete Confirmation Modal -->
         <div id="delete-modal" class="modal delete-modal">
             <div class="modal-content delete-modal-content cute-popup">
-                <!-- Decoration -->
                 <div class="popup-star"><i class="fas fa-star"></i></div>
-                
+
                 <div class="popup-header-row">
                     <div class="popup-icon bell-style">
                         <i class="fas fa-trash-alt"></i>
@@ -138,11 +118,11 @@
                         <i class="fas fa-trash-alt"></i>
                     </div>
                 </div>
-                
+
                 <div class="popup-body">
                     <p>Remove this item?</p>
                 </div>
-                
+
                 <div class="modal-actions simple-actions">
                     <button id="cancel-delete-btn" class="btn-cute btn-close">Close</button>
                     <button id="confirm-delete-btn" class="btn-cute btn-open">Delete</button>
@@ -168,7 +148,7 @@
                         <h2>Left This Month</h2>
                         <div class="total-amount" id="total-balance">$0.00</div>
                     </div>
-                    
+
                     <div class="summary-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
                         <div class="card summary-card income-card">
                             <h2 style="font-size: 16px;">Income (Mo)</h2>
@@ -188,7 +168,7 @@
                     </div>
                 </div>
             </section>
-            
+
             <!-- Categories Section -->
             <section id="categories" class="section fade-in">
                 <div class="card chart-card">
@@ -197,14 +177,14 @@
                         <canvas id="category-chart"></canvas>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <h2>Top Categories</h2>
                     <div class="top-categories" id="top-categories">
                         <div class="category-loading">Loading category data...</div>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <h2>Category Insights</h2>
                     <div class="category-insights">
@@ -239,12 +219,8 @@
                 </div>
             </section>
 
-            <!-- Income Section (Removed) -->
-            <!-- <section id="income" class="section fade-in"> ... </section> -->
-
             <!-- Transactions Section -->
             <section id="transactions" class="section fade-in">
-                <!-- Month/Year Selector (Pull-down) -->
                 <div class="month-selector-wrap">
                     <button type="button" id="month-selector-btn" class="month-selector-btn">
                         <span id="month-selector-label">2026年2月</span>
@@ -261,7 +237,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- Quick Add Card -->
+
                 <div class="card quick-actions-card">
                     <div class="card-header">
                         <h2>Quick Add</h2>
@@ -278,11 +254,9 @@
                     <div class="card-header">
                         <h2>Transactions</h2>
                         <div class="transaction-buttons">
-                            <!-- Delete Mode Button -->
                             <button id="delete-mode-btn" class="delete-transaction-btn-top">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <!-- Add Transaction Button -->
                             <button id="add-transaction-btn" class="add-transaction-btn-top">
                                 <i class="fas fa-plus"></i>
                             </button>
@@ -292,12 +266,7 @@
                         <div class="loading-message">Loading transactions...</div>
                     </div>
                 </div>
-                
-                <!-- Unified Add Transaction/Income Modal (Calculator Style) -->
-                <!-- Moved to top of app-container -->
-                <!-- <div id="add-modal" class="modal calculator-modal"> ... </div> -->
 
-                <!-- Delete Confirmation Modal -->
                 <div id="quick-add-config-modal" class="modal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -358,7 +327,7 @@
                     </div>
                 </div>
             </section>
-            
+
             <!-- Settings Section -->
             <section id="settings" class="section fade-in">
                 <div class="card">
@@ -389,7 +358,7 @@
                             <i class="fas fa-pen"></i>
                         </button>
                     </div>
-                    
+
                     <div class="budget-overview">
                         <div class="budget-circle-container">
                             <svg class="budget-circle" viewBox="0 0 36 36">
@@ -401,7 +370,7 @@
                                 <span class="budget-value" id="budget-remaining">$0</span>
                             </div>
                         </div>
-                        
+
                         <div class="budget-stats">
                             <div class="budget-stat-item">
                                 <span class="stat-label">Total Budget</span>
@@ -421,8 +390,7 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Budget Edit Modal -->
+
                 <div id="budget-modal" class="modal">
                     <div class="modal-content budget-modal-content">
                         <div class="modal-header">
@@ -430,11 +398,9 @@
                             <span class="close-budget-modal">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <!-- Grid of small icon buttons -->
                             <div id="budget-grid-view" class="budget-grid-view">
                                 <!-- Icons generated by JS -->
                             </div>
-                            <!-- Input view when one category is selected -->
                             <div id="budget-input-view" class="budget-input-view">
                                 <div id="selected-budget-icon" class="selected-budget-icon">
                                     <i class="fas fa-utensils"></i>
@@ -454,10 +420,7 @@
                 </div>
             </section>
         </div>
-        
-        <!-- Subscription Details Modal - Full Screen (Removed) -->
-        <!-- Edit Subscription Modal (Removed) -->
-        
+
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <a href="#dashboard" class="nav-item active" data-section="dashboard">
@@ -485,7 +448,6 @@
 
     <script src="js/app.js?v=1.0.1"></script>
     <script>
-        // Register service worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js?v=1.0.1')
@@ -499,4 +461,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
