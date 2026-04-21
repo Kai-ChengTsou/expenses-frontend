@@ -1,40 +1,18 @@
 {
   "name": "Tommy Expense",
   "short_name": "Expense",
-  "description": "Track and visualize your expenses with a modern blue interface",
-  "start_url": "/index.html",
+  "description": "Track and visualize your expenses with Tommy Expense.",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f1115",
-  "theme_color": "#0ea5e9",
+  "theme_color": "#0f1115",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "images/icons/favicon-16x16.png",
-      "sizes": "16x16",
-      "type": "image/png"
-    },
-    {
-      "src": "images/icons/favicon-32x32.png",
-      "sizes": "32x32",
-      "type": "image/png"
-    },
-    {
-      "src": "images/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "./hot-air-balloon-svgrepo-com.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
-    },
-    {
-      "src": "images/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "images/icons/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
-} 
+}

@@ -2,49 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+    
     <title>Tommy Expense</title>
 
-    <!-- iPhone / iOS -->
+    <meta name="theme-color" content="#0f1115">
+    <meta name="description" content="Track and visualize your expenses with Tommy Expense">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tommy Expense">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="renderer" content="webkit">
 
-    <!-- Basic app meta -->
-    <meta name="theme-color" content="#0f1115">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Tommy Expense">
-    <meta name="description" content="Track and visualize your expenses with Tommy Expense">
-
-    <!-- Regular icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="images/icons/favicon-16x16.png">
-
-    <!-- IMPORTANT: make this exactly the icon you want -->
-    <!-- you can replace this URL with your own image URL if you want -->
+    <!-- Use project-relative paths, NOT C:\... -->
     <link rel="apple-touch-icon" href="./hot-air-balloon-svgrepo-com.svg">
+    <link rel="icon" type="image/svg+xml" href="./hot-air-balloon-svgrepo-com.svg">
+    <link rel="manifest" href="./manifest.json">
 
-    <!-- iOS splash screens -->
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="./hot-air-balloon-svgrepo-com.svg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
-
-    <!-- IMPORTANT: disable manifest first while testing iPhone icon/splash -->
-    <!-- <link rel="manifest" href="manifest.json"> -->
-
-    <link rel="stylesheet" href="css/style.css?v=1.0.2">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.3">
-    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
-    <link rel="stylesheet" href="css/budget.css?v=1.0.2">
+    <link rel="stylesheet" href="css/style.css?v=1.0.1">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.2">
+    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -63,7 +40,9 @@
                 </div>
 
                 <div class="category-grid-container">
-                    <div class="category-grid" id="category-grid"></div>
+                    <div class="category-grid" id="category-grid">
+                        <!-- Categories will be injected here via JS -->
+                    </div>
                 </div>
 
                 <div class="input-display-area">
@@ -120,7 +99,7 @@
         <div id="delete-modal" class="modal delete-modal">
             <div class="modal-content delete-modal-content cute-popup">
                 <div class="popup-star"><i class="fas fa-star"></i></div>
-
+                
                 <div class="popup-header-row">
                     <div class="popup-icon bell-style">
                         <i class="fas fa-trash-alt"></i>
@@ -130,11 +109,11 @@
                         <i class="fas fa-trash-alt"></i>
                     </div>
                 </div>
-
+                
                 <div class="popup-body">
                     <p>Remove this item?</p>
                 </div>
-
+                
                 <div class="modal-actions simple-actions">
                     <button id="cancel-delete-btn" class="btn-cute btn-close">Close</button>
                     <button id="confirm-delete-btn" class="btn-cute btn-open">Delete</button>
@@ -159,7 +138,7 @@
                         <h2>Left This Month</h2>
                         <div class="total-amount" id="total-balance">$0.00</div>
                     </div>
-
+                    
                     <div class="summary-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
                         <div class="card summary-card income-card">
                             <h2 style="font-size: 16px;">Income (Mo)</h2>
@@ -179,7 +158,7 @@
                     </div>
                 </div>
             </section>
-
+            
             <section id="categories" class="section fade-in">
                 <div class="card chart-card">
                     <h2>Categories</h2>
@@ -187,14 +166,14 @@
                         <canvas id="category-chart"></canvas>
                     </div>
                 </div>
-
+                
                 <div class="card">
                     <h2>Top Categories</h2>
                     <div class="top-categories" id="top-categories">
                         <div class="category-loading">Loading category data...</div>
                     </div>
                 </div>
-
+                
                 <div class="card">
                     <h2>Category Insights</h2>
                     <div class="category-insights">
@@ -332,7 +311,7 @@
                     </div>
                 </div>
             </section>
-
+            
             <section id="settings" class="section fade-in">
                 <div class="card">
                     <h2>Settings</h2>
@@ -361,7 +340,7 @@
                             <i class="fas fa-pen"></i>
                         </button>
                     </div>
-
+                    
                     <div class="budget-overview">
                         <div class="budget-circle-container">
                             <svg class="budget-circle" viewBox="0 0 36 36">
@@ -373,7 +352,7 @@
                                 <span class="budget-value" id="budget-remaining">$0</span>
                             </div>
                         </div>
-
+                        
                         <div class="budget-stats">
                             <div class="budget-stat-item">
                                 <span class="stat-label">Total Budget</span>
@@ -391,7 +370,7 @@
                         <div id="budget-breakdown" class="budget-breakdown"></div>
                     </div>
                 </div>
-
+                
                 <div id="budget-modal" class="modal">
                     <div class="modal-content budget-modal-content">
                         <div class="modal-header">
@@ -419,7 +398,7 @@
                 </div>
             </section>
         </div>
-
+        
         <nav class="bottom-nav">
             <a href="#dashboard" class="nav-item active" data-section="dashboard">
                 <span class="nav-indicator"></span>
@@ -444,14 +423,11 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.2"></script>
-
-    <!-- TEMP: disable service worker while testing icon/splash -->
-    <!--
+    <script src="js/app.js?v=1.0.1"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.2')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.1')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
@@ -461,6 +437,5 @@
             });
         }
     </script>
-    -->
 </body>
 </html>
