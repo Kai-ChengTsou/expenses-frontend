@@ -7,7 +7,7 @@ const INCOME_RANGE = 'A1:F1000'; // Adjust range as needed
 
 // Subscription sheet constants
 const SUBSCRIPTION_SHEET_NAME = 'Subscription';
-const SUBSCRIPTION_RANGE = 'A1:H1000'; // Include all columns for subscriptions
+const SUBSCRIPTION_RANGE = 'A1:D1000'; // Name, Amount, Account, Billing Date
 
 // Google Apps Script Web App URL with the new script ID
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv9ivlEENtsOGzODQeBNIdlenH85hhpC0qo6RiJRVrPqq5BK0VQ/exec';
@@ -32,6 +32,7 @@ let isIncomeDeleteMode = false;
 let isSubscriptionDeleteMode = false;
 let subscriptionData = []; // Store subscription data for deletion
 let deleteCallback = null; // Store the function to call when delete is confirmed
+let currentView = 'transactions'; // 'transactions' or 'subscriptions'
 
 // Calculator Logic Variables
 let currentCalcAmount = '0';
@@ -1417,6 +1418,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.log('Setting up quick add...');
         setupQuickAdd();
         
+        // Setup Subscription Management
+        console.log('Setting up subscription management...');
+        setupSubscriptionManagement();
+        
         // Setup Budget Logic
         console.log('Setting up budget section...');
         setupBudgetSection();
@@ -2483,8 +2488,11 @@ async function fetchSubscriptionData() {
             }
         };
         
-        // Process and display the data
-        await displaySubscriptionData(result);
+        // Refresh subscription list if on subscription view
+        await fetchSubscriptionsFromGoogle();
+        if (currentView === 'subscriptions') {
+            renderSubscriptionListInline();
+        }
         
         return Promise.resolve(result);
     } catch (error) {
@@ -2493,11 +2501,11 @@ async function fetchSubscriptionData() {
     }
 }
 
-// Function to display subscription data
+// Function to display subscription data (deprecated - kept for compatibility)
 async function displaySubscriptionData(data) {
     if (!data) return;
     
-    const container = document.getElementById('subscription-cards-container');
+    const container = document.getElementById('subscription-list-container');
     
     if (!data || !data.table || !data.table.rows || data.table.rows.length === 0) {
         container.innerHTML = `
@@ -3448,4 +3456,372 @@ function setupIncomeDeleteButtons() {
 // Function to setup income delete mode (Deprecated/Removed)
 function setupIncomeDeleteMode() {
     // Income section removed
+}
+
+
+// ===== SUBSCRIPTION MANAGEMENT =====
+
+// Fetch subscriptions from Google Sheets
+async function fetchSubscriptionsFromGoogle() {
+    try {
+        const url = `${SCRIPT_URL}?action=read&sheetName=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.values || data.values.length <= 1) {
+            return [];
+        }
+        
+        // Parse subscription data (skip header row)
+        // Columns: Name, Amount, Account, Billing Date
+        const subscriptions = [];
+        for (let i = 1; i < data.values.length; i++) {
+            const row = data.values[i];
+            if (row && row.length > 0 && row[0]) {
+                subscriptions.push({
+                    index: i + 1, // Row number in sheet (1-based, +1 for header)
+                    name: row[0] || '',
+                    amount: row[1] || '',
+                    payment: row[2] || '',
+                    billingDate: row[3] || '',
+                    status: 'active' // Default status
+                });
+            }
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('tommy_subscriptions', JSON.stringify(subscriptions));
+        
+        return subscriptions;
+    } catch (error) {
+        console.error('Error fetching subscriptions:', error);
+        // Return cached data if available
+        const cached = localStorage.getItem('tommy_subscriptions');
+        return cached ? JSON.parse(cached) : [];
+    }
+}
+
+// Get subscriptions from localStorage
+function getLocalSubscriptions() {
+    try {
+        const data = localStorage.getItem('tommy_subscriptions');
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading subscriptions from localStorage:', e);
+        return [];
+    }
+}
+
+// Add new subscription to Google Sheets
+async function addSubscriptionToGoogle(subscription) {
+    try {
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Adding subscription...';
+        
+        const url = `${SCRIPT_URL}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'append',
+                sheetName: SUBSCRIPTION_SHEET_NAME,
+                values: JSON.stringify([[
+                    subscription.name,
+                    subscription.amount,
+                    subscription.payment,
+                    subscription.billingDate
+                ]])
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (statusMsg) {
+            statusMsg.textContent = 'Subscription added!';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Subscription added!') {
+                    statusMsg.textContent = '';
+                }
+            }, 2000);
+        }
+        
+        // Refresh subscriptions
+        await fetchSubscriptionsFromGoogle();
+        renderSubscriptionSummary();
+        renderSubscriptionList();
+        
+        return result;
+    } catch (error) {
+        console.error('Error adding subscription:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Failed to add subscription';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Failed to add subscription') {
+                    statusMsg.textContent = '';
+                }
+            }, 3000);
+        }
+        throw error;
+    }
+}
+
+// Delete subscription from Google Sheets
+async function deleteSubscriptionFromGoogle(rowIndex) {
+    try {
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Deleting subscription...';
+        
+        const url = `${SCRIPT_URL}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'delete',
+                sheetName: SUBSCRIPTION_SHEET_NAME,
+                rowIndex: rowIndex
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (statusMsg) {
+            statusMsg.textContent = 'Subscription deleted!';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Subscription deleted!') {
+                    statusMsg.textContent = '';
+                }
+            }, 2000);
+        }
+        
+        // Refresh subscriptions
+        await fetchSubscriptionsFromGoogle();
+        renderSubscriptionSummary();
+        renderSubscriptionList();
+        
+        return result;
+    } catch (error) {
+        console.error('Error deleting subscription:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Failed to delete subscription';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Failed to delete subscription') {
+                    statusMsg.textContent = '';
+                }
+            }, 3000);
+        }
+        throw error;
+    }
+}
+
+// Render subscription list inline (replaces transaction list)
+function renderSubscriptionListInline() {
+    const container = document.getElementById('subscription-list-container');
+    if (!container) return;
+    
+    const subscriptions = getLocalSubscriptions();
+    
+    if (subscriptions.length === 0) {
+        container.innerHTML = '<div class="loading-message">No subscriptions yet. Click the + button to add one!</div>';
+        return;
+    }
+    
+    // Group subscriptions by status
+    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active');
+    
+    if (activeSubscriptions.length === 0) {
+        container.innerHTML = '<div class="loading-message">No active subscriptions</div>';
+        return;
+    }
+    
+    let html = '<div class="subscription-day-card">';
+    
+    html += activeSubscriptions.map(sub => {
+        const amount = parseFloat(sub.amount) || 0;
+        const deleteClass = isSubscriptionDeleteMode ? 'show' : '';
+        
+        return `
+            <div class="subscription-list-item-inline">
+                <div class="subscription-item-info">
+                    <div class="subscription-item-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="subscription-item-details">
+                        <div class="subscription-item-name">${sub.name}</div>
+                        <div class="subscription-item-billing">Day ${sub.billingDate} • ${sub.payment}</div>
+                    </div>
+                </div>
+                <div class="subscription-item-amount">$${amount.toFixed(2)}</div>
+                <button class="subscription-item-delete ${deleteClass}" onclick="handleDeleteSubscriptionInline(${sub.index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Handle delete subscription inline
+async function handleDeleteSubscriptionInline(rowIndex) {
+    if (confirm('Are you sure you want to delete this subscription?')) {
+        try {
+            await deleteSubscriptionFromGoogle(rowIndex);
+            renderSubscriptionListInline();
+        } catch (error) {
+            alert('Failed to delete subscription. Please try again.');
+        }
+    }
+}
+
+// Toggle between transactions and subscriptions view
+function toggleView(view) {
+    currentView = view;
+    
+    const transactionsView = document.getElementById('transactions-view');
+    const subscriptionsView = document.getElementById('subscriptions-view');
+    const toggleBtns = document.querySelectorAll('.view-toggle-btn');
+    
+    // Update toggle buttons
+    toggleBtns.forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Show/hide views
+    if (view === 'transactions') {
+        transactionsView.style.display = 'block';
+        subscriptionsView.style.display = 'none';
+        isDeleteMode = false;
+        isSubscriptionDeleteMode = false;
+        // Reset delete mode button for transactions
+        const deleteBtn = document.getElementById('delete-mode-btn');
+        if (deleteBtn) deleteBtn.classList.remove('active');
+    } else {
+        transactionsView.style.display = 'none';
+        subscriptionsView.style.display = 'block';
+        isDeleteMode = false;
+        isSubscriptionDeleteMode = false;
+        renderSubscriptionListInline();
+        // Reset delete mode button for subscriptions
+        const deleteSubBtn = document.getElementById('delete-subscription-mode-btn');
+        if (deleteSubBtn) deleteSubBtn.classList.remove('active');
+    }
+}
+
+// Update subscription delete buttons visibility
+function updateSubscriptionDeleteButtons() {
+    const deleteButtons = document.querySelectorAll('.subscription-item-delete');
+    deleteButtons.forEach(btn => {
+        if (isSubscriptionDeleteMode) {
+            btn.classList.add('show');
+        } else {
+            btn.classList.remove('show');
+        }
+    });
+}
+
+// Setup subscription management with inline view
+function setupSubscriptionManagement() {
+    const addSubscriptionModal = document.getElementById('add-subscription-modal');
+    const closeAddSubscriptionBtn = document.querySelector('.close-add-subscription-modal');
+    const cancelAddBtn = document.getElementById('cancel-add-subscription');
+    const addForm = document.getElementById('add-subscription-form');
+    const addInlineBtn = document.getElementById('add-subscription-inline-btn');
+    const deleteSubscriptionModeBtn = document.getElementById('delete-subscription-mode-btn');
+    
+    // Setup view toggle buttons
+    const toggleBtns = document.querySelectorAll('.view-toggle-btn');
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            toggleView(btn.dataset.view);
+        });
+    });
+    
+    // Add subscription button (inline)
+    if (addInlineBtn) {
+        addInlineBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'flex';
+            addForm.reset();
+        });
+    }
+    
+    // Delete mode button for subscriptions
+    if (deleteSubscriptionModeBtn) {
+        deleteSubscriptionModeBtn.addEventListener('click', () => {
+            isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
+            deleteSubscriptionModeBtn.classList.toggle('active', isSubscriptionDeleteMode);
+            renderSubscriptionListInline();
+        });
+    }
+    
+    // Close add subscription modal
+    if (closeAddSubscriptionBtn) {
+        closeAddSubscriptionBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'none';
+        });
+    }
+    
+    if (cancelAddBtn) {
+        cancelAddBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'none';
+        });
+    }
+    
+    // Handle add subscription form submission
+    if (addForm) {
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const subscription = {
+                name: document.getElementById('sub-name').value,
+                amount: document.getElementById('sub-amount').value,
+                billingDate: document.getElementById('sub-billing-date').value,
+                payment: document.getElementById('sub-payment').value
+            };
+            
+            try {
+                await addSubscriptionToGoogle(subscription);
+                addSubscriptionModal.style.display = 'none';
+                addForm.reset();
+                renderSubscriptionListInline();
+            } catch (error) {
+                alert('Failed to add subscription. Please try again.');
+            }
+        });
+    }
+    
+    // Close modal on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === addSubscriptionModal) {
+            addSubscriptionModal.style.display = 'none';
+        }
+    });
+    
+    // Initial load of subscriptions
+    fetchSubscriptionsFromGoogle().then(() => {
+        renderSubscriptionListInline();
+    });
 }
