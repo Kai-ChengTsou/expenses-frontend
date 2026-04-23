@@ -19,6 +19,7 @@ const APP_VERSION = Date.now();
 const STORAGE_KEYS = {
     TRANSACTIONS: 'tommy_expenses_transactions',
     INCOME: 'tommy_expenses_income',
+    SUBSCRIPTIONS: 'tommy_expenses_subscriptions',
     PENDING_SYNC: 'tommy_expenses_pending_sync',
     LAST_SYNC_DATE: 'tommy_expenses_last_sync_date',
     LAST_FETCH_DATE: 'tommy_expenses_last_fetch_date'
@@ -78,6 +79,24 @@ function saveLocalStorageIncome(data) {
         localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(data));
     } catch (e) {
         console.error('Error saving income to localStorage:', e);
+    }
+}
+
+function getLocalSubscriptions() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading subscriptions from localStorage:', e);
+        return [];
+    }
+}
+
+function saveLocalSubscriptions(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving subscriptions to localStorage:', e);
     }
 }
 
@@ -3464,52 +3483,19 @@ function setupIncomeDeleteMode() {
 // Fetch subscriptions from Google Sheets
 async function fetchSubscriptionsFromGoogle() {
     try {
-        const url = `${SCRIPT_URL}?action=read&sheetName=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.values || data.values.length <= 1) {
-            return [];
-        }
-        
-        // Parse subscription data (skip header row)
-        // Columns: Name, Amount, Account, Billing Date
-        const subscriptions = [];
-        for (let i = 1; i < data.values.length; i++) {
-            const row = data.values[i];
-            if (row && row.length > 0 && row[0]) {
-                subscriptions.push({
-                    index: i + 1, // Row number in sheet (1-based, +1 for header)
-                    name: row[0] || '',
-                    amount: row[1] || '',
-                    payment: row[2] || '',
-                    billingDate: row[3] || '',
-                    status: 'active' // Default status
-                });
-            }
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('tommy_subscriptions', JSON.stringify(subscriptions));
-        
+        // Simply return subscriptions from localStorage (no network call needed)
+        const subscriptions = getLocalSubscriptions();
         return subscriptions;
     } catch (error) {
         console.error('Error fetching subscriptions:', error);
-        // Return cached data if available
-        const cached = localStorage.getItem('tommy_subscriptions');
-        return cached ? JSON.parse(cached) : [];
+        return [];
     }
 }
 
 // Get subscriptions from localStorage
 function getLocalSubscriptions() {
     try {
-        const data = localStorage.getItem('tommy_subscriptions');
+        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
         return data ? JSON.parse(data) : [];
     } catch (e) {
         console.error('Error reading subscriptions from localStorage:', e);
@@ -3523,29 +3509,23 @@ async function addSubscriptionToGoogle(subscription) {
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) statusMsg.textContent = 'Adding subscription...';
         
-        const url = `${SCRIPT_URL}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                action: 'append',
-                sheetName: SUBSCRIPTION_SHEET_NAME,
-                values: JSON.stringify([[
-                    subscription.name,
-                    subscription.amount,
-                    subscription.payment,
-                    subscription.billingDate
-                ]])
-            })
-        });
+        // Get existing subscriptions from localStorage
+        const subscriptions = getLocalSubscriptions();
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // Add new subscription with auto-incrementing index
+        const nextIndex = subscriptions.length > 0 ? Math.max(...subscriptions.map(s => s.index || 0)) + 1 : 1;
+        const newSubscription = {
+            index: nextIndex,
+            name: subscription.name,
+            amount: parseFloat(subscription.amount) || 0,
+            payment: subscription.payment,
+            billingDate: subscription.billingDate,
+            status: 'active',
+            createdAt: new Date().toISOString()
+        };
         
-        const result = await response.json();
+        subscriptions.push(newSubscription);
+        saveLocalSubscriptions(subscriptions);
         
         if (statusMsg) {
             statusMsg.textContent = 'Subscription added!';
@@ -3556,12 +3536,10 @@ async function addSubscriptionToGoogle(subscription) {
             }, 2000);
         }
         
-        // Refresh subscriptions
-        await fetchSubscriptionsFromGoogle();
-        renderSubscriptionSummary();
-        renderSubscriptionList();
+        // Refresh subscriptions display
+        renderSubscriptionListInline();
         
-        return result;
+        return { success: true };
     } catch (error) {
         console.error('Error adding subscription:', error);
         const statusMsg = document.getElementById('status-message');
@@ -3577,30 +3555,20 @@ async function addSubscriptionToGoogle(subscription) {
     }
 }
 
-// Delete subscription from Google Sheets
+// Delete subscription from localStorage
 async function deleteSubscriptionFromGoogle(rowIndex) {
     try {
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) statusMsg.textContent = 'Deleting subscription...';
         
-        const url = `${SCRIPT_URL}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                action: 'delete',
-                sheetName: SUBSCRIPTION_SHEET_NAME,
-                rowIndex: rowIndex
-            })
-        });
+        // Get subscriptions from localStorage
+        let subscriptions = getLocalSubscriptions();
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // Find the subscription by index and remove it
+        subscriptions = subscriptions.filter(sub => sub.index !== rowIndex);
         
-        const result = await response.json();
+        // Save updated subscriptions
+        saveLocalSubscriptions(subscriptions);
         
         if (statusMsg) {
             statusMsg.textContent = 'Subscription deleted!';
@@ -3611,12 +3579,10 @@ async function deleteSubscriptionFromGoogle(rowIndex) {
             }, 2000);
         }
         
-        // Refresh subscriptions
-        await fetchSubscriptionsFromGoogle();
-        renderSubscriptionSummary();
-        renderSubscriptionList();
+        // Refresh subscriptions display
+        renderSubscriptionListInline();
         
-        return result;
+        return { success: true };
     } catch (error) {
         console.error('Error deleting subscription:', error);
         const statusMsg = document.getElementById('status-message');
@@ -3633,6 +3599,48 @@ async function deleteSubscriptionFromGoogle(rowIndex) {
 }
 
 // Render subscription list inline (replaces transaction list)
+// Calculate next billing date
+function getNextBillingDate(billingDay) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-11
+    const currentDate = today.getDate();
+    
+    const billingDayNum = parseInt(billingDay);
+    
+    // Create a date for the billing day in the current month
+    let nextBillingDate = new Date(currentYear, currentMonth, billingDayNum);
+    
+    // If the billing day has already passed this month, use next month
+    if (currentDate > billingDayNum) {
+        nextBillingDate = new Date(currentYear, currentMonth + 1, billingDayNum);
+    }
+    
+    return nextBillingDate;
+}
+
+// Get days until next billing date
+function getDaysUntilBilling(billingDay) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to midnight
+    
+    const nextBilling = getNextBillingDate(billingDay);
+    nextBilling.setHours(0, 0, 0, 0); // Reset time to midnight
+    
+    const diffTime = nextBilling - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+}
+
+// Format date to M/D format
+function formatBillingDate(billingDay) {
+    const nextBilling = getNextBillingDate(billingDay);
+    const month = nextBilling.getMonth() + 1;
+    const date = nextBilling.getDate();
+    return `${month}/${date}`;
+}
+
 function renderSubscriptionListInline() {
     const container = document.getElementById('subscription-list-container');
     if (!container) return;
@@ -3658,14 +3666,15 @@ function renderSubscriptionListInline() {
         const amount = parseFloat(sub.amount) || 0;
         const deleteClass = isSubscriptionDeleteMode ? 'show' : '';
         
-        // Calculate the billing date in M/D format
-        const now = new Date();
-        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
-        const billingDay = parseInt(sub.billingDate);
-        const billingDateDisplay = `${currentMonth}/${billingDay}`;
+        // Calculate the next billing date
+        const billingDateDisplay = formatBillingDate(sub.billingDate);
+        const daysUntil = getDaysUntilBilling(sub.billingDate);
+        
+        // Add warning class if billing date is within 7 days
+        const warningClass = daysUntil <= 7 && daysUntil > 0 ? 'warning' : '';
         
         return `
-            <div class="subscription-list-item-inline">
+            <div class="subscription-list-item-inline ${warningClass}" onclick="showSubscriptionDetail(${sub.index})">
                 <div class="subscription-item-info">
                     <div class="subscription-item-icon">
                         <i class="fas fa-calendar-check"></i>
@@ -3676,7 +3685,7 @@ function renderSubscriptionListInline() {
                     </div>
                 </div>
                 <div class="subscription-item-amount">$${amount.toFixed(2)}</div>
-                <button class="subscription-item-delete ${deleteClass}" onclick="handleDeleteSubscriptionInline(${sub.index})">
+                <button class="subscription-item-delete ${deleteClass}" onclick="handleDeleteSubscriptionInline(event, ${sub.index})">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -3688,7 +3697,8 @@ function renderSubscriptionListInline() {
 }
 
 // Handle delete subscription inline
-async function handleDeleteSubscriptionInline(rowIndex) {
+async function handleDeleteSubscriptionInline(event, rowIndex) {
+    event.stopPropagation(); // Prevent triggering the parent click handler
     if (confirm('Are you sure you want to delete this subscription?')) {
         try {
             await deleteSubscriptionFromGoogle(rowIndex);
@@ -3696,6 +3706,107 @@ async function handleDeleteSubscriptionInline(rowIndex) {
         } catch (error) {
             alert('Failed to delete subscription. Please try again.');
         }
+    }
+}
+
+// Show subscription detail in a modal
+function showSubscriptionDetail(subscriptionIndex) {
+    const subscriptions = getLocalSubscriptions();
+    const subscription = subscriptions.find(sub => sub.index === subscriptionIndex);
+    
+    if (!subscription) return;
+    
+    const daysUntil = getDaysUntilBilling(subscription.billingDate);
+    const nextBillingDate = formatBillingDate(subscription.billingDate);
+    const amount = parseFloat(subscription.amount) || 0;
+    const createdDate = subscription.createdAt ? new Date(subscription.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+    
+    // Create modal HTML with improved layout
+    const modalHTML = `
+        <div id="subscription-detail-modal" class="modal" style="display: flex;">
+            <div class="modal-content subscription-detail-content">
+                <div class="modal-header">
+                    <h2>Subscription Details</h2>
+                    <span class="close-subscription-detail" onclick="closeSubscriptionDetail()">&times;</span>
+                </div>
+                
+                <div class="subscription-detail-body">
+                    <div class="detail-section">
+                        <div class="detail-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="detail-info">
+                            <h3>${subscription.name}</h3>
+                            <p class="detail-label">Service Name</p>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Amount</label>
+                            <p class="detail-value">$${amount.toFixed(2)}</p>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Next Billing</label>
+                            <p class="detail-value">${nextBillingDate}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid" style="grid-template-columns: 1fr;">
+                        <div class="detail-item">
+                            <label>Payment Method</label>
+                            <p class="detail-value">${subscription.payment}</p>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Days Until Billing</label>
+                            <p class="detail-value ${daysUntil <= 7 && daysUntil > 0 ? 'warning-text' : ''}">${daysUntil > 0 ? daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') : 'Today!'}</p>
+                        </div>
+                    </div>
+                    
+                    ${createdDate ? `
+                        <div class="detail-meta">
+                            <strong>Created:</strong> ${createdDate}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closeSubscriptionDetail()">Close</button>
+                    <button class="btn-delete" onclick="deleteAndCloseSubscription(${subscriptionIndex})">Delete</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insert modal into page
+    const existingModal = document.getElementById('subscription-detail-modal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Close modal on background click
+    document.getElementById('subscription-detail-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSubscriptionDetail();
+        }
+    });
+}
+
+function closeSubscriptionDetail() {
+    const modal = document.getElementById('subscription-detail-modal');
+    if (modal) modal.remove();
+}
+
+function deleteAndCloseSubscription(subscriptionIndex) {
+    if (confirm('Are you sure you want to delete this subscription?')) {
+        deleteSubscriptionFromGoogle(subscriptionIndex).then(() => {
+            closeSubscriptionDetail();
+            renderSubscriptionListInline();
+        }).catch(error => {
+            alert('Failed to delete subscription. Please try again.');
+        });
     }
 }
 
