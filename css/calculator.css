@@ -65,7 +65,7 @@
 .close-add-modal {
     position: absolute;
     right: 16px;
-    top: 12px;
+    top: 6px;
     margin-top: max(0px, env(safe-area-inset-top)); /* Adjust for safe area */
     font-size: 24px;
     cursor: pointer;
