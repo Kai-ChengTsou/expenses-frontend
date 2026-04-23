@@ -3658,6 +3658,12 @@ function renderSubscriptionListInline() {
         const amount = parseFloat(sub.amount) || 0;
         const deleteClass = isSubscriptionDeleteMode ? 'show' : '';
         
+        // Calculate the billing date in M/D format
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+        const billingDay = parseInt(sub.billingDate);
+        const billingDateDisplay = `${currentMonth}/${billingDay}`;
+        
         return `
             <div class="subscription-list-item-inline">
                 <div class="subscription-item-info">
@@ -3666,7 +3672,7 @@ function renderSubscriptionListInline() {
                     </div>
                     <div class="subscription-item-details">
                         <div class="subscription-item-name">${sub.name}</div>
-                        <div class="subscription-item-billing">Day ${sub.billingDate} • ${sub.payment}</div>
+                        <div class="subscription-item-billing">${billingDateDisplay} • ${sub.payment}</div>
                     </div>
                 </div>
                 <div class="subscription-item-amount">$${amount.toFixed(2)}</div>
