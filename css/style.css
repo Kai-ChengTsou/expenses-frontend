@@ -1525,6 +1525,7 @@ section h2 {
 .subscription-detail-content {
     padding: 20px 25px 15px; /* Reduced padding */
     margin-bottom: 0;
+    margin-top:60px;
     background-color: transparent;
     overflow-y: auto;
     flex: 1;
