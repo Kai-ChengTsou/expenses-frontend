@@ -1,28 +1,11 @@
-// Google Sheet ID from the URL
-const SPREADSHEET_ID = '1YztC7lJq9mg2GEt92TdPWAfhH_UmFvXFQW8hKLKL798';
-const SHEET_NAME = 'Expenses'; // Changed to match the Apple Shortcuts script
-const INCOME_SHEET_NAME = 'Income'; // New sheet for Income
-const RANGE = 'A1:F1000'; // Adjust range as needed
-const INCOME_RANGE = 'A1:F1000'; // Adjust range as needed
-
-// Subscription sheet constants
-const SUBSCRIPTION_SHEET_NAME = 'Subscription';
-const SUBSCRIPTION_RANGE = 'A1:D1000'; // Name, Amount, Account, Billing Date
-
-// Google Apps Script Web App URL with the new script ID
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv9ivlEENtsOGzODQeBNIdlenH85hhpC0qo6RiJRVrPqq5BK0VQ/exec';
-
-// App version to force cache refresh
+// App version
 const APP_VERSION = Date.now();
 
 // ===== LOCAL STORAGE KEYS =====
 const STORAGE_KEYS = {
     TRANSACTIONS: 'tommy_expenses_transactions',
     INCOME: 'tommy_expenses_income',
-    SUBSCRIPTIONS: 'tommy_expenses_subscriptions',
-    PENDING_SYNC: 'tommy_expenses_pending_sync',
-    LAST_SYNC_DATE: 'tommy_expenses_last_sync_date',
-    LAST_FETCH_DATE: 'tommy_expenses_last_fetch_date'
+    SUBSCRIPTIONS: 'tommy_expenses_subscriptions'
 };
 
 // Global variables for delete functionality
@@ -100,22 +83,6 @@ function saveLocalSubscriptions(data) {
     }
 }
 
-function getPendingSyncData() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.PENDING_SYNC);
-        return data ? JSON.parse(data) : { added: [], deleted: [], lastSyncTime: null };
-    } catch (e) {
-        return { added: [], deleted: [], lastSyncTime: null };
-    }
-}
-
-function savePendingSyncData(data) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, JSON.stringify(data));
-    } catch (e) {
-        console.error('Error saving pending sync data:', e);
-    }
-}
 
 // Categories Config
 const EXPENSE_CATEGORIES = [
@@ -141,156 +108,18 @@ const INCOME_CATEGORIES = [
     { id: 'other', label: '其他', icon: 'fas fa-box' }
 ];
 
-// Check if we should fetch from Google Sheets (at 6 AM Taiwan time)
-function shouldFetchFromGoogle() {
-    try {
-        const lastFetchDate = localStorage.getItem(STORAGE_KEYS.LAST_FETCH_DATE);
-        const now = new Date();
-        
-        // Taiwan time zone (UTC+8)
-        const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-        const taiwanDateStr = taiwanTime.toISOString().split('T')[0]; // YYYY-MM-DD
-        const taiwanHour = taiwanTime.getHours();
-        
-        // Fetch if:
-        // 1. Never fetched before
-        // 2. Fetched on a different day
-        // 3. Current time is >= 6 AM and last fetch was before 6 AM
-        if (!lastFetchDate) return true;
-        if (lastFetchDate !== taiwanDateStr) return true;
-        
-        return false;
-    } catch (e) {
-        console.error('Error checking if should fetch:', e);
-        return true; // Default to fetch on error
-    }
-}
 
-// Function to fetch data from Google Sheet (only at 6 AM or on manual refresh)
-async function fetchExpenseDataFromGoogle() {
-    try {
-        const url = `${SCRIPT_URL}?action=getData&sheetName=${SHEET_NAME}&spreadsheetId=${SPREADSHEET_ID}&v=${Date.now()}`;
-        
-        // Add timeout of 10 seconds
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            redirect: 'follow',
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        
-        const resultJson = await response.json();
-        
-        if (resultJson.status !== 'success' || !resultJson.data) {
-            if (resultJson.message === 'Invalid action specified') {
-                showRedeployWarning();
-            }
-            throw new Error(resultJson.message || 'Failed to load data');
-        }
-        
-        const rows = resultJson.data;
-        hideRedeployWarning();
-        
-        // Parse Google Sheets data
-        const expenses = [];
-        const income = [];
-        
-        rows.slice(1).forEach((row, index) => {
-            const safeRow = [...row];
-            while (safeRow.length < 4) safeRow.push('');
-            
-            const amountVal = parseFloat(String(safeRow[1]).replace(/[^0-9.-]/g, ''));
-            const isExpense = amountVal < 0;
-
-            const item = {
-                index: index + 1,
-                date: safeRow[0],
-                amount: safeRow[1],
-                category: safeRow[2],
-                description: safeRow[3],
-                type: isExpense ? 'expense' : 'income',
-                fromGoogle: true // Mark as from Google Sheets
-            };
-
-            if (isExpense) {
-                expenses.push(item);
-            } else {
-                income.push(item);
-            }
-        });
-        
-        // Save to localStorage
-        saveLocalStorageTransactions(expenses);
-        saveLocalStorageIncome(income);
-        
-        // Update last fetch date (Taiwan time)
-        const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-        const taiwanDateStr = taiwanTime.toISOString().split('T')[0];
-        localStorage.setItem(STORAGE_KEYS.LAST_FETCH_DATE, taiwanDateStr);
-        
-        return { expenses, income };
-    } catch (error) {
-        console.error('Error fetching from Google Sheets:', error);
-        throw error;
-    }
-}
-
-// Main function to load data (from localStorage first, fetch from Google if needed)
+// Main function to load data from localStorage only
 async function fetchExpenseData() {
     try {
-        const statusMsg = document.getElementById('status-message');
-        
-        // Step 1: Load from localStorage immediately
+        // Load from localStorage
         transactionData = getLocalStorageTransactions() || [];
         incomeData = getLocalStorageIncome() || [];
         
-        // Update UI immediately with cached data
+        // Update UI with cached data
         updateTransactionsList();
         updateExpenseCharts();
         updateBalance();
-        
-        // Step 2: Check if we need to fetch from Google Sheets (non-blocking)
-        const shouldFetch = shouldFetchFromGoogle();
-        
-        if (shouldFetch) {
-            if (statusMsg) statusMsg.textContent = 'Syncing from Excel...';
-            
-            try {
-                // Fetch from Google Sheets with timeout (non-blocking)
-                await Promise.race([
-                    fetchExpenseDataFromGoogle(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch timeout')), 10000))
-                ]);
-                
-                // Update data from localStorage
-                transactionData = getLocalStorageTransactions() || [];
-                incomeData = getLocalStorageIncome() || [];
-                
-                // Refresh UI with new data
-                updateTransactionsList();
-                updateExpenseCharts();
-                updateBalance();
-                
-                if (statusMsg) {
-                    statusMsg.textContent = 'Synced';
-                    setTimeout(() => {
-                        if (statusMsg && statusMsg.textContent === 'Synced') statusMsg.textContent = '';
-                    }, 2000);
-                }
-            } catch (error) {
-                // If Google Sheets fetch fails or times out, continue with localStorage data
-                console.warn('Could not sync from Google Sheets, using local data:', error);
-                if (statusMsg) statusMsg.textContent = '';
-            }
-        }
         
         return Promise.resolve({ success: true });
     } catch (error) {
@@ -312,84 +141,9 @@ async function fetchExpenseData() {
     }
 }
 
-// Function to show redeploy warning
-function showRedeployWarning() {
-    let warningEl = document.getElementById('redeploy-warning');
-    if (!warningEl) {
-        warningEl = document.createElement('div');
-        warningEl.id = 'redeploy-warning';
-        warningEl.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ff3b30; color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; text-align: center; width: 90%; max-width: 400px;';
-        warningEl.innerHTML = '⚠️ System Update Required<br><span style="font-size:12px; opacity:0.9">Please redeploy Google Apps Script (Select "New Version") to see descriptions.</span>';
-        document.body.appendChild(warningEl);
-        
-        // Allow dismissing
-        warningEl.onclick = () => warningEl.remove();
-    }
-}
-
-function hideRedeployWarning() {
-    const warningEl = document.getElementById('redeploy-warning');
-    if (warningEl) warningEl.remove();
-}
-
-// Fallback function using CSV (Old Method)
-async function fetchExpenseDataCSV() {
-    try {
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            cache: 'no-store',
-            headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
-        });
-        
-        const csvText = await response.text();
-        const rows = parseCSV(csvText);
-        
-        transactionData = rows.slice(1).map((row, index) => {
-            const safeRow = [...row]; 
-            while (safeRow.length < 4) safeRow.push('');
-            
-            return {
-                index: index + 1,
-                date: safeRow[0],
-                amount: safeRow[1],
-                category: safeRow[2],
-                description: safeRow[3],
-                type: 'expense'
-            };
-        });
-        
-        const result = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
-        
-        updateTransactionsList();
-        updateExpenseCharts(result);
-        updateBalance();
-        
-        return Promise.resolve(result);
-    } catch (error) {
-        console.error('CSV Fallback failed:', error);
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) statusMsg.textContent = 'Connection error';
-        return Promise.reject(error);
-    }
-}
-
-// Function to fetch income data from the published Google Sheet
+// Function to fetch income data (now just loads from localStorage)
 async function fetchIncomeData() {
-    // Deprecated: Income is now fetched from the main Expenses sheet
-    return Promise.resolve({ rows: [] });
-}
-
-// Fallback for Income CSV
-async function fetchIncomeDataCSV() {
-    // Deprecated
+    incomeData = getLocalStorageIncome() || [];
     return Promise.resolve({ rows: [] });
 }
 
@@ -1044,41 +798,30 @@ function closeDeleteModal() {
     deleteCallback = null;
 }
 
-// Function to delete transaction from Google Sheet (modified to accept sheetName)
-async function deleteTransactionFromSheet(rowIndex, sheetName = SHEET_NAME) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Transaction will not be deleted from Google Sheet.');
-        
-        // For demo purposes, we'll just simulate a successful API call
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
+// Function to delete transaction from localStorage
+async function deleteTransactionFromSheet(rowIndex, type = 'expense') {
     try {
-        console.log('Deleting transaction at row:', rowIndex);
+        console.log('Deleting transaction at index:', rowIndex);
         
-        // Build URL with all parameters since no-cors mode doesn't properly send JSON body
-        const url = `${SCRIPT_URL}?action=delete&rowIndex=${rowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${sheetName}&v=${Date.now()}`;
-        
-        // Send the request to Google Apps Script Web App
-        const response = await fetch(url, {
-            method: 'GET', // Changed to GET since we're passing parameters in URL
-            mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
+        if (type === 'income') {
+            const incomeList = getLocalStorageIncome();
+            const indexToDelete = incomeList.findIndex(item => item.index == rowIndex);
+            if (indexToDelete !== -1) {
+                incomeList.splice(indexToDelete, 1);
+                saveLocalStorageIncome(incomeList);
+            }
+        } else {
+            const transactionList = getLocalStorageTransactions();
+            const indexToDelete = transactionList.findIndex(item => item.index == rowIndex);
+            if (indexToDelete !== -1) {
+                transactionList.splice(indexToDelete, 1);
+                saveLocalStorageTransactions(transactionList);
+            }
+        }
         
         return true;
     } catch (error) {
-        console.error('Error deleting transaction from Google Sheet:', error);
+        console.error('Error deleting transaction from localStorage:', error);
         throw error;
     }
 }
@@ -1461,9 +1204,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.log('Fetching income data...');
         await fetchIncomeData();
         
-        // Setup sync scheduling (midnight sync & 6 AM fetch)
-        console.log('Setting up sync scheduling...');
-        setupSyncScheduling();
+        // Sync scheduling removed - app now works entirely offline with localStorage
+        
+        // Setup export to Excel button
+        console.log('Setting up export button...');
+        setupExportButton();
         
         console.log('App initialization complete!');
         
@@ -1472,6 +1217,119 @@ window.addEventListener('DOMContentLoaded', async () => {
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) statusMsg.textContent = 'Error loading app';
     }
+
+// --- EXPORT TO EXCEL FUNCTION ---
+
+function exportToExcel() {
+    try {
+        // Get all data from localStorage
+        const transactions = getLocalStorageTransactions() || [];
+        const income = getLocalStorageIncome() || [];
+        const subscriptions = getLocalSubscriptions() || [];
+        
+        // Combine expenses and income
+        const allTransactions = [...transactions, ...income];
+        
+        // Sort by date (newest first)
+        allTransactions.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB - dateA;
+        });
+        
+        // Create CSV content
+        let csvContent = '';
+        
+        // Add Transactions/Income section
+        csvContent += 'TRANSACTIONS & INCOME\n';
+        csvContent += 'Date,Amount,Category,Description,Type\n';
+        
+        allTransactions.forEach(item => {
+            const date = item.date || '';
+            const amount = item.amount || 0;
+            const category = item.category || '';
+            const description = (item.description || '').replace(/,/g, ';'); // Replace commas to avoid CSV issues
+            const type = item.type || 'expense';
+            
+            csvContent += `${date},${amount},${category},${description},${type}\n`;
+        });
+        
+        // Add empty line
+        csvContent += '\n';
+        
+        // Add Subscriptions section
+        csvContent += 'SUBSCRIPTIONS\n';
+        csvContent += 'Service,Account,Price,Billing Cycle,Category,Next Payment,Payment Method,Description\n';
+        
+        subscriptions.forEach(sub => {
+            const service = (sub.service || sub.name || '').replace(/,/g, ';');
+            const account = (sub.account || sub.payment || '').replace(/,/g, ';');
+            const price = sub.price || sub.amount || 0;
+            const billingCycle = (sub.billingCycle || 'Monthly').replace(/,/g, ';');
+            const category = (sub.category || '').replace(/,/g, ';');
+            const nextPayment = sub.nextPaymentDate || sub.billingDate || '';
+            const paymentMethod = (sub.paymentMethod || '').replace(/,/g, ';');
+            const description = (sub.description || '').replace(/,/g, ';');
+            
+            csvContent += `${service},${account},${price},${billingCycle},${category},${nextPayment},${paymentMethod},${description}\n`;
+        });
+        
+        // Create blob and download
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        // Generate filename with current date
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const filename = `Tommy_Expense_Export_${dateStr}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Exported successfully!';
+            setTimeout(() => {
+                statusMsg.textContent = '';
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Export failed';
+            setTimeout(() => {
+                statusMsg.textContent = '';
+            }, 2000);
+        }
+    }
+}
+
+// Setup export button
+function setupExportButton() {
+    const exportBtn = document.getElementById('export-excel-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToExcel);
+        
+        // Add hover effect
+        exportBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 8px 16px rgba(102, 126, 234, 0.4)';
+        });
+        
+        exportBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    }
+}
 });
 
 // --- SYNC SCHEDULING FUNCTIONS ---
@@ -2326,58 +2184,41 @@ function setupMonthSelector() {
 
 // Function to add transaction to Google Sheet
 async function addTransactionToSheet(date, amount, category, description, sheetName = SHEET_NAME) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Transaction will only be added to UI.');
-        
-        // For demo purposes, we'll just simulate a successful API call
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
     try {
-        // Format the date to YYYY-MM-DD in LOCAL time (avoid UTC shift)
+        // Format the date to YYYY-MM-DD in LOCAL time
         const d = new Date(date);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         const formattedDate = `${year}-${month}-${day}`;
         
-        // Convert amount to a number to ensure proper formatting
+        // Convert amount to a number
         const numericAmount = parseFloat(amount);
         
-        // Build URL with parameters
-        const url = new URL(SCRIPT_URL);
+        // Create new transaction object
+        const newTransaction = {
+            index: Date.now(), // Use timestamp as unique ID
+            date: formattedDate,
+            amount: numericAmount,
+            category: category,
+            description: description || '',
+            type: type
+        };
         
-        // Determine action based on sheet name
-        url.searchParams.append('action', 'addTransaction');
-        
-        url.searchParams.append('date', formattedDate);
-        url.searchParams.append('amount', numericAmount);
-        url.searchParams.append('category', category);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
-        url.searchParams.append('sheetName', sheetName);
-        url.searchParams.append('v', Date.now());
-        
-        // Send the request to Google Apps Script Web App
-        const response = await fetch(url.toString(), {
-            method: 'GET', // Using GET with URL parameters
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
+        // Add to appropriate storage
+        if (type === 'income') {
+            const incomeList = getLocalStorageIncome();
+            incomeList.push(newTransaction);
+            saveLocalStorageIncome(incomeList);
+        } else {
+            const transactionList = getLocalStorageTransactions();
+            transactionList.push(newTransaction);
+            saveLocalStorageTransactions(transactionList);
+        }
         
         return true;
     } catch (error) {
-        console.error('Error adding transaction to Google Sheet:', error);
+        console.error('Error adding transaction to localStorage:', error);
         throw error;
     }
 }
@@ -2436,13 +2277,9 @@ function setupRefreshButton() {
                 // Show loading animation
                 refreshButton.classList.add('rotating');
                 
-                // Fetch expense data
+                // Reload data from localStorage
                 await fetchExpenseData();
-                
-                // Fetch income data
                 await fetchIncomeData();
-                
-                // Fetch subscription data
                 await fetchSubscriptionData();
                 
                 // Show success message
@@ -2464,59 +2301,58 @@ function setupRefreshButton() {
     }
 }
 
-// Function to fetch subscription data from the Google Sheet
+// Function to fetch subscription data from localStorage
 async function fetchSubscriptionData() {
     try {
-        // Using the CSV export approach which is more reliable
-        // Add current timestamp to bust cache effectively
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SUBSCRIPTION_SHEET_NAME}&range=${SUBSCRIPTION_RANGE}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            cache: 'no-store', // Force fetch from network, not cache
-            headers: {
-                'Pragma': 'no-cache',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        
-        const csvText = await response.text();
-        
-        // Parse CSV data
-        const rows = parseCSV(csvText);
-        
-        // Store the raw data for deletion purposes
-        subscriptionData = rows.slice(1).map((row, index) => ({
-            index: index + 1, // +1 because row 0 is headers
-            service: row[0],
-            account: row[1],
-            price: row[2],
-            billingCycle: row[3],
-            category: row[4],
-            nextPaymentDate: row[5],
-            paymentMethod: row[6],
-            description: row[7]
-        }));
-        
-        // Convert to the format expected by the rest of the code
-        const result = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
+        // Load from localStorage
+        subscriptionData = getLocalSubscriptions() || [];
         
         // Refresh subscription list if on subscription view
-        await fetchSubscriptionsFromGoogle();
         if (currentView === 'subscriptions') {
             renderSubscriptionListInline();
         }
         
-        return Promise.resolve(result);
+        return Promise.resolve({ success: true });
     } catch (error) {
         console.error('Error fetching subscription data:', error);
         return Promise.reject(error);
+    }
+}
+
+// Deprecated function - kept for compatibility
+async function displaySubscriptionData(data) {
+    // This function is no longer used but kept for compatibility
+    return Promise.resolve();
+}
+
+// Function to add subscription to localStorage only
+async function addSubscriptionToSheet(service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
+    try {
+        const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
+        const numericPrice = parseFloat(price);
+        
+        // Create new subscription object
+        const newSubscription = {
+            index: Date.now(), // Use timestamp as unique ID
+            service: service,
+            account: account,
+            price: numericPrice,
+            billingCycle: billingCycle,
+            category: category,
+            nextPaymentDate: formattedDate,
+            paymentMethod: paymentMethod,
+            description: description || ''
+        };
+        
+        // Add to localStorage
+        const subscriptionList = getLocalSubscriptions();
+        subscriptionList.push(newSubscription);
+        saveLocalSubscriptions(subscriptionList);
+        
+        return true;
+    } catch (error) {
+        console.error('Error adding subscription to localStorage:', error);
+        throw error;
     }
 }
 
@@ -2689,79 +2525,21 @@ async function displaySubscriptionData(data) {
     }
 }
 
-// Function to add subscription to Google Sheet
-async function addSubscriptionToSheet(service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Subscription will only be added to UI.');
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    try {
-        const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
-        const numericPrice = parseFloat(price);
-        
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.append('action', 'addSubscription');
-        url.searchParams.append('service', service);
-        url.searchParams.append('account', account);
-        url.searchParams.append('price', numericPrice);
-        url.searchParams.append('billingCycle', billingCycle);
-        url.searchParams.append('category', category);
-        url.searchParams.append('nextPaymentDate', formattedDate);
-        url.searchParams.append('paymentMethod', paymentMethod);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
-        url.searchParams.append('sheetName', SUBSCRIPTION_SHEET_NAME);
-        url.searchParams.append('v', Date.now());
-        
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        return true;
-    } catch (error) {
-        console.error('Error adding subscription to Google Sheet:', error);
-        throw error;
-    }
-}
 
-// Function to delete subscription from Google Sheet
+// Function to delete subscription from localStorage
 async function deleteSubscriptionFromSheet(rowIndex) {
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured.');
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
     try {
-        const actualRowIndex = parseInt(rowIndex) + 1;
-        console.log('Deleting subscription at row:', actualRowIndex);
+        const subscriptionList = getLocalSubscriptions();
+        const indexToDelete = subscriptionList.findIndex(sub => sub.index == rowIndex);
         
-        const url = `${SCRIPT_URL}?action=deleteSubscription&rowIndex=${actualRowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${SUBSCRIPTION_SHEET_NAME}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
+        if (indexToDelete !== -1) {
+            subscriptionList.splice(indexToDelete, 1);
+            saveLocalSubscriptions(subscriptionList);
+        }
         
         return true;
     } catch (error) {
-        console.error('Error deleting subscription from Google Sheet:', error);
+        console.error('Error deleting subscription from localStorage:', error);
         throw error;
     }
 }
@@ -2801,6 +2579,7 @@ function showDeleteSubscriptionConfirmation(rowIndex, service, account, price, b
                     document.getElementById('status-message').textContent = '';
                 }, 2000);
                 
+                // Reload subscription data
                 return fetchSubscriptionData();
             })
             .catch(error => {
@@ -3171,38 +2950,30 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
     window.addEventListener('click', outsideClickHandler);
 }
 
-// Update subscription in the Google Sheet
+// Update subscription in localStorage
 async function updateSubscriptionFromSheet(rowIndex, service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
     try {
-        const actualRowIndex = parseInt(rowIndex) + 1;
+        console.log(`Updating subscription at index: ${rowIndex}`);
         
-        console.log(`Updating subscription at row index: ${actualRowIndex}`);
+        const subscriptionList = getLocalSubscriptions();
+        const indexToUpdate = subscriptionList.findIndex(sub => sub.index == rowIndex);
         
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.append('action', 'updateSubscription');
-        url.searchParams.append('rowIndex', actualRowIndex);
-        url.searchParams.append('service', service);
-        url.searchParams.append('account', account);
-        url.searchParams.append('price', price);
-        url.searchParams.append('billingCycle', billingCycle);
-        url.searchParams.append('category', category);
-        url.searchParams.append('nextPaymentDate', nextPaymentDate);
-        url.searchParams.append('paymentMethod', paymentMethod);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('sheetName', 'Subscription');
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-        });
-        
-        const result = await response.json();
-        
-        if (result.status !== 'success') {
-            throw new Error(result.message || 'Failed to update subscription');
+        if (indexToUpdate !== -1) {
+            subscriptionList[indexToUpdate] = {
+                ...subscriptionList[indexToUpdate],
+                service: service,
+                account: account,
+                price: parseFloat(price),
+                billingCycle: billingCycle,
+                category: category,
+                nextPaymentDate: nextPaymentDate,
+                paymentMethod: paymentMethod,
+                description: description || ''
+            };
+            saveLocalSubscriptions(subscriptionList);
         }
         
-        return result;
+        return { status: 'success' };
     } catch (error) {
         console.error('Error updating subscription:', error);
         throw error;

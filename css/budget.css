@@ -154,7 +154,7 @@
 
 .budget-progress-bar {
     height: 8px;
-    background: #f0f2f5;
+    background: rgba(26, 29, 35, 0.6);
     border-radius: 4px;
     overflow: hidden;
     position: relative;
@@ -295,14 +295,14 @@
     border: 2px solid #f0f2f5;
     border-radius: 16px;
     text-align: center;
-    background: #f9fafb;
-    color: var(--text-primary);
+    background: rgba(26, 29, 35, 0.6);
+    color: var(--text-color);
     outline: none;
 }
 
 .budget-amount-input:focus {
     border-color: var(--primary-color);
-    background: #fff;
+    background: rgba(79, 172, 254, 0.2);
 }
 
 .budget-input-actions {
@@ -312,7 +312,7 @@
 }
 
 .btn-back {
-    background: #f0f2f5;
+    background: rgba(26, 29, 35, 0.8);
     color: var(--text-secondary);
     border: none;
     padding: 10px 16px;
@@ -338,7 +338,7 @@
         stroke: #5c5b5b;
     }
     .budget-stat-item, .budget-item, .budget-input-row {
-        background: #cdefff;;
+        background: #495b64;;
     }
     .budget-progress-bar {
         background: #5e5e61;

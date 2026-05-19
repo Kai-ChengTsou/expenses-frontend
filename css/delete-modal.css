@@ -7,7 +7,7 @@
 }
 
 .delete-modal-content.cute-popup {
-    background: #f0f2f5;
+    background: rgba(26, 29, 35, 0.95);
     width: 280px; /* Small width */
     max-width: 85%;
     border-radius: 30px;
@@ -68,7 +68,7 @@
 }
 
 .bell-style {
-    background: linear-gradient(145deg, #ffd700, #e6c200);
+    background: linear-gradient(145deg, #4facfe, #00f2fe);
     color: #fff;
     transform: rotate(-10deg);
 }
