@@ -59,7 +59,7 @@
 .type-btn.active {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
 }
 
 .close-add-modal {
@@ -119,14 +119,14 @@
     justify-content: center;
     font-size: 20px;
     color: var(--text-secondary);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 0 12px rgba(0,0,0,0.05);
     transition: all 0.2s;
 }
 
 .category-option.selected .cat-icon-circle {
     background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(0, 242, 254, 0.3));
     color: var(--primary-color);
-    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.2);
+    box-shadow: 0 0 15px rgba(65, 105, 225, 0.2);
     border: 2px solid var(--primary-color);
 }
 
@@ -249,7 +249,7 @@
     cursor: pointer;
     background: rgba(26, 29, 35, 0.8);
     color: var(--text-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 0 8px rgba(0,0,0,0.05);
     transition: transform 0.1s, background-color 0.2s;
     display: flex;
     align-items: center;
@@ -291,7 +291,7 @@
         height: 80vh;
         border-radius: 24px;
         position: relative;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        box-shadow: 0 0 40px rgba(0,0,0,0.2);
     }
     
     .calculator-modal {

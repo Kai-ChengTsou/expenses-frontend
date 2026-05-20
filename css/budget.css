@@ -213,7 +213,7 @@
     justify-content: center;
     color: white;
     font-size: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
     position: relative;
 }
 
@@ -261,7 +261,7 @@
     color: white;
     font-size: 26px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 0 15px rgba(0,0,0,0.15);
 }
 
 .selected-budget-name {

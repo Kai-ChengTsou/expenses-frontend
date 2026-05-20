@@ -96,6 +96,7 @@ const EXPENSE_CATEGORIES = [
     { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad' },
     { id: 'gf', label: '女友', icon: 'fas fa-heart' },
     { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag' },
+    { id: 'investment', label: '投資', icon: 'fas fa-chart-line' },
     { id: 'other', label: '其他', icon: 'fas fa-box' }
 ];
 
@@ -321,7 +322,7 @@ function updateTransactionsList() {
                 amountDisplay = `${sign}$${Math.round(absVal).toLocaleString()}`;
             }
             
-            const amountStyle = isIncome ? 'color: #4cd964;' : 'color: #000;'; 
+            const amountStyle = isIncome ? 'color: #4cd964;' : 'color: #f87069;';
             
             // Get Icon and Color
             let iconClass = 'fas fa-question';
@@ -341,9 +342,6 @@ function updateTransactionsList() {
             }
             const bgIndex = (Math.abs(hash) % 12) + 1; // 1-12
             
-            // All transactions (Expense AND Income) are now in the same SHEET_NAME ('Expenses')
-            const sheetName = SHEET_NAME;
-            
             html += `
                 <div class="transaction-item" onclick="/* Open details? */">
                     <div class="trans-icon-wrapper icon-bg-${bgIndex}">
@@ -356,7 +354,7 @@ function updateTransactionsList() {
                     <span class="trans-amount" style="${amountStyle}">${amountDisplay}</span>
                     
                     <div class="trans-delete-wrapper">
-                        <button class="list-delete-btn" data-row-index="${t.index}" data-sheet="${sheetName}">
+                        <button class="list-delete-btn" data-row-index="${t.index}" data-sheet="Expenses">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -606,7 +604,7 @@ function setupDeleteButtons() {
     function handleDeleteClick(e) {
         e.stopPropagation();
         const rowIndex = this.getAttribute('data-row-index');
-        const sheetName = this.getAttribute('data-sheet') || SHEET_NAME; // Get sheet name
+        const sheetName = this.getAttribute('data-sheet') || 'Expenses'; // Get sheet name
         
         // Find row/item
         const item = this.closest('.transaction-item') || this.closest('tr');
@@ -666,7 +664,7 @@ function setupDeleteButtons() {
                 
                 // Let's manually subtract the amount from totals?
                 // Actually, filtering transactionData is safer.
-                if (sheetName === SHEET_NAME) { // Expenses sheet
+                if (sheetName === 'Expenses') { // Expenses sheet
                      // Try to remove from transactionData or incomeData based on rowIndex
                      // Note: row indices in data are 1-based (from sheet). 
                      // item.index stores this.
@@ -682,9 +680,10 @@ function setupDeleteButtons() {
                          if (iIdx > -1) { incomeData.splice(iIdx, 1); }
                      }
                      
-                     // Update Charts and Balance with new data
+                     // Update Charts, Balance, and Transaction List with new data
                      updateBalance();
                      updateExpenseCharts();
+                     updateTransactionsList();
                 }
 
                 // Close modal immediately
@@ -695,16 +694,10 @@ function setupDeleteButtons() {
                 if (statusMsg) statusMsg.textContent = 'Deleted locally';
                 
                 // Save updated state to localStorage
-                if (sheetName === SHEET_NAME) {
+                if (sheetName === 'Expenses') {
                     saveLocalStorageTransactions(transactionData);
                     saveLocalStorageIncome(incomeData);
                 }
-                
-                // Mark as pending for midnight sync
-                const deletedItem = { index: parseInt(rowIndex), sheetName };
-                const pendingData = getPendingSyncData();
-                pendingData.deleted.push(deletedItem);
-                savePendingSyncData(pendingData);
                 
                 // Close modal immediately
                 closeDeleteModal();
@@ -720,8 +713,6 @@ function setupDeleteButtons() {
                             }, 2000);
                         }
                         
-                        // Sync real state from Google Sheets
-                        fetchExpenseDataFromGoogle();
                     })
                     .catch(error => {
                         console.error('Background delete sync error (will retry at midnight):', error);
@@ -1357,97 +1348,6 @@ function getTimeUntil6AM() {
     return target.getTime() - taiwanTime.getTime();
 }
 
-// Sync pending transactions to Google Sheets (at midnight)
-async function syncToGoogleSheets() {
-    try {
-        const pendingData = getPendingSyncData();
-        
-        if (pendingData.added.length === 0 && pendingData.deleted.length === 0) {
-            console.log('No pending transactions to sync');
-            return;
-        }
-        
-        console.log('Syncing to Google Sheets at midnight...');
-        console.log('Added:', pendingData.added.length, 'Deleted:', pendingData.deleted.length);
-        
-        // TODO: Implement actual sync to Google Sheets
-        // For now, we'll just clear the pending data
-        // In a real app, you'd send this data to your backend/Google Apps Script
-        
-        savePendingSyncData({ added: [], deleted: [], lastSyncTime: new Date().toISOString() });
-        
-        console.log('Sync completed successfully');
-    } catch (error) {
-        console.error('Error syncing to Google Sheets:', error);
-    }
-}
-
-// Fetch from Google Sheets (at 6 AM)
-async function fetchFromGoogleAt6AM() {
-    try {
-        console.log('Fetching from Google Sheets at 6 AM Taiwan time...');
-        
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) statusMsg.textContent = 'Syncing from Excel...';
-        
-        await fetchExpenseDataFromGoogle();
-        transactionData = getLocalStorageTransactions();
-        incomeData = getLocalStorageIncome();
-        
-        // Refresh UI
-        updateTransactionsList();
-        updateExpenseCharts();
-        updateBalance();
-        
-        if (statusMsg) statusMsg.textContent = 'Synced from Excel';
-        
-        console.log('Fetch from Google completed');
-    } catch (error) {
-        console.error('Error fetching from Google at 6 AM:', error);
-    }
-}
-
-// Setup sync scheduling
-function setupSyncScheduling() {
-    try {
-        console.log('Setting up sync scheduling...');
-        
-        // Schedule midnight sync
-        try {
-            const midnightDelay = getTimeUntilNextMidnight();
-            console.log(`Next sync at midnight: in ${Math.round(midnightDelay / 1000 / 60)} minutes`);
-            
-            setInterval(() => {
-                try {
-                    syncToGoogleSheets();
-                } catch (e) {
-                    console.error('Error in midnight sync:', e);
-                }
-            }, 24 * 60 * 60 * 1000); // Fixed 24-hour interval
-        } catch (e) {
-            console.error('Error setting up midnight sync:', e);
-        }
-        
-        // Schedule 6 AM fetch
-        try {
-            const fetchDelay = getTimeUntil6AM();
-            console.log(`Next fetch at 6 AM: in ${Math.round(fetchDelay / 1000 / 60)} minutes`);
-            
-            setInterval(() => {
-                try {
-                    fetchFromGoogleAt6AM();
-                } catch (e) {
-                    console.error('Error in 6 AM fetch:', e);
-                }
-            }, 24 * 60 * 60 * 1000); // Fixed 24-hour interval
-        } catch (e) {
-            console.error('Error setting up 6 AM fetch:', e);
-        }
-    } catch (e) {
-        console.error('Error in setupSyncScheduling:', e);
-    }
-}
-
 // --- Budget Page Logic ---
 
 function setupBudgetSection() {
@@ -1925,70 +1825,41 @@ async function submitTransaction() {
         amount = Math.abs(amount); // Ensure income is positive
     }
     
-    // Create new transaction item
-    const newItem = {
-        index: -1, // Temporary index, will be fixed on next sync
-        date: toLocalDateKey(currentCalcDate), // Use local date helper
-        amount: amount,
-        category: categoryLabel,
-        description: description,
-        type: currentCalcType,
-        pendingSync: true // Mark as pending sync
-    };
-    
-    // Update local state immediately
-    if (currentCalcType === 'expense') {
-        transactionData.push(newItem);
-        saveLocalStorageTransactions(transactionData);
-    } else {
-        incomeData.push(newItem);
-        saveLocalStorageIncome(incomeData);
-    }
-    
-    // Mark as pending for midnight sync
-    const pendingData = getPendingSyncData();
-    pendingData.added.push(newItem);
-    savePendingSyncData(pendingData);
-    
-    // Update UI components immediately
-    updateTransactionsList();
-    updateBalance();
-    updateExpenseCharts();
-    
     // Close modal immediately
     document.getElementById('add-modal').style.display = 'none';
     document.body.style.overflow = '';
     
     // Show quiet "Saving..." message
     const statusMsg = document.getElementById('status-message');
-    if (statusMsg) statusMsg.textContent = 'Saved locally';
+    if (statusMsg) statusMsg.textContent = 'Saving...';
 
-    // Submit to backend in background (async, no wait)
+    // Add transaction to localStorage
     try {
         await addTransactionToSheet(
-            currentCalcDate, 
-            amount, 
-            categoryLabel, 
+            currentCalcDate,
+            amount,
+            categoryLabel,
             description,
-            SHEET_NAME 
+            currentCalcType // 'expense' or 'income'
         );
         
-        if (statusMsg && statusMsg.textContent === 'Saved locally') {
-            statusMsg.textContent = 'Synced';
-            setTimeout(() => { if (statusMsg.textContent === 'Synced') statusMsg.textContent = ''; }, 2000);
+        if (statusMsg && statusMsg.textContent === 'Saving...') {
+            statusMsg.textContent = 'Saved!';
+            setTimeout(() => { if (statusMsg.textContent === 'Saved!') statusMsg.textContent = ''; }, 2000);
         }
         
-        // Update from Google Sheets to get proper indices
-        await fetchExpenseDataFromGoogle();
+        // Data is already in localStorage, just refresh all UI components
         transactionData = getLocalStorageTransactions();
         incomeData = getLocalStorageIncome();
         updateTransactionsList();
+        updateBalance();
+        updateExpenseCharts();
         
     } catch (error) {
         console.error('Background sync error (will retry at midnight):', error);
-        if (statusMsg && statusMsg.textContent === 'Saved locally') {
-            statusMsg.textContent = 'Saved (sync at midnight)';
-            setTimeout(() => { if (statusMsg.textContent === 'Saved (sync at midnight)') statusMsg.textContent = ''; }, 3000);
+        if (statusMsg && statusMsg.textContent === 'Saving...') {
+            statusMsg.textContent = 'Error saving';
+            setTimeout(() => { if (statusMsg.textContent === 'Error saving') statusMsg.textContent = ''; }, 3000);
         }
     }
 }
@@ -2182,8 +2053,8 @@ function setupMonthSelector() {
     renderMonths();
 }
 
-// Function to add transaction to Google Sheet
-async function addTransactionToSheet(date, amount, category, description, sheetName = SHEET_NAME) {
+// Function to add transaction to localStorage
+async function addTransactionToSheet(date, amount, category, description, type = 'expense') {
     try {
         // Format the date to YYYY-MM-DD in LOCAL time
         const d = new Date(date);
