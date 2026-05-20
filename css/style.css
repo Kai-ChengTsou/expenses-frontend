@@ -2395,7 +2395,7 @@ section h2 {
 
 /* Warning state for subscription items (within 7 days of billing) */
 .subscription-list-item-inline.warning {
-    background: linear-gradient(145deg, #ffe0e0, #ffcccc);
+    background: linear-gradient(145deg, #f76d6d, #ffcccc);
     box-shadow: 
         2px 2px 5px rgba(255, 107, 107, 0.2),
         0px 0px 5px rgba(255, 200, 200, 0.3);
