@@ -1,22 +1,22 @@
-// Google Sheet ID from the URL
-const SPREADSHEET_ID = '1YztC7lJq9mg2GEt92TdPWAfhH_UmFvXFQW8hKLKL798';
-const SHEET_NAME = 'Expenses'; // Changed to match the Apple Shortcuts script
-const INCOME_SHEET_NAME = 'Income'; // New sheet for Income
-const RANGE = 'A1:F1000'; // Adjust range as needed
-const INCOME_RANGE = 'A1:F1000'; // Adjust range as needed
-
-// Google Apps Script Web App URL with the new script ID
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfeOrbwhM2JUOP6zFPv9ivlEENtsOGzODQeBNIdlenH85hhpC0qo6RiJRVrPqq5BK0VQ/exec';
-
-// App version to force cache refresh
+// App version
 const APP_VERSION = Date.now();
+
+// ===== LOCAL STORAGE KEYS =====
+const STORAGE_KEYS = {
+    TRANSACTIONS: 'tommy_expenses_transactions',
+    INCOME: 'tommy_expenses_income',
+    SUBSCRIPTIONS: 'tommy_expenses_subscriptions'
+};
 
 // Global variables for delete functionality
 let isDeleteMode = false;
 let transactionData = []; // Store transaction data for deletion
 let incomeData = []; // Store income data
 let isIncomeDeleteMode = false;
+let isSubscriptionDeleteMode = false;
+let subscriptionData = []; // Store subscription data for deletion
 let deleteCallback = null; // Store the function to call when delete is confirmed
+let currentView = 'transactions'; // 'transactions' or 'subscriptions'
 
 // Calculator Logic Variables
 let currentCalcAmount = '0';
@@ -24,9 +24,65 @@ let currentCalcType = 'expense'; // 'expense' or 'income'
 let currentCalcDate = new Date();
 let selectedCategoryId = null;
 
-// Expenses view month/year filter
-let viewMonth = new Date().getMonth();
-let viewYear = new Date().getFullYear();
+// Month Selector Variables
+let selectedMonth = new Date().getMonth() + 1; // 1-12
+let selectedYear = new Date().getFullYear();     // e.g., 2026
+
+// ===== LOCAL STORAGE UTILITIES =====
+function getLocalStorageTransactions() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading transactions from localStorage:', e);
+        return [];
+    }
+}
+
+function getLocalStorageIncome() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.INCOME);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading income from localStorage:', e);
+        return [];
+    }
+}
+
+function saveLocalStorageTransactions(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving transactions to localStorage:', e);
+    }
+}
+
+function saveLocalStorageIncome(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving income to localStorage:', e);
+    }
+}
+
+function getLocalSubscriptions() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading subscriptions from localStorage:', e);
+        return [];
+    }
+}
+
+function saveLocalSubscriptions(data) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving subscriptions to localStorage:', e);
+    }
+}
+
 
 // Categories Config
 const EXPENSE_CATEGORIES = [
@@ -40,6 +96,7 @@ const EXPENSE_CATEGORIES = [
     { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad' },
     { id: 'gf', label: '女友', icon: 'fas fa-heart' },
     { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag' },
+    { id: 'investment', label: '投資', icon: 'fas fa-chart-line' },
     { id: 'other', label: '其他', icon: 'fas fa-box' }
 ];
 
@@ -52,197 +109,42 @@ const INCOME_CATEGORIES = [
     { id: 'other', label: '其他', icon: 'fas fa-box' }
 ];
 
-// Function to fetch data from the published Google Sheet
+
+// Main function to load data from localStorage only
 async function fetchExpenseData() {
     try {
-        // Fetch data from Google Apps Script to ensure we get proper text values
-        // This avoids GVIZ type inference issues where text in mixed columns is dropped
-        const url = `${SCRIPT_URL}?action=getData&sheetName=${SHEET_NAME}&spreadsheetId=${SPREADSHEET_ID}&v=${Date.now()}`;
+        // Load from localStorage
+        transactionData = getLocalStorageTransactions() || [];
+        incomeData = getLocalStorageIncome() || [];
         
-        // Show loading status
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) statusMsg.textContent = 'Loading...';
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            redirect: 'follow'
-            // mode: 'cors' is default and required to read body
-        });
-        
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        
-        const resultJson = await response.json();
-        
-        if (resultJson.status !== 'success' || !resultJson.data) {
-            // Check for specific "Invalid action" error which means old script version
-            if (resultJson.message === 'Invalid action specified') {
-                showRedeployWarning();
-            }
-            throw new Error(resultJson.message || 'Failed to load data');
-        }
-        
-        const rows = resultJson.data;
-        
-        // Hide warning if successful
-        hideRedeployWarning();
-        
-        // Store the raw data for deletion purposes
-        // Reset arrays
-        transactionData = [];
-        incomeData = [];
-
-        rows.slice(1).forEach((row, index) => {
-            // Ensure we have enough columns, pad with empty strings if needed
-            const safeRow = [...row]; 
-            while (safeRow.length < 4) safeRow.push('');
-            
-            const amountVal = parseFloat(String(safeRow[1]).replace(/[^0-9.-]/g, ''));
-            const isExpense = amountVal < 0;
-
-            const item = {
-                index: index + 1, // +1 because row 0 is headers
-                date: safeRow[0],
-                amount: safeRow[1],
-                category: safeRow[2],
-                description: safeRow[3],
-                type: isExpense ? 'expense' : 'income'
-            };
-
-            if (isExpense) {
-                transactionData.push(item);
-            } else {
-                incomeData.push(item);
-            }
-        });
-        
-        // Convert to the format expected by the chart functions
-        // Charts expect { table: { rows: [{ c: [{v: val}, ...] }] } }
-        const chartResult = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
-        
-        // Process and display the data
+        // Update UI with cached data
         updateTransactionsList();
         updateExpenseCharts();
-        
-        // Update balance
         updateBalance();
         
-        // Clear loading status
-        if (statusMsg) {
-            statusMsg.textContent = 'Updated';
-            setTimeout(() => {
-                if (statusMsg.textContent === 'Updated') {
-                    statusMsg.textContent = '';
-                }
-            }, 2000);
+        return Promise.resolve({ success: true });
+    } catch (error) {
+        console.error('Error in fetchExpenseData:', error);
+        
+        // Load from localStorage as fallback
+        transactionData = getLocalStorageTransactions() || [];
+        incomeData = getLocalStorageIncome() || [];
+        
+        try {
+            updateTransactionsList();
+            updateExpenseCharts();
+            updateBalance();
+        } catch (updateError) {
+            console.error('Error updating UI:', updateError);
         }
         
-        return Promise.resolve(chartResult);
-    } catch (error) {
-        console.error('Error fetching expense data:', error);
-        
-        // Fallback to CSV method if Script API fails (e.g. not redeployed yet)
-        console.log('Falling back to CSV fetch...');
-        
-        // Only show warning if we aren't already showing it from the specific error above
-        if (!document.getElementById('redeploy-warning')) {
-             // If we are falling back, it implies the backend isn't ready or accessible
-             // We can show a generic "Using offline/backup mode" or just the redeploy warning if it's likely the cause
-             // For now, let's assumes if the API failed, we might be on old version
-             // But we don't want to annoy user if it's just a network glitch.
-             // However, the "Invalid action" check above is the robust one.
-        }
-        
-        return fetchExpenseDataCSV();
+        return Promise.resolve({ success: true, fromCache: true });
     }
 }
 
-// Function to show redeploy warning
-function showRedeployWarning() {
-    let warningEl = document.getElementById('redeploy-warning');
-    if (!warningEl) {
-        warningEl = document.createElement('div');
-        warningEl.id = 'redeploy-warning';
-        warningEl.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ff3b30; color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; text-align: center; width: 90%; max-width: 400px;';
-        warningEl.innerHTML = '⚠️ System Update Required<br><span style="font-size:12px; opacity:0.9">Please redeploy Google Apps Script (Select "New Version") to see descriptions.</span>';
-        document.body.appendChild(warningEl);
-        
-        // Allow dismissing
-        warningEl.onclick = () => warningEl.remove();
-    }
-}
-
-function hideRedeployWarning() {
-    const warningEl = document.getElementById('redeploy-warning');
-    if (warningEl) warningEl.remove();
-}
-
-// Fallback function using CSV (Old Method)
-async function fetchExpenseDataCSV() {
-    try {
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${RANGE}&v=${Date.now()}`;
-        
-        const response = await fetch(url, {
-            cache: 'no-store',
-            headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
-        });
-        
-        const csvText = await response.text();
-        const rows = parseCSV(csvText);
-        
-        transactionData = rows.slice(1).map((row, index) => {
-            const safeRow = [...row]; 
-            while (safeRow.length < 4) safeRow.push('');
-            
-            return {
-                index: index + 1,
-                date: safeRow[0],
-                amount: safeRow[1],
-                category: safeRow[2],
-                description: safeRow[3],
-                type: 'expense'
-            };
-        });
-        
-        const result = {
-            table: {
-                cols: rows[0].map(header => ({ label: header })),
-                rows: rows.slice(1).map(row => ({
-                    c: row.map(cell => ({ v: cell }))
-                }))
-            }
-        };
-        
-        updateTransactionsList();
-        updateExpenseCharts(result);
-        updateBalance();
-        
-        return Promise.resolve(result);
-    } catch (error) {
-        console.error('CSV Fallback failed:', error);
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) statusMsg.textContent = 'Connection error';
-        return Promise.reject(error);
-    }
-}
-
-// Function to fetch income data from the published Google Sheet
+// Function to fetch income data (now just loads from localStorage)
 async function fetchIncomeData() {
-    // Deprecated: Income is now fetched from the main Expenses sheet
-    return Promise.resolve({ rows: [] });
-}
-
-// Fallback for Income CSV
-async function fetchIncomeDataCSV() {
-    // Deprecated
+    incomeData = getLocalStorageIncome() || [];
     return Promise.resolve({ rows: [] });
 }
 
@@ -303,21 +205,6 @@ function parseCSV(text) {
     return rows.filter(row => row.length > 1 || (row.length === 1 && row[0] !== ''));
 }
 
-// Format month for display (e.g. "2026年2月")
-function formatMonthLabel(year, month) {
-    return year + '年' + (month + 1) + '月';
-}
-
-// Get icon background class for category (租房 = yellow)
-function getCategoryIconBgClass(categoryLabel) {
-    if (categoryLabel === '租房') return 'icon-bg-rent';
-    let hash = 0;
-    for (let i = 0; i < categoryLabel.length; i++) {
-        hash = categoryLabel.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return `icon-bg-${(Math.abs(hash) % 12) + 1}`;
-}
-
 // Normalize sheet date to local YYYY-MM-DD (avoids UTC shift from Google Sheets JSON)
 function toLocalDateKey(dateVal) {
     if (dateVal == null || dateVal === '') return '';
@@ -337,32 +224,31 @@ function updateTransactionsList() {
     if (!container) return;
     
     // Combine expense and income data
-    let allTransactions = [
+    const allTransactions = [
         ...transactionData,
         ...incomeData
     ];
     
     // Filter by selected month/year
-    allTransactions = allTransactions.filter(t => {
+    const filteredTransactions = allTransactions.filter(t => {
         const key = toLocalDateKey(t.date);
         if (!key) return false;
         const [y, mo] = key.split('-').map(Number);
-        return y === viewYear && mo === viewMonth + 1;
+        return mo === selectedMonth && y === selectedYear;
     });
     
-    if (allTransactions.length === 0) {
-        const monthLabel = formatMonthLabel(viewYear, viewMonth);
+    if (filteredTransactions.length === 0) {
         container.innerHTML = `
             <div class="empty-subscriptions" style="text-align:center; padding: 40px; color: var(--text-secondary);">
                 <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>No transactions in ${monthLabel}</p>
+                <p>No transactions found for this month.</p>
             </div>
         `;
         return;
     }
     
     // Sort by date descending (use local date key for consistent order)
-    allTransactions.sort((a, b) => {
+    filteredTransactions.sort((a, b) => {
         const keyA = toLocalDateKey(a.date);
         const keyB = toLocalDateKey(b.date);
         if (keyA !== keyB) return keyB.localeCompare(keyA);
@@ -371,7 +257,7 @@ function updateTransactionsList() {
     
     // Group by Date (use local calendar date so sheet date matches display)
     const grouped = {};
-    allTransactions.forEach(t => {
+    filteredTransactions.forEach(t => {
         const dateStr = toLocalDateKey(t.date);
         if (!dateStr) return;
         if (!grouped[dateStr]) grouped[dateStr] = [];
@@ -436,7 +322,7 @@ function updateTransactionsList() {
                 amountDisplay = `${sign}$${Math.round(absVal).toLocaleString()}`;
             }
             
-            const amountStyle = isIncome ? 'color: #4cd964;' : 'color: #000;'; 
+            const amountStyle = isIncome ? 'color: #4cd964;' : 'color: #f87069;';
             
             // Get Icon and Color
             let iconClass = 'fas fa-question';
@@ -448,14 +334,17 @@ function updateTransactionsList() {
             }
             if (catConfig) iconClass = catConfig.icon;
             
-            const bgClass = getCategoryIconBgClass(t.category);
-            
-            // All transactions (Expense AND Income) are now in the same SHEET_NAME ('Expenses')
-            const sheetName = SHEET_NAME;
+            // Pick distinct color based on category name
+            // Simple hash function to get consistent color for same category
+            let hash = 0;
+            for (let i = 0; i < t.category.length; i++) {
+                hash = t.category.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const bgIndex = (Math.abs(hash) % 12) + 1; // 1-12
             
             html += `
                 <div class="transaction-item" onclick="/* Open details? */">
-                    <div class="trans-icon-wrapper ${bgClass}">
+                    <div class="trans-icon-wrapper icon-bg-${bgIndex}">
                         <i class="${iconClass}"></i>
                     </div>
                     <div class="trans-content">
@@ -465,7 +354,7 @@ function updateTransactionsList() {
                     <span class="trans-amount" style="${amountStyle}">${amountDisplay}</span>
                     
                     <div class="trans-delete-wrapper">
-                        <button class="list-delete-btn" data-row-index="${t.index}" data-sheet="${sheetName}">
+                        <button class="list-delete-btn" data-row-index="${t.index}" data-sheet="Expenses">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -489,168 +378,6 @@ function updateTransactionsList() {
     }
     
     setupDeleteButtons();
-    
-    // Update month selector label
-    updateMonthSelectorLabel();
-}
-
-function updateMonthSelectorLabel() {
-    const label = formatMonthLabel(viewYear, viewMonth);
-    const txLabel = document.getElementById('month-selector-label');
-    const statsLabel = document.getElementById('stats-month-selector-label');
-    if (txLabel) txLabel.textContent = label;
-    if (statsLabel) statsLabel.textContent = label;
-}
-
-function setupMonthSelector() {
-    const wrap = document.querySelector('#transactions .month-selector-wrap');
-    const btn = document.getElementById('month-selector-btn');
-    const dropdown = document.getElementById('month-picker-dropdown');
-    const yearLabel = document.getElementById('month-picker-year-label');
-    const yearPrev = document.getElementById('year-prev');
-    const yearNext = document.getElementById('year-next');
-    const grid = document.getElementById('month-picker-grid');
-    
-    if (!btn || !dropdown || !grid) return;
-    
-    function renderMonthGrid() {
-        grid.innerHTML = '';
-        for (let m = 0; m < 12; m++) {
-            const cell = document.createElement('button');
-            cell.type = 'button';
-            cell.className = 'month-picker-cell' + (m === viewMonth ? ' selected' : '');
-            cell.textContent = (m + 1) + '月';
-            cell.dataset.month = m;
-            cell.addEventListener('click', () => {
-                viewMonth = m;
-                updateMonthSelectorLabel();
-                updateTransactionsList();
-                updateExpenseCharts();
-                renderMonthGrid();
-                wrap.classList.remove('expanded');
-            });
-            grid.appendChild(cell);
-        }
-    }
-    
-    function syncYearLabel() {
-        if (yearLabel) yearLabel.textContent = viewYear + '年';
-    }
-    
-    btn.addEventListener('click', () => {
-        wrap.classList.toggle('expanded');
-        if (wrap.classList.contains('expanded')) {
-            renderMonthGrid();
-            syncYearLabel();
-        }
-    });
-    
-    yearPrev.addEventListener('click', () => {
-        viewYear--;
-        syncYearLabel();
-        renderMonthGrid();
-        updateMonthSelectorLabel();
-        updateTransactionsList();
-        updateExpenseCharts();
-    });
-    
-    yearNext.addEventListener('click', () => {
-        viewYear++;
-        syncYearLabel();
-        renderMonthGrid();
-        updateMonthSelectorLabel();
-        updateTransactionsList();
-        updateExpenseCharts();
-    });
-    
-    // Close when tapping outside
-    document.addEventListener('click', (e) => {
-        if (wrap.classList.contains('expanded') && !wrap.contains(e.target)) {
-            wrap.classList.remove('expanded');
-        }
-    });
-    
-    renderMonthGrid();
-    syncYearLabel();
-    updateMonthSelectorLabel();
-}
-
-function setupStatsMonthSelector() {
-    const wrap = document.querySelector('.stats-month-selector-wrap');
-    const btn = document.getElementById('stats-month-selector-btn');
-    const yearLabel = document.getElementById('stats-month-picker-year-label');
-    const yearPrev = document.getElementById('stats-year-prev');
-    const yearNext = document.getElementById('stats-year-next');
-    const grid = document.getElementById('stats-month-picker-grid');
-    
-    if (!btn || !grid) return;
-    
-    function renderMonthGrid() {
-        grid.innerHTML = '';
-        for (let m = 0; m < 12; m++) {
-            const cell = document.createElement('button');
-            cell.type = 'button';
-            cell.className = 'month-picker-cell' + (m === viewMonth ? ' selected' : '');
-            cell.textContent = (m + 1) + '月';
-            cell.dataset.month = m;
-            cell.addEventListener('click', () => {
-                viewMonth = m;
-                updateMonthSelectorLabel();
-                updateTransactionsList();
-                updateExpenseCharts();
-                renderMonthGrid();
-                if (wrap) wrap.classList.remove('expanded');
-            });
-            grid.appendChild(cell);
-        }
-    }
-    
-    function syncYearLabel() {
-        if (yearLabel) yearLabel.textContent = viewYear + '年';
-    }
-    
-    btn.addEventListener('click', () => {
-        if (wrap) wrap.classList.toggle('expanded');
-        if (wrap && wrap.classList.contains('expanded')) {
-            renderMonthGrid();
-            syncYearLabel();
-        }
-    });
-    
-    if (yearPrev) yearPrev.addEventListener('click', () => {
-        viewYear--;
-        syncYearLabel();
-        renderMonthGrid();
-        updateMonthSelectorLabel();
-        updateTransactionsList();
-        updateExpenseCharts();
-    });
-    
-    if (yearNext) yearNext.addEventListener('click', () => {
-        viewYear++;
-        syncYearLabel();
-        renderMonthGrid();
-        updateMonthSelectorLabel();
-        updateTransactionsList();
-        updateExpenseCharts();
-    });
-    
-    document.addEventListener('click', (e) => {
-        if (wrap && wrap.classList.contains('expanded') && !wrap.contains(e.target)) {
-            wrap.classList.remove('expanded');
-        }
-    });
-    
-    renderMonthGrid();
-    syncYearLabel();
-}
-
-// Helper: is transaction in the currently selected month/year?
-function isInSelectedMonth(dateStr) {
-    const key = toLocalDateKey(dateStr);
-    if (!key) return false;
-    const [y, mo] = key.split('-').map(Number);
-    return y === viewYear && mo === viewMonth + 1;
 }
 
 // Function to update expense charts (Refactored to use local transactionData)
@@ -662,27 +389,28 @@ async function updateExpenseCharts() {
     }
     
     let totalExpense = 0;
-    const categoryTotals = {};  // Stats: filtered by viewMonth/viewYear
-    const monthlyExpenses = {}; // Dashboard trend: all months
+    const categoryTotals = {};
+    const monthlyExpenses = {};
     
     transactionData.forEach(item => {
         // item: { date, amount, category, type: 'expense', ... }
+        // Ensure it's an expense just in case
         if (item.type !== 'expense') return;
         
+        // Clean amount string
         const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
         
         if (!isNaN(amountVal) && amountVal < 0) {
             const absAmount = Math.abs(amountVal);
+            totalExpense += absAmount;
+            
+            // Category
+            const category = item.category || 'Uncategorized';
+            categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
+            
+            // Month
+            // Use local date for monthly grouping
             const dateStr = toLocalDateKey(item.date);
-            
-            // Category totals: only selected month (for Stats section)
-            if (isInSelectedMonth(item.date)) {
-                totalExpense += absAmount;
-                const category = item.category || 'Uncategorized';
-                categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
-            }
-            
-            // Monthly trend: all months (for Dashboard)
             if (dateStr) {
                 const [y, mo, d] = dateStr.split('-').map(Number);
                 const dateObj = new Date(y, mo - 1, d);
@@ -708,20 +436,16 @@ async function updateExpenseCharts() {
 
 
 function updateBalance() {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
     const parseAmount = (str) => {
         return parseFloat(String(str).replace(/[^0-9.-]+/g, '')) || 0;
     };
-    
-    const isCurrentMonth = (dateStr) => {
+
+    const isSelectedMonth = (dateStr) => {
         try {
             const key = toLocalDateKey(dateStr);
             if (!key) return false;
             const [y, mo] = key.split('-').map(Number);
-            return mo === currentMonth + 1 && y === currentYear;
+            return mo === selectedMonth && y === selectedYear;
         } catch (e) { return false; }
     };
     
@@ -732,7 +456,7 @@ function updateBalance() {
     const allItems = [...transactionData, ...incomeData];
     
     allItems.forEach(item => {
-        if (isCurrentMonth(item.date)) {
+        if (isSelectedMonth(item.date)) {
             const val = parseAmount(item.amount);
             if (val < 0) {
                 monthlyExpense += Math.abs(val);
@@ -880,7 +604,7 @@ function setupDeleteButtons() {
     function handleDeleteClick(e) {
         e.stopPropagation();
         const rowIndex = this.getAttribute('data-row-index');
-        const sheetName = this.getAttribute('data-sheet') || SHEET_NAME; // Get sheet name
+        const sheetName = this.getAttribute('data-sheet') || 'Expenses'; // Get sheet name
         
         // Find row/item
         const item = this.closest('.transaction-item') || this.closest('tr');
@@ -940,7 +664,7 @@ function setupDeleteButtons() {
                 
                 // Let's manually subtract the amount from totals?
                 // Actually, filtering transactionData is safer.
-                if (sheetName === SHEET_NAME) { // Expenses sheet
+                if (sheetName === 'Expenses') { // Expenses sheet
                      // Try to remove from transactionData or incomeData based on rowIndex
                      // Note: row indices in data are 1-based (from sheet). 
                      // item.index stores this.
@@ -956,9 +680,10 @@ function setupDeleteButtons() {
                          if (iIdx > -1) { incomeData.splice(iIdx, 1); }
                      }
                      
-                     // Update Charts and Balance with new data
+                     // Update Charts, Balance, and Transaction List with new data
                      updateBalance();
                      updateExpenseCharts();
+                     updateTransactionsList();
                 }
 
                 // Close modal immediately
@@ -966,26 +691,37 @@ function setupDeleteButtons() {
                 
                 // Show "Deleting" status quietly
                 const statusMsg = document.getElementById('status-message');
-                if (statusMsg) statusMsg.textContent = 'Deleting...';
+                if (statusMsg) statusMsg.textContent = 'Deleted locally';
                 
-                // Calculate the actual row index in the spreadsheet (add 1 for header row)
+                // Save updated state to localStorage
+                if (sheetName === 'Expenses') {
+                    saveLocalStorageTransactions(transactionData);
+                    saveLocalStorageIncome(incomeData);
+                }
+                
+                // Close modal immediately
+                closeDeleteModal();
+                
+                // Delete from Google Sheet in background (async, no wait)
                 const actualRowIndex = parseInt(rowIndex) + 1;
-                
-                // Delete from Google Sheet in background
                 deleteTransactionFromSheet(actualRowIndex, sheetName)
                     .then(() => {
-                        if (statusMsg) statusMsg.textContent = 'Deleted';
-                        setTimeout(() => {
-                            if (statusMsg && statusMsg.textContent === 'Deleted') statusMsg.textContent = '';
-                        }, 2000);
+                        if (statusMsg && statusMsg.textContent === 'Deleted locally') {
+                            statusMsg.textContent = 'Synced';
+                            setTimeout(() => {
+                                if (statusMsg && statusMsg.textContent === 'Synced') statusMsg.textContent = '';
+                            }, 2000);
+                        }
                         
-                        // Sync real state
-                        fetchExpenseData();
                     })
                     .catch(error => {
-                        console.error('Error deleting transaction:', error);
-                        if (statusMsg) statusMsg.textContent = 'Error deleting';
-                        alert('Failed to delete from sheet. Please refresh.');
+                        console.error('Background delete sync error (will retry at midnight):', error);
+                        if (statusMsg && statusMsg.textContent === 'Deleted locally') {
+                            statusMsg.textContent = 'Deleted (sync at midnight)';
+                            setTimeout(() => {
+                                if (statusMsg && statusMsg.textContent === 'Deleted (sync at midnight)') statusMsg.textContent = '';
+                            }, 3000);
+                        }
                     });
             });
         }
@@ -1053,41 +789,30 @@ function closeDeleteModal() {
     deleteCallback = null;
 }
 
-// Function to delete transaction from Google Sheet (modified to accept sheetName)
-async function deleteTransactionFromSheet(rowIndex, sheetName = SHEET_NAME) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Transaction will not be deleted from Google Sheet.');
-        
-        // For demo purposes, we'll just simulate a successful API call
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
+// Function to delete transaction from localStorage
+async function deleteTransactionFromSheet(rowIndex, type = 'expense') {
     try {
-        console.log('Deleting transaction at row:', rowIndex);
+        console.log('Deleting transaction at index:', rowIndex);
         
-        // Build URL with all parameters since no-cors mode doesn't properly send JSON body
-        const url = `${SCRIPT_URL}?action=delete&rowIndex=${rowIndex}&spreadsheetId=${SPREADSHEET_ID}&sheetName=${sheetName}&v=${Date.now()}`;
-        
-        // Send the request to Google Apps Script Web App
-        const response = await fetch(url, {
-            method: 'GET', // Changed to GET since we're passing parameters in URL
-            mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
+        if (type === 'income') {
+            const incomeList = getLocalStorageIncome();
+            const indexToDelete = incomeList.findIndex(item => item.index == rowIndex);
+            if (indexToDelete !== -1) {
+                incomeList.splice(indexToDelete, 1);
+                saveLocalStorageIncome(incomeList);
+            }
+        } else {
+            const transactionList = getLocalStorageTransactions();
+            const indexToDelete = transactionList.findIndex(item => item.index == rowIndex);
+            if (indexToDelete !== -1) {
+                transactionList.splice(indexToDelete, 1);
+                saveLocalStorageTransactions(transactionList);
+            }
+        }
         
         return true;
     } catch (error) {
-        console.error('Error deleting transaction from Google Sheet:', error);
+        console.error('Error deleting transaction from localStorage:', error);
         throw error;
     }
 }
@@ -1396,20 +1121,25 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
         
         // Initialize sections
+        console.log('Initializing sections...');
         initializeSections();
         
         // Setup delete modal
+        console.log('Setting up delete modal...');
         setupDeleteModal();
         
         // Setup navigation
+        console.log('Setting up navigation...');
         setupNavigation();
         
         // Add ripple effect to buttons
+        console.log('Adding ripple effects...');
         document.querySelectorAll('.btn-primary, .btn-secondary, .btn-danger').forEach(button => {
             button.addEventListener('click', createRipple);
         });
         
         // Setup transaction modal (New Calculator)
+        console.log('Setting up calculator modal...');
         setupCalculatorModal();
         
         // Replace old button listeners
@@ -1429,44 +1159,194 @@ window.addEventListener('DOMContentLoaded', async () => {
             newBtn.addEventListener('click', () => openCalculatorModal('income'));
         }
         
-        // Setup subscription modal (Removed)
-        // setupSubscriptionModal();
-        
         // Setup delete mode
+        console.log('Setting up delete mode...');
         setupDeleteMode();
         
-        // Setup subscription delete mode (Removed)
-        // setupSubscriptionDeleteMode();
-        
         // Setup refresh button
+        console.log('Setting up refresh button...');
         setupRefreshButton();
         
         // Setup Quick Add Buttons
+        console.log('Setting up quick add...');
         setupQuickAdd();
         
+        // Setup Subscription Management
+        console.log('Setting up subscription management...');
+        setupSubscriptionManagement();
+        
         // Setup Budget Logic
+        console.log('Setting up budget section...');
         setupBudgetSection();
         
-        // Setup month selector for Expenses
+        // Setup Month Selector
+        console.log('Setting up month selector...');
         setupMonthSelector();
-        setupStatsMonthSelector();
         
         // Create empty charts initially
+        console.log('Creating empty charts...');
         createEmptyCharts();
         
         // Fetch expense data from Google Sheet
+        console.log('Fetching expense data...');
         await fetchExpenseData();
         
         // Fetch income data
+        console.log('Fetching income data...');
         await fetchIncomeData();
         
-        // Fetch subscription data from Google Sheet (Removed)
-        // await fetchSubscriptionData();
+        // Sync scheduling removed - app now works entirely offline with localStorage
+        
+        // Setup export to Excel button
+        console.log('Setting up export button...');
+        setupExportButton();
+        
+        console.log('App initialization complete!');
         
     } catch (error) {
         console.error('Error initializing app:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Error loading app';
     }
+
+// --- EXPORT TO EXCEL FUNCTION ---
+
+function exportToExcel() {
+    try {
+        // Get all data from localStorage
+        const transactions = getLocalStorageTransactions() || [];
+        const income = getLocalStorageIncome() || [];
+        const subscriptions = getLocalSubscriptions() || [];
+        
+        // Combine expenses and income
+        const allTransactions = [...transactions, ...income];
+        
+        // Sort by date (newest first)
+        allTransactions.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB - dateA;
+        });
+        
+        // Create CSV content
+        let csvContent = '';
+        
+        // Add Transactions/Income section
+        csvContent += 'TRANSACTIONS & INCOME\n';
+        csvContent += 'Date,Amount,Category,Description,Type\n';
+        
+        allTransactions.forEach(item => {
+            const date = item.date || '';
+            const amount = item.amount || 0;
+            const category = item.category || '';
+            const description = (item.description || '').replace(/,/g, ';'); // Replace commas to avoid CSV issues
+            const type = item.type || 'expense';
+            
+            csvContent += `${date},${amount},${category},${description},${type}\n`;
+        });
+        
+        // Add empty line
+        csvContent += '\n';
+        
+        // Add Subscriptions section
+        csvContent += 'SUBSCRIPTIONS\n';
+        csvContent += 'Service,Account,Price,Billing Cycle,Category,Next Payment,Payment Method,Description\n';
+        
+        subscriptions.forEach(sub => {
+            const service = (sub.service || sub.name || '').replace(/,/g, ';');
+            const account = (sub.account || sub.payment || '').replace(/,/g, ';');
+            const price = sub.price || sub.amount || 0;
+            const billingCycle = (sub.billingCycle || 'Monthly').replace(/,/g, ';');
+            const category = (sub.category || '').replace(/,/g, ';');
+            const nextPayment = sub.nextPaymentDate || sub.billingDate || '';
+            const paymentMethod = (sub.paymentMethod || '').replace(/,/g, ';');
+            const description = (sub.description || '').replace(/,/g, ';');
+            
+            csvContent += `${service},${account},${price},${billingCycle},${category},${nextPayment},${paymentMethod},${description}\n`;
+        });
+        
+        // Create blob and download
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        // Generate filename with current date
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const filename = `Tommy_Expense_Export_${dateStr}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Exported successfully!';
+            setTimeout(() => {
+                statusMsg.textContent = '';
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Export failed';
+            setTimeout(() => {
+                statusMsg.textContent = '';
+            }, 2000);
+        }
+    }
+}
+
+// Setup export button
+function setupExportButton() {
+    const exportBtn = document.getElementById('export-excel-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToExcel);
+        
+        // Add hover effect
+        exportBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 8px 16px rgba(102, 126, 234, 0.4)';
+        });
+        
+        exportBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    }
+}
 });
+
+// --- SYNC SCHEDULING FUNCTIONS ---
+
+// Get time until next event (in milliseconds)
+function getTimeUntilNextMidnight() {
+    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const tomorrow = new Date(taiwanTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    return tomorrow.getTime() - taiwanTime.getTime();
+}
+
+function getTimeUntil6AM() {
+    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const target = new Date(taiwanTime);
+    target.setHours(6, 0, 0, 0);
+    
+    if (target.getTime() <= taiwanTime.getTime()) {
+        // If it's already past 6 AM, set for tomorrow
+        target.setDate(target.getDate() + 1);
+    }
+    
+    return target.getTime() - taiwanTime.getTime();
+}
 
 // --- Budget Page Logic ---
 
@@ -1501,7 +1381,12 @@ function setupBudgetSection() {
         currentEditingId = cat.id;
         
         selectedName.textContent = cat.label;
-        selectedIcon.className = `selected-budget-icon ${getCategoryIconBgClass(cat.label)}`;
+        let hash = 0;
+        for (let i = 0; i < cat.label.length; i++) {
+            hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const bgIndex = (Math.abs(hash) % 12) + 1;
+        selectedIcon.className = `selected-budget-icon icon-bg-${bgIndex}`;
         selectedIcon.innerHTML = `<i class="${cat.icon}"></i>`;
         
         amountInput.value = categoryBudgets[cat.id] || '';
@@ -1513,11 +1398,15 @@ function setupBudgetSection() {
         
         gridView.innerHTML = EXPENSE_CATEGORIES.map(cat => {
             const hasBudget = categoryBudgets[cat.id] > 0;
-            const bgClass = getCategoryIconBgClass(cat.label);
+            let hash = 0;
+            for (let i = 0; i < cat.label.length; i++) {
+                hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const bgIndex = (Math.abs(hash) % 12) + 1;
             
             return `
                 <div class="budget-grid-item" data-id="${cat.id}">
-                    <div class="budget-grid-icon ${bgClass}">
+                    <div class="budget-grid-icon icon-bg-${bgIndex}">
                         <i class="${cat.icon}"></i>
                         ${hasBudget ? '<span class="budget-grid-badge">✓</span>' : ''}
                     </div>
@@ -1682,13 +1571,18 @@ function updateBudgetUI(categoryBudgets) {
                 if (isOver) progressClass = 'danger';
                 else if (percent > 80) progressClass = 'warning';
                 
-                const bgClass = getCategoryIconBgClass(cat.label);
+                // Icon color
+                let hash = 0;
+                for (let i = 0; i < cat.label.length; i++) {
+                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const bgIndex = (Math.abs(hash) % 12) + 1;
                 
                 html += `
                     <div class="budget-item">
                         <div class="budget-item-header">
                             <div class="budget-cat-info">
-                                <div class="budget-cat-icon ${bgClass}">
+                                <div class="budget-cat-icon icon-bg-${bgIndex}">
                                     <i class="${cat.icon}"></i>
                                 </div>
                                 <span class="budget-cat-name">${cat.label}</span>
@@ -1931,27 +1825,6 @@ async function submitTransaction() {
         amount = Math.abs(amount); // Ensure income is positive
     }
     
-    // Optimistic UI Update: Immediately add to local state
-    const newItem = {
-        index: -1, // Temporary index, will be fixed on next sync
-        date: toLocalDateKey(currentCalcDate), // Use local date helper
-        amount: amount,
-        category: categoryLabel,
-        description: description,
-        type: currentCalcType
-    };
-    
-    if (currentCalcType === 'expense') {
-        transactionData.push(newItem);
-    } else {
-        incomeData.push(newItem);
-    }
-    
-    // Update UI components immediately
-    updateTransactionsList();
-    updateBalance();
-    updateExpenseCharts();
-    
     // Close modal immediately
     document.getElementById('add-modal').style.display = 'none';
     document.body.style.overflow = '';
@@ -1960,28 +1833,34 @@ async function submitTransaction() {
     const statusMsg = document.getElementById('status-message');
     if (statusMsg) statusMsg.textContent = 'Saving...';
 
-    // Submit to backend in background
+    // Add transaction to localStorage
     try {
         await addTransactionToSheet(
-            currentCalcDate, 
-            amount, 
-            categoryLabel, 
+            currentCalcDate,
+            amount,
+            categoryLabel,
             description,
-            SHEET_NAME 
+            currentCalcType // 'expense' or 'income'
         );
         
-        if (statusMsg) {
-            statusMsg.textContent = 'Saved';
-            setTimeout(() => { if (statusMsg.textContent === 'Saved') statusMsg.textContent = ''; }, 2000);
+        if (statusMsg && statusMsg.textContent === 'Saving...') {
+            statusMsg.textContent = 'Saved!';
+            setTimeout(() => { if (statusMsg.textContent === 'Saved!') statusMsg.textContent = ''; }, 2000);
         }
         
-        // Silent sync to update row indices
-        fetchExpenseData(); 
+        // Data is already in localStorage, just refresh all UI components
+        transactionData = getLocalStorageTransactions();
+        incomeData = getLocalStorageIncome();
+        updateTransactionsList();
+        updateBalance();
+        updateExpenseCharts();
         
     } catch (error) {
-        console.error(error);
-        alert('Error syncing transaction to sheet. Please check connection.');
-        // Optionally revert local change here if needed, but for now we assume it eventually syncs or user refreshes
+        console.error('Background sync error (will retry at midnight):', error);
+        if (statusMsg && statusMsg.textContent === 'Saving...') {
+            statusMsg.textContent = 'Error saving';
+            setTimeout(() => { if (statusMsg.textContent === 'Error saving') statusMsg.textContent = ''; }, 3000);
+        }
     }
 }
 
@@ -1998,41 +1877,56 @@ function initializeSections() {
 
 // Handle bottom navigation
 function setupNavigation() {
-    const navItems = document.querySelectorAll('.nav-item');
-    const sections = document.querySelectorAll('.section');
-    
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all nav items
-            navItems.forEach(navItem => {
-                navItem.classList.remove('active');
+    try {
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.section');
+        
+        if (!navItems || navItems.length === 0) {
+            console.warn('No nav items found');
+            return;
+        }
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                try {
+                    e.preventDefault();
+                    
+                    // Remove active class from all nav items
+                    navItems.forEach(navItem => {
+                        navItem.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked nav item
+                    this.classList.add('active');
+                    
+                    // Add ripple effect
+                    createRipple(e);
+                    
+                    // Get the target section ID
+                    const targetSectionId = this.getAttribute('data-section');
+                    
+                    // Hide all sections
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                        section.style.display = 'none';
+                    });
+                    
+                    // Show only the target section
+                    const targetSection = document.getElementById(targetSectionId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        targetSection.style.display = 'block';
+                    } else {
+                        console.warn('Target section not found:', targetSectionId);
+                    }
+                } catch (err) {
+                    console.error('Error in nav click handler:', err);
+                }
             });
-            
-            // Add active class to clicked nav item
-            this.classList.add('active');
-            
-            // Add ripple effect
-            createRipple(e);
-            
-            // Get the target section ID
-            const targetSectionId = this.getAttribute('data-section');
-            
-            // Hide all sections
-            sections.forEach(section => {
-                section.classList.remove('active');
-                section.style.display = 'none';
-            });
-            
-            // Show only the target section
-            const targetSection = document.getElementById(targetSectionId);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                targetSection.style.display = 'block';
-            }
         });
-    });
+    } catch (e) {
+        console.error('Error setting up navigation:', e);
+    }
 }
 
 // Function to create ripple effect
@@ -2065,60 +1959,137 @@ function createRipple(event) {
     }, 600);
 }
 
-// Function to add transaction to Google Sheet
-async function addTransactionToSheet(date, amount, category, description, sheetName = SHEET_NAME) {
-    // Check if we have a deployed Google Apps Script Web App URL
-    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-        console.warn('No Google Apps Script Web App URL configured. Transaction will only be added to UI.');
+// Setup Month Selector
+function setupMonthSelector() {
+    const btn = document.getElementById('month-selector-btn');
+    const dropdown = document.getElementById('month-picker-dropdown');
+    const grid = document.getElementById('month-picker-grid');
+    const label = document.getElementById('month-selector-label');
+    const yearLabel = document.getElementById('month-picker-year-label');
+    const yearPrevBtn = document.getElementById('year-prev');
+    const yearNextBtn = document.getElementById('year-next');
+    
+    if (!btn || !dropdown || !grid) return;
+    
+    // Generate month buttons
+    function renderMonths() {
+        grid.innerHTML = '';
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         
-        // For demo purposes, we'll just simulate a successful API call
-        return new Promise(resolve => setTimeout(resolve, 500));
+        monthNames.forEach((name, index) => {
+            const monthNum = index + 1;
+            const monthBtn = document.createElement('button');
+            monthBtn.type = 'button';
+            monthBtn.className = 'month-btn';
+            monthBtn.textContent = name;
+            monthBtn.dataset.month = monthNum;
+            
+            // Highlight the currently selected month
+            if (monthNum === selectedMonth && selectedYear === new Date().getFullYear()) {
+                monthBtn.classList.add('selected');
+            }
+            
+            monthBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Update global variables
+                selectedMonth = monthNum;
+                
+                // Update all month buttons
+                grid.querySelectorAll('.month-btn').forEach(m => m.classList.remove('selected'));
+                monthBtn.classList.add('selected');
+                
+                // Update label
+                label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+                
+                // Update data displays
+                updateTransactionsList();
+                updateBalance();
+                updateExpenseCharts();
+                
+                // Close dropdown
+                dropdown.classList.remove('active');
+                btn.setAttribute('aria-expanded', 'false');
+            });
+            
+            grid.appendChild(monthBtn);
+        });
+        
+        yearLabel.textContent = `${selectedYear}年`;
     }
     
+    // Toggle dropdown
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.toggle('active');
+        btn.setAttribute('aria-expanded', dropdown.classList.contains('active'));
+        if (dropdown.classList.contains('active')) {
+            renderMonths();
+        }
+    });
+    
+    // Year navigation
+    yearPrevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedYear--;
+        renderMonths();
+    });
+    
+    yearNextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedYear++;
+        renderMonths();
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+    
+    // Initialize label and render months
+    label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+    renderMonths();
+}
+
+// Function to add transaction to localStorage
+async function addTransactionToSheet(date, amount, category, description, type = 'expense') {
     try {
-        // Format the date to YYYY-MM-DD in LOCAL time (avoid UTC shift)
+        // Format the date to YYYY-MM-DD in LOCAL time
         const d = new Date(date);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         const formattedDate = `${year}-${month}-${day}`;
         
-        // Convert amount to a number to ensure proper formatting
+        // Convert amount to a number
         const numericAmount = parseFloat(amount);
         
-        // Build URL with parameters
-        const url = new URL(SCRIPT_URL);
+        // Create new transaction object
+        const newTransaction = {
+            index: Date.now(), // Use timestamp as unique ID
+            date: formattedDate,
+            amount: numericAmount,
+            category: category,
+            description: description || '',
+            type: type
+        };
         
-        // Determine action based on sheet name
-        url.searchParams.append('action', 'addTransaction');
-        
-        url.searchParams.append('date', formattedDate);
-        url.searchParams.append('amount', numericAmount);
-        url.searchParams.append('category', category);
-        url.searchParams.append('description', description || '');
-        url.searchParams.append('spreadsheetId', SPREADSHEET_ID);
-        url.searchParams.append('sheetName', sheetName);
-        url.searchParams.append('v', Date.now());
-        
-        // Send the request to Google Apps Script Web App
-        const response = await fetch(url.toString(), {
-            method: 'GET', // Using GET with URL parameters
-            mode: 'no-cors',
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            redirect: 'follow'
-        });
-        
-        // Note: Due to 'no-cors' mode, we won't be able to read the response
-        // We'll assume it was successful if no error was thrown
+        // Add to appropriate storage
+        if (type === 'income') {
+            const incomeList = getLocalStorageIncome();
+            incomeList.push(newTransaction);
+            saveLocalStorageIncome(incomeList);
+        } else {
+            const transactionList = getLocalStorageTransactions();
+            transactionList.push(newTransaction);
+            saveLocalStorageTransactions(transactionList);
+        }
         
         return true;
     } catch (error) {
-        console.error('Error adding transaction to Google Sheet:', error);
+        console.error('Error adding transaction to localStorage:', error);
         throw error;
     }
 }
@@ -2177,11 +2148,10 @@ function setupRefreshButton() {
                 // Show loading animation
                 refreshButton.classList.add('rotating');
                 
-                // Fetch expense data
+                // Reload data from localStorage
                 await fetchExpenseData();
-                
-                // Fetch income data
                 await fetchIncomeData();
+                await fetchSubscriptionData();
                 
                 // Show success message
                 document.getElementById('status-message').textContent = 'Refreshed!';
@@ -2202,19 +2172,731 @@ function setupRefreshButton() {
     }
 }
 
-// --- Quick Add Functionality ---
-
-// Get meal type (Breakfast/Lunch/Dinner/Late Night) based on current Taiwan time (UTC+8)
-function getMealTypeByTaiwanTime() {
-    const now = new Date();
-    const hour = (now.getUTCHours() + 8) % 24; // Taiwan = UTC+8
-    
-    if (hour >= 5 && hour < 11) return 'Breakfast';
-    if (hour >= 11 && hour < 15) return 'Lunch';
-    if (hour >= 17 && hour < 22) return 'Dinner';
-    if (hour >= 22 || hour < 5) return 'Late Night';
-    return 'Snack'; // 15:00-16:59 afternoon
+// Function to fetch subscription data from localStorage
+async function fetchSubscriptionData() {
+    try {
+        // Load from localStorage
+        subscriptionData = getLocalSubscriptions() || [];
+        
+        // Refresh subscription list if on subscription view
+        if (currentView === 'subscriptions') {
+            renderSubscriptionListInline();
+        }
+        
+        return Promise.resolve({ success: true });
+    } catch (error) {
+        console.error('Error fetching subscription data:', error);
+        return Promise.reject(error);
+    }
 }
+
+// Deprecated function - kept for compatibility
+async function displaySubscriptionData(data) {
+    // This function is no longer used but kept for compatibility
+    return Promise.resolve();
+}
+
+// Function to add subscription to localStorage only
+async function addSubscriptionToSheet(service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
+    try {
+        const formattedDate = new Date(nextPaymentDate).toISOString().split('T')[0];
+        const numericPrice = parseFloat(price);
+        
+        // Create new subscription object
+        const newSubscription = {
+            index: Date.now(), // Use timestamp as unique ID
+            service: service,
+            account: account,
+            price: numericPrice,
+            billingCycle: billingCycle,
+            category: category,
+            nextPaymentDate: formattedDate,
+            paymentMethod: paymentMethod,
+            description: description || ''
+        };
+        
+        // Add to localStorage
+        const subscriptionList = getLocalSubscriptions();
+        subscriptionList.push(newSubscription);
+        saveLocalSubscriptions(subscriptionList);
+        
+        return true;
+    } catch (error) {
+        console.error('Error adding subscription to localStorage:', error);
+        throw error;
+    }
+}
+
+// Function to display subscription data (deprecated - kept for compatibility)
+async function displaySubscriptionData(data) {
+    if (!data) return;
+    
+    const container = document.getElementById('subscription-list-container');
+    
+    if (!data || !data.table || !data.table.rows || data.table.rows.length === 0) {
+        container.innerHTML = `
+            <div class="empty-subscriptions">
+                <i class="fas fa-calendar-alt"></i>
+                <p>No subscriptions found. Click the + button to add your first subscription.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const rows = data.table.rows;
+    const columns = data.table.cols;
+    
+    // Get column indices
+    const serviceIndex = 0;       // Service
+    const accountIndex = 1;       // Account
+    const priceIndex = 2;         // Price
+    const billingCycleIndex = 3;  // Billing Cycle
+    const categoryIndex = 4;      // Category
+    const nextPaymentIndex = 5;   // Next Payment Date
+    const paymentMethodIndex = 6; // Payment Method
+    const descriptionIndex = 7;   // Description (optional)
+    
+    // Process subscription data
+    const subscriptionsHTML = rows.map((row, rowIndex) => {
+        if (!row.c || row.c.some(cell => !cell)) return ''; // Skip rows with empty cells
+        
+        const service = row.c[serviceIndex]?.v || 'N/A';
+        const account = row.c[accountIndex]?.v || 'N/A';
+        const price = row.c[priceIndex]?.v || '0';
+        const billingCycle = row.c[billingCycleIndex]?.v || 'N/A';
+        const category = row.c[categoryIndex]?.v || 'Uncategorized';
+        const nextPayment = row.c[nextPaymentIndex]?.v || 'N/A';
+        const paymentMethod = row.c[paymentMethodIndex]?.v || 'N/A';
+        const description = row.c[descriptionIndex]?.v || '';
+        
+        // Clean price string and convert to number
+        const priceValue = parseFloat(String(price).replace(/[^0-9.-]+/g, ''));
+        
+        // Format price for display - ensure $ is always shown
+        let displayPrice;
+        if (typeof priceValue === 'number' && !isNaN(priceValue)) {
+            displayPrice = `$${priceValue.toFixed(2)}`;
+        } else {
+            // If for some reason we can't parse it, just show the original
+            displayPrice = price.toString().startsWith('$') ? price : `$${price}`;
+        }
+        
+        // Format date for display
+        let displayNextPayment = nextPayment;
+        try {
+            const dateObj = new Date(nextPayment);
+            if (!isNaN(dateObj.getTime())) {
+                displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        } catch (e) {
+            console.warn('Date parsing error:', e);
+        }
+        
+        // Add data attributes for details and deletion
+        const dataAttributes = `
+            data-row-index="${rowIndex}"
+            data-service="${service}"
+            data-account="${account}"
+            data-price="${priceValue}"
+            data-billing="${billingCycle}"
+            data-category="${category}"
+            data-next-payment="${nextPayment}"
+            data-payment="${paymentMethod}"
+            data-description="${description}"
+        `;
+        
+        // Determine if the service has an icon
+        const serviceFirstLetter = service.charAt(0).toUpperCase();
+        let serviceIcon;
+        
+        const serviceIcons = {
+            'google': 'fab fa-google',
+            'netflix': 'fab fa-netflix',
+            'spotify': 'fab fa-spotify',
+            'apple': 'fab fa-apple',
+            'amazon': 'fab fa-amazon',
+            'youtube': 'fab fa-youtube',
+            'disney': 'fab fa-disney',
+            'hulu': 'fas fa-tv',
+            'dropbox': 'fab fa-dropbox',
+            'microsoft': 'fab fa-microsoft',
+            'github': 'fab fa-github',
+            'slack': 'fab fa-slack',
+            'adobe': 'fab fa-adobe',
+            'paypal': 'fab fa-paypal',
+            'twitter': 'fab fa-twitter',
+            'facebook': 'fab fa-facebook',
+            'instagram': 'fab fa-instagram',
+            'linkedin': 'fab fa-linkedin'
+        };
+        
+        const serviceLower = service.toLowerCase();
+        for (const [key, icon] of Object.entries(serviceIcons)) {
+            if (serviceLower.includes(key)) {
+                serviceIcon = icon;
+                break;
+            }
+        }
+        
+        if (!serviceIcon) {
+            serviceIcon = 'fas fa-calendar-alt';
+        }
+        
+        return `
+            <div class="subscription-card" ${dataAttributes}>
+                <div class="service-name">${service}</div>
+                <div class="price">${displayPrice}<span class="billing-cycle">/${billingCycle}</span></div>
+                <div class="next-payment">
+                    <i class="far fa-calendar-alt"></i>
+                    ${displayNextPayment}
+                </div>
+                <div class="delete-overlay">
+                    <button class="delete-btn" data-row-index="${rowIndex}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = subscriptionsHTML || `
+        <div class="empty-subscriptions">
+            <i class="fas fa-calendar-alt"></i>
+            <p>No subscriptions found. Click the + button to add your first subscription.</p>
+        </div>
+    `;
+    
+    // Add click listeners to cards for showing details
+    const cards = document.querySelectorAll('.subscription-card');
+    cards.forEach(card => {
+        card.addEventListener('click', function(event) {
+            // Don't show details if delete mode is active or if clicking on delete button
+            if (isSubscriptionDeleteMode || event.target.closest('.delete-btn')) {
+                return;
+            }
+            
+            // Show subscription details
+            showSubscriptionDetails(
+                this.getAttribute('data-service'),
+                this.getAttribute('data-account'),
+                this.getAttribute('data-price'),
+                this.getAttribute('data-billing'),
+                this.getAttribute('data-category'),
+                this.getAttribute('data-next-payment'),
+                this.getAttribute('data-payment'),
+                this.getAttribute('data-description'),
+                this.getAttribute('data-row-index')
+            );
+        });
+    });
+    
+    // Setup delete buttons if in delete mode
+    if (isSubscriptionDeleteMode) {
+        setupSubscriptionDeleteButtons();
+    }
+}
+
+
+// Function to delete subscription from localStorage
+async function deleteSubscriptionFromSheet(rowIndex) {
+    try {
+        const subscriptionList = getLocalSubscriptions();
+        const indexToDelete = subscriptionList.findIndex(sub => sub.index == rowIndex);
+        
+        if (indexToDelete !== -1) {
+            subscriptionList.splice(indexToDelete, 1);
+            saveLocalSubscriptions(subscriptionList);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error deleting subscription from localStorage:', error);
+        throw error;
+    }
+}
+
+// Setup subscription delete buttons
+function setupSubscriptionDeleteButtons() {
+    const deleteButtons = document.querySelectorAll('.subscription-card .delete-btn');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.stopPropagation();
+            const rowIndex = this.getAttribute('data-row-index');
+            const card = this.closest('.subscription-card');
+            
+            const service = card.getAttribute('data-service');
+            const account = card.getAttribute('data-account');
+            const price = card.getAttribute('data-price');
+            const billingCycle = card.getAttribute('data-billing');
+            const category = card.getAttribute('data-category');
+            const nextPayment = card.getAttribute('data-next-payment');
+            const paymentMethod = card.getAttribute('data-payment');
+            
+            showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
+        });
+    });
+}
+
+// Show delete subscription confirmation modal
+function showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod) {
+    const confirmed = confirm(`Are you sure you want to delete the ${service} subscription?`);
+    
+    if (confirmed) {
+        deleteSubscriptionFromSheet(rowIndex)
+            .then(() => {
+                document.getElementById('status-message').textContent = 'Deleted!';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+                
+                // Reload subscription data
+                return fetchSubscriptionData();
+            })
+            .catch(error => {
+                console.error('Error deleting subscription:', error);
+                document.getElementById('status-message').textContent = 'Error deleting';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            });
+    }
+}
+
+// Setup subscription modal
+function setupSubscriptionModal() {
+    const modal = document.getElementById('subscription-modal');
+    const addButton = document.getElementById('add-subscription-btn');
+    const closeButton = document.querySelector('.close-subscription-modal');
+    const cancelButton = document.getElementById('cancel-subscription');
+    const form = document.getElementById('subscription-form');
+    
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+            document.getElementById('subscription-next-payment').valueAsDate = new Date();
+        });
+    }
+    
+    function closeModal() {
+        modal.style.display = 'none';
+        form.reset();
+    }
+    
+    if (closeButton) closeButton.addEventListener('click', closeModal);
+    if (cancelButton) cancelButton.addEventListener('click', closeModal);
+    
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            closeModal();
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    window.addEventListener('click', outsideClickHandler);
+    
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const service = document.getElementById('subscription-service').value;
+        const account = document.getElementById('subscription-account').value;
+        const price = document.getElementById('subscription-price').value;
+        const billingCycle = document.getElementById('subscription-billing').value;
+        const category = document.getElementById('subscription-category').value;
+        const nextPaymentDate = document.getElementById('subscription-next-payment').value;
+        const paymentMethod = document.getElementById('subscription-payment').value;
+        const description = document.getElementById('subscription-description').value;
+        
+        try {
+            document.getElementById('status-message').textContent = 'Adding...';
+            
+            await addSubscriptionToSheet(
+                service,
+                account,
+                price,
+                billingCycle,
+                category,
+                nextPaymentDate,
+                paymentMethod,
+                description
+            );
+            
+            closeModal();
+            
+            await fetchSubscriptionData();
+            
+            document.getElementById('status-message').textContent = 'Added!';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        } catch (error) {
+            console.error('Error adding subscription:', error);
+            document.getElementById('status-message').textContent = 'Error adding';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        }
+    });
+}
+
+// Setup subscription delete mode
+function setupSubscriptionDeleteMode() {
+    const deleteButton = document.getElementById('delete-subscription-btn');
+    
+    if (deleteButton) {
+        deleteButton.addEventListener('click', function() {
+            isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
+            
+            if (isSubscriptionDeleteMode) {
+                deleteButton.classList.add('active');
+            } else {
+                deleteButton.classList.remove('active');
+            }
+            
+            const cards = document.querySelectorAll('.subscription-card');
+            cards.forEach(card => {
+                const deleteOverlay = card.querySelector('.delete-overlay');
+                if (isSubscriptionDeleteMode) {
+                    deleteOverlay.classList.add('visible');
+                } else {
+                    deleteOverlay.classList.remove('visible');
+                }
+            });
+            
+            if (isSubscriptionDeleteMode) {
+                setupSubscriptionDeleteButtons();
+            }
+        });
+    }
+}
+
+// Show subscription details modal
+function showSubscriptionDetails(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
+    const modal = document.getElementById('subscription-details-modal');
+    const detailsContainer = document.getElementById('subscription-detail-content');
+    
+    const priceValue = parseFloat(price);
+    const displayPrice = !isNaN(priceValue) ? `$${priceValue.toFixed(2)}` : `$${price}`;
+    
+    let displayNextPayment = nextPayment;
+    try {
+        const dateObj = new Date(nextPayment);
+        if (!isNaN(dateObj.getTime())) {
+            displayNextPayment = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+    } catch (e) {
+        console.warn('Date parsing error:', e);
+    }
+    
+    const serviceLower = service.toLowerCase();
+    let serviceIcon = 'fas fa-calendar-alt';
+    
+    const serviceIcons = {
+        'google': 'fab fa-google',
+        'netflix': 'fab fa-netflix',
+        'spotify': 'fab fa-spotify',
+        'apple': 'fab fa-apple',
+        'amazon': 'fab fa-amazon',
+        'youtube': 'fab fa-youtube',
+        'disney': 'fab fa-disney',
+        'hulu': 'fas fa-tv',
+        'dropbox': 'fab fa-dropbox',
+        'microsoft': 'fab fa-microsoft',
+        'github': 'fab fa-github',
+        'slack': 'fab fa-slack',
+        'adobe': 'fab fa-adobe',
+        'paypal': 'fab fa-paypal',
+        'twitter': 'fab fa-twitter',
+        'facebook': 'fab fa-facebook',
+        'instagram': 'fab fa-instagram',
+        'linkedin': 'fab fa-linkedin'
+    };
+    
+    for (const [key, icon] of Object.entries(serviceIcons)) {
+        if (serviceLower.includes(key)) {
+            serviceIcon = icon;
+            break;
+        }
+    }
+    
+    detailsContainer.innerHTML = `
+        <div class="service-tag">
+            <i class="${serviceIcon}"></i> ${category}
+        </div>
+        <div class="service-name">${service}</div>
+        <div class="price">${displayPrice}/${billingCycle}</div>
+        
+        <div class="detail-group">
+            <div class="detail-item">
+                <i class="fas fa-user"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Account</div>
+                    <div class="detail-value">${account}</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <i class="far fa-calendar-alt"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Next Payment</div>
+                    <div class="detail-value">${displayNextPayment}</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <i class="fas fa-credit-card"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Payment Method</div>
+                    <div class="detail-value">${paymentMethod}</div>
+                </div>
+            </div>
+            
+            ${description ? `
+            <div class="detail-item">
+                <i class="fas fa-info-circle"></i>
+                <div class="detail-content">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value">${description}</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    const closeButton = modal.querySelector('.close-details-modal');
+    closeButton.onclick = function() {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; 
+    };
+    
+    const deleteButton = document.getElementById('delete-subscription-detail-btn');
+    deleteButton.onclick = function() {
+        modal.style.display = 'none';
+        showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
+    };
+    
+    const editButton = document.getElementById('edit-subscription-btn');
+    editButton.onclick = function() {
+        modal.style.display = 'none';
+        openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex);
+    };
+    
+    const resubscribeButton = document.getElementById('resubscribe-btn');
+    resubscribeButton.onclick = function() {
+        let newPaymentDate = calculateNextPaymentDate(nextPayment, billingCycle);
+        
+        const confirmed = confirm(`Resubscribe to ${service} for another ${billingCycle} cycle?\nNew payment date: ${formatDateForDisplay(newPaymentDate)}`);
+        
+        if (confirmed) {
+            modal.style.display = 'none';
+            
+            updateSubscriptionFromSheet(
+                rowIndex,
+                service,
+                account,
+                price,
+                billingCycle,
+                category,
+                newPaymentDate,
+                paymentMethod,
+                description
+            ).then(() => {
+                fetchSubscriptionData();
+                
+                document.getElementById('status-message').textContent = 'Resubscribed!';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            }).catch(error => {
+                console.error('Error resubscribing:', error);
+                document.getElementById('status-message').textContent = 'Error resubscribing';
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = '';
+                }, 2000);
+            });
+        }
+    };
+    
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; 
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    window.addEventListener('click', outsideClickHandler);
+}
+
+// Setup edit subscription modal
+function openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex) {
+    const modal = document.getElementById('edit-subscription-modal');
+    
+    document.getElementById('edit-subscription-service').value = service;
+    document.getElementById('edit-subscription-account').value = account;
+    document.getElementById('edit-subscription-price').value = parseFloat(price);
+    document.getElementById('edit-subscription-billing').value = billingCycle;
+    document.getElementById('edit-subscription-category').value = category;
+    
+    let formattedDate = nextPayment;
+    try {
+        const dateObj = new Date(nextPayment);
+        if (!isNaN(dateObj.getTime())) {
+            formattedDate = dateObj.toISOString().split('T')[0];
+        }
+    } catch (e) {
+        console.warn('Date parsing error:', e);
+    }
+    
+    document.getElementById('edit-subscription-next-payment').value = formattedDate;
+    document.getElementById('edit-subscription-payment').value = paymentMethod;
+    document.getElementById('edit-subscription-description').value = description || '';
+    document.getElementById('edit-subscription-row-index').value = rowIndex;
+    
+    modal.style.display = 'block';
+    
+    const closeButton = modal.querySelector('.close-edit-subscription-modal');
+    closeButton.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    const cancelButton = document.getElementById('cancel-edit-subscription');
+    cancelButton.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    const form = document.getElementById('edit-subscription-form');
+    form.onsubmit = async function(e) {
+        e.preventDefault();
+        
+        try {
+            const updatedService = document.getElementById('edit-subscription-service').value;
+            const updatedAccount = document.getElementById('edit-subscription-account').value;
+            const updatedPrice = document.getElementById('edit-subscription-price').value;
+            const updatedBillingCycle = document.getElementById('edit-subscription-billing').value;
+            const updatedCategory = document.getElementById('edit-subscription-category').value;
+            const updatedNextPayment = document.getElementById('edit-subscription-next-payment').value;
+            const updatedPaymentMethod = document.getElementById('edit-subscription-payment').value;
+            const updatedDescription = document.getElementById('edit-subscription-description').value;
+            const rowIndex = document.getElementById('edit-subscription-row-index').value;
+            
+            await updateSubscriptionFromSheet(
+                rowIndex,
+                updatedService,
+                updatedAccount,
+                updatedPrice,
+                updatedBillingCycle,
+                updatedCategory,
+                updatedNextPayment,
+                updatedPaymentMethod,
+                updatedDescription
+            );
+            
+            modal.style.display = 'none';
+            
+            await fetchSubscriptionData();
+            
+            document.getElementById('status-message').textContent = 'Updated!';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        } catch (error) {
+            console.error('Error updating subscription:', error);
+            document.getElementById('status-message').textContent = 'Error updating';
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = '';
+            }, 2000);
+        }
+    };
+    
+    const outsideClickHandler = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            window.removeEventListener('click', outsideClickHandler);
+        }
+    };
+    
+    window.addEventListener('click', outsideClickHandler);
+}
+
+// Update subscription in localStorage
+async function updateSubscriptionFromSheet(rowIndex, service, account, price, billingCycle, category, nextPaymentDate, paymentMethod, description) {
+    try {
+        console.log(`Updating subscription at index: ${rowIndex}`);
+        
+        const subscriptionList = getLocalSubscriptions();
+        const indexToUpdate = subscriptionList.findIndex(sub => sub.index == rowIndex);
+        
+        if (indexToUpdate !== -1) {
+            subscriptionList[indexToUpdate] = {
+                ...subscriptionList[indexToUpdate],
+                service: service,
+                account: account,
+                price: parseFloat(price),
+                billingCycle: billingCycle,
+                category: category,
+                nextPaymentDate: nextPaymentDate,
+                paymentMethod: paymentMethod,
+                description: description || ''
+            };
+            saveLocalSubscriptions(subscriptionList);
+        }
+        
+        return { status: 'success' };
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        throw error;
+    }
+}
+
+// Calculate next payment date based on billing cycle
+function calculateNextPaymentDate(currentDate, billingCycle) {
+    try {
+        const date = new Date(currentDate);
+        
+        if (isNaN(date.getTime())) {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        switch (billingCycle) {
+            case '月': 
+                date.setMonth(date.getMonth() + 1);
+                break;
+            case '季': 
+                date.setMonth(date.getMonth() + 3);
+                break;
+            case '年': 
+                date.setFullYear(date.getFullYear() + 1);
+                break;
+            default:
+                date.setMonth(date.getMonth() + 1);
+                break;
+        }
+        
+        return date.toISOString().split('T')[0];
+    } catch (error) {
+        console.error('Error calculating next payment date:', error);
+        return new Date().toISOString().split('T')[0];
+    }
+}
+
+// Format date for display
+function formatDateForDisplay(dateString) {
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return dateString; 
+        }
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (error) {
+        console.warn('Date formatting error:', error);
+        return dateString;
+    }
+}
+
+// --- Quick Add Functionality ---
 
 // Default Quick Add Configuration
 const DEFAULT_QUICK_ADDS = [
@@ -2293,12 +2975,9 @@ function setupQuickAdd() {
             const cat = EXPENSE_CATEGORIES.find(c => c.label === btnConfig.category);
             if (cat) selectCategory(cat);
             
-            // Pre-fill description: Food category uses Taiwan time to auto-detect meal (Breakfast/Lunch/Dinner/Late Night)
-            const descEl = document.getElementById('calc-description');
-            if (btnConfig.category === '食物') {
-                descEl.value = getMealTypeByTaiwanTime();
-            } else if (btnConfig.description) {
-                descEl.value = btnConfig.description;
+            // Pre-fill description
+            if (btnConfig.description) {
+                document.getElementById('calc-description').value = btnConfig.description;
             }
             
             // Note: Payment method logic is simplified in calculator view
@@ -2438,4 +3117,470 @@ function setupIncomeDeleteButtons() {
 // Function to setup income delete mode (Deprecated/Removed)
 function setupIncomeDeleteMode() {
     // Income section removed
+}
+
+
+// ===== SUBSCRIPTION MANAGEMENT =====
+
+// Fetch subscriptions from Google Sheets
+async function fetchSubscriptionsFromGoogle() {
+    try {
+        // Simply return subscriptions from localStorage (no network call needed)
+        const subscriptions = getLocalSubscriptions();
+        return subscriptions;
+    } catch (error) {
+        console.error('Error fetching subscriptions:', error);
+        return [];
+    }
+}
+
+// Get subscriptions from localStorage
+function getLocalSubscriptions() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Error reading subscriptions from localStorage:', e);
+        return [];
+    }
+}
+
+// Add new subscription to Google Sheets
+async function addSubscriptionToGoogle(subscription) {
+    try {
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Adding subscription...';
+        
+        // Get existing subscriptions from localStorage
+        const subscriptions = getLocalSubscriptions();
+        
+        // Add new subscription with auto-incrementing index
+        const nextIndex = subscriptions.length > 0 ? Math.max(...subscriptions.map(s => s.index || 0)) + 1 : 1;
+        const newSubscription = {
+            index: nextIndex,
+            name: subscription.name,
+            amount: parseFloat(subscription.amount) || 0,
+            payment: subscription.payment,
+            billingDate: subscription.billingDate,
+            status: 'active',
+            createdAt: new Date().toISOString()
+        };
+        
+        subscriptions.push(newSubscription);
+        saveLocalSubscriptions(subscriptions);
+        
+        if (statusMsg) {
+            statusMsg.textContent = 'Subscription added!';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Subscription added!') {
+                    statusMsg.textContent = '';
+                }
+            }, 2000);
+        }
+        
+        // Refresh subscriptions display
+        renderSubscriptionListInline();
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error adding subscription:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Failed to add subscription';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Failed to add subscription') {
+                    statusMsg.textContent = '';
+                }
+            }, 3000);
+        }
+        throw error;
+    }
+}
+
+// Delete subscription from localStorage
+async function deleteSubscriptionFromGoogle(rowIndex) {
+    try {
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Deleting subscription...';
+        
+        // Get subscriptions from localStorage
+        let subscriptions = getLocalSubscriptions();
+        
+        // Find the subscription by index and remove it
+        subscriptions = subscriptions.filter(sub => sub.index !== rowIndex);
+        
+        // Save updated subscriptions
+        saveLocalSubscriptions(subscriptions);
+        
+        if (statusMsg) {
+            statusMsg.textContent = 'Subscription deleted!';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Subscription deleted!') {
+                    statusMsg.textContent = '';
+                }
+            }, 2000);
+        }
+        
+        // Refresh subscriptions display
+        renderSubscriptionListInline();
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting subscription:', error);
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.textContent = 'Failed to delete subscription';
+            setTimeout(() => {
+                if (statusMsg && statusMsg.textContent === 'Failed to delete subscription') {
+                    statusMsg.textContent = '';
+                }
+            }, 3000);
+        }
+        throw error;
+    }
+}
+
+// Render subscription list inline (replaces transaction list)
+// Calculate next billing date
+function getNextBillingDate(billingDay) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-11
+    const currentDate = today.getDate();
+    
+    const billingDayNum = parseInt(billingDay);
+    
+    // Create a date for the billing day in the current month
+    let nextBillingDate = new Date(currentYear, currentMonth, billingDayNum);
+    
+    // If the billing day has already passed this month, use next month
+    if (currentDate > billingDayNum) {
+        nextBillingDate = new Date(currentYear, currentMonth + 1, billingDayNum);
+    }
+    
+    return nextBillingDate;
+}
+
+// Get days until next billing date
+function getDaysUntilBilling(billingDay) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to midnight
+    
+    const nextBilling = getNextBillingDate(billingDay);
+    nextBilling.setHours(0, 0, 0, 0); // Reset time to midnight
+    
+    const diffTime = nextBilling - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+}
+
+// Format date to M/D format
+function formatBillingDate(billingDay) {
+    const nextBilling = getNextBillingDate(billingDay);
+    const month = nextBilling.getMonth() + 1;
+    const date = nextBilling.getDate();
+    return `${month}/${date}`;
+}
+
+function renderSubscriptionListInline() {
+    const container = document.getElementById('subscription-list-container');
+    if (!container) return;
+    
+    const subscriptions = getLocalSubscriptions();
+    
+    if (subscriptions.length === 0) {
+        container.innerHTML = '<div class="loading-message">No subscriptions yet. Click the + button to add one!</div>';
+        return;
+    }
+    
+    // Group subscriptions by status
+    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active');
+    
+    if (activeSubscriptions.length === 0) {
+        container.innerHTML = '<div class="loading-message">No active subscriptions</div>';
+        return;
+    }
+    
+    let html = '<div class="subscription-day-card">';
+    
+    html += activeSubscriptions.map(sub => {
+        const amount = parseFloat(sub.amount) || 0;
+        const deleteClass = isSubscriptionDeleteMode ? 'show' : '';
+        
+        // Calculate the next billing date
+        const billingDateDisplay = formatBillingDate(sub.billingDate);
+        const daysUntil = getDaysUntilBilling(sub.billingDate);
+        
+        // Add warning class if billing date is within 7 days
+        const warningClass = daysUntil <= 7 && daysUntil > 0 ? 'warning' : '';
+        
+        return `
+            <div class="subscription-list-item-inline ${warningClass}" onclick="showSubscriptionDetail(${sub.index})">
+                <div class="subscription-item-info">
+                    <div class="subscription-item-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="subscription-item-details">
+                        <div class="subscription-item-name">${sub.name}</div>
+                        <div class="subscription-item-billing">${billingDateDisplay} • ${sub.payment}</div>
+                    </div>
+                </div>
+                <div class="subscription-item-amount">$${amount.toFixed(2)}</div>
+                <button class="subscription-item-delete ${deleteClass}" onclick="handleDeleteSubscriptionInline(event, ${sub.index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Handle delete subscription inline
+async function handleDeleteSubscriptionInline(event, rowIndex) {
+    event.stopPropagation(); // Prevent triggering the parent click handler
+    if (confirm('Are you sure you want to delete this subscription?')) {
+        try {
+            await deleteSubscriptionFromGoogle(rowIndex);
+            renderSubscriptionListInline();
+        } catch (error) {
+            alert('Failed to delete subscription. Please try again.');
+        }
+    }
+}
+
+// Show subscription detail in a modal
+function showSubscriptionDetail(subscriptionIndex) {
+    const subscriptions = getLocalSubscriptions();
+    const subscription = subscriptions.find(sub => sub.index === subscriptionIndex);
+    
+    if (!subscription) return;
+    
+    const daysUntil = getDaysUntilBilling(subscription.billingDate);
+    const nextBillingDate = formatBillingDate(subscription.billingDate);
+    const amount = parseFloat(subscription.amount) || 0;
+    const createdDate = subscription.createdAt ? new Date(subscription.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+    
+    // Create modal HTML with improved layout
+    const modalHTML = `
+        <div id="subscription-detail-modal" class="modal" style="display: flex;">
+            <div class="modal-content subscription-detail-content">
+                <div class="modal-header">
+                    <h2>Subscription Details</h2>
+                    <span class="close-subscription-detail" onclick="closeSubscriptionDetail()">&times;</span>
+                </div>
+                
+                <div class="subscription-detail-body">
+                    <div class="detail-section">
+                        <div class="detail-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="detail-info">
+                            <h3>${subscription.name}</h3>
+                            <p class="detail-label">Service Name</p>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Amount</label>
+                            <p class="detail-value">$${amount.toFixed(2)}</p>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Next Billing</label>
+                            <p class="detail-value">${nextBillingDate}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid" style="grid-template-columns: 1fr;">
+                        <div class="detail-item">
+                            <label>Payment Method</label>
+                            <p class="detail-value">${subscription.payment}</p>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Days Until Billing</label>
+                            <p class="detail-value ${daysUntil <= 7 && daysUntil > 0 ? 'warning-text' : ''}">${daysUntil > 0 ? daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') : 'Today!'}</p>
+                        </div>
+                    </div>
+                    
+                    ${createdDate ? `
+                        <div class="detail-meta">
+                            <strong>Created:</strong> ${createdDate}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closeSubscriptionDetail()">Close</button>
+                    <button class="btn-delete" onclick="deleteAndCloseSubscription(${subscriptionIndex})">Delete</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insert modal into page
+    const existingModal = document.getElementById('subscription-detail-modal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Close modal on background click
+    document.getElementById('subscription-detail-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSubscriptionDetail();
+        }
+    });
+}
+
+function closeSubscriptionDetail() {
+    const modal = document.getElementById('subscription-detail-modal');
+    if (modal) modal.remove();
+}
+
+function deleteAndCloseSubscription(subscriptionIndex) {
+    if (confirm('Are you sure you want to delete this subscription?')) {
+        deleteSubscriptionFromGoogle(subscriptionIndex).then(() => {
+            closeSubscriptionDetail();
+            renderSubscriptionListInline();
+        }).catch(error => {
+            alert('Failed to delete subscription. Please try again.');
+        });
+    }
+}
+
+// Toggle between transactions and subscriptions view
+function toggleView(view) {
+    currentView = view;
+    
+    const transactionsView = document.getElementById('transactions-view');
+    const subscriptionsView = document.getElementById('subscriptions-view');
+    const toggleBtns = document.querySelectorAll('.view-toggle-btn');
+    
+    // Update toggle buttons
+    toggleBtns.forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Show/hide views
+    if (view === 'transactions') {
+        transactionsView.style.display = 'block';
+        subscriptionsView.style.display = 'none';
+        isDeleteMode = false;
+        isSubscriptionDeleteMode = false;
+        // Reset delete mode button for transactions
+        const deleteBtn = document.getElementById('delete-mode-btn');
+        if (deleteBtn) deleteBtn.classList.remove('active');
+    } else {
+        transactionsView.style.display = 'none';
+        subscriptionsView.style.display = 'block';
+        isDeleteMode = false;
+        isSubscriptionDeleteMode = false;
+        renderSubscriptionListInline();
+        // Reset delete mode button for subscriptions
+        const deleteSubBtn = document.getElementById('delete-subscription-mode-btn');
+        if (deleteSubBtn) deleteSubBtn.classList.remove('active');
+    }
+}
+
+// Update subscription delete buttons visibility
+function updateSubscriptionDeleteButtons() {
+    const deleteButtons = document.querySelectorAll('.subscription-item-delete');
+    deleteButtons.forEach(btn => {
+        if (isSubscriptionDeleteMode) {
+            btn.classList.add('show');
+        } else {
+            btn.classList.remove('show');
+        }
+    });
+}
+
+// Setup subscription management with inline view
+function setupSubscriptionManagement() {
+    const addSubscriptionModal = document.getElementById('add-subscription-modal');
+    const closeAddSubscriptionBtn = document.querySelector('.close-add-subscription-modal');
+    const cancelAddBtn = document.getElementById('cancel-add-subscription');
+    const addForm = document.getElementById('add-subscription-form');
+    const addInlineBtn = document.getElementById('add-subscription-inline-btn');
+    const deleteSubscriptionModeBtn = document.getElementById('delete-subscription-mode-btn');
+    
+    // Setup view toggle buttons
+    const toggleBtns = document.querySelectorAll('.view-toggle-btn');
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            toggleView(btn.dataset.view);
+        });
+    });
+    
+    // Add subscription button (inline)
+    if (addInlineBtn) {
+        addInlineBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'flex';
+            addForm.reset();
+        });
+    }
+    
+    // Delete mode button for subscriptions
+    if (deleteSubscriptionModeBtn) {
+        deleteSubscriptionModeBtn.addEventListener('click', () => {
+            isSubscriptionDeleteMode = !isSubscriptionDeleteMode;
+            deleteSubscriptionModeBtn.classList.toggle('active', isSubscriptionDeleteMode);
+            renderSubscriptionListInline();
+        });
+    }
+    
+    // Close add subscription modal
+    if (closeAddSubscriptionBtn) {
+        closeAddSubscriptionBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'none';
+        });
+    }
+    
+    if (cancelAddBtn) {
+        cancelAddBtn.addEventListener('click', () => {
+            addSubscriptionModal.style.display = 'none';
+        });
+    }
+    
+    // Handle add subscription form submission
+    if (addForm) {
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const subscription = {
+                name: document.getElementById('sub-name').value,
+                amount: document.getElementById('sub-amount').value,
+                billingDate: document.getElementById('sub-billing-date').value,
+                payment: document.getElementById('sub-payment').value
+            };
+            
+            try {
+                await addSubscriptionToGoogle(subscription);
+                addSubscriptionModal.style.display = 'none';
+                addForm.reset();
+                renderSubscriptionListInline();
+            } catch (error) {
+                alert('Failed to add subscription. Please try again.');
+            }
+        });
+    }
+    
+    // Close modal on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === addSubscriptionModal) {
+            addSubscriptionModal.style.display = 'none';
+        }
+    });
+    
+    // Initial load of subscriptions
+    fetchSubscriptionsFromGoogle().then(() => {
+        renderSubscriptionListInline();
+    });
 }
