@@ -23,13 +23,13 @@
 
 .circle-bg {
     fill: none;
-    stroke: #e0e0e0;
+    stroke: rgba(99, 135, 197, 0.18);
     stroke-width: 2.5;
 }
 
 .circle-progress {
     fill: none;
-    stroke: #4cd964; /* Green for healthy budget */
+    stroke: var(--primary-color);
     stroke-width: 2.5;
     stroke-linecap: round;
     transition: stroke-dasharray 0.6s ease, stroke 0.3s ease;
@@ -55,7 +55,7 @@
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 .budget-stats {
@@ -68,11 +68,12 @@
 
 .budget-stat-item {
     text-align: center;
-    background: var(--bg-color);
+    background: linear-gradient(180deg, rgba(24, 31, 48, 0.88), rgba(18, 24, 38, 0.92));
     padding: 15px;
-    border-radius: 16px;
+    border-radius: 14px;
     width: 45%;
-    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
 }
 
 .stat-label {
@@ -86,7 +87,7 @@
     display: block;
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 .stat-value.spent {
@@ -100,17 +101,18 @@
 
 .budget-breakdown-container h3 {
     font-size: 1.1rem;
-    color: var(--text-primary);
+    color: var(--text-color);
     margin-bottom: 15px;
     font-weight: 600;
 }
 
 .budget-item {
-    background: var(--bg-color);
-    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(24, 31, 48, 0.88), rgba(18, 24, 38, 0.92));
+    border-radius: 14px;
     padding: 15px;
     margin-bottom: 12px;
-    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(99, 135, 197, 0.13);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
 }
 
 .budget-item-header {
@@ -133,13 +135,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--category-color);
     font-size: 14px;
+    background: var(--category-bg);
+    border: 1px solid color-mix(in srgb, var(--category-color) 50%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--category-color) 22%, transparent);
 }
 
 .budget-cat-name {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-color);
     font-size: 0.95rem;
 }
 
@@ -149,12 +154,12 @@
 }
 
 .budget-cat-amount strong {
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 .budget-progress-bar {
     height: 8px;
-    background: rgba(26, 29, 35, 0.6);
+    background: rgba(99, 135, 197, 0.14);
     border-radius: 4px;
     overflow: hidden;
     position: relative;
@@ -162,7 +167,7 @@
 
 .budget-progress-fill {
     height: 100%;
-    background: #4cd964;
+    background: linear-gradient(90deg, var(--category-color, var(--primary-color)), var(--accent-color));
     border-radius: 4px;
     transition: width 0.5s ease;
 }
@@ -211,9 +216,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--category-color);
     font-size: 20px;
-    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    background: var(--category-bg);
+    border: 1px solid color-mix(in srgb, var(--category-color) 50%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--category-color) 22%, transparent);
     position: relative;
 }
 
@@ -229,7 +236,7 @@
     position: absolute;
     top: -2px;
     right: -2px;
-    background: #4cd964;
+    background: var(--primary-color);
     color: white;
     width: 14px;
     height: 14px;
@@ -239,7 +246,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white;
+    border: 2px solid var(--card-background);
     line-height: 1;
 }
 
@@ -258,16 +265,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--category-color);
     font-size: 26px;
     margin-bottom: 12px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.15);
+    background: var(--category-bg);
+    border: 1px solid color-mix(in srgb, var(--category-color) 55%, transparent);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--category-color) 26%, transparent);
 }
 
 .selected-budget-name {
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text-color);
     margin-bottom: 18px;
 }
 
@@ -292,7 +301,7 @@
     padding: 12px 12px 12px 36px;
     font-size: 1.5rem;
     font-weight: 700;
-    border: 2px solid #f0f2f5;
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     text-align: center;
     background: rgba(26, 29, 35, 0.6);
@@ -323,7 +332,7 @@
 
 .btn-save-single {
     flex: 1;
-    background: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     color: white;
     border: none;
     padding: 10px;
@@ -335,12 +344,12 @@
 /* Dark Mode Adjustments */
 @media (prefers-color-scheme: dark) {
     .circle-bg {
-        stroke: #5c5b5b;
+        stroke: rgba(99, 135, 197, 0.18);
     }
     .budget-stat-item, .budget-item, .budget-input-row {
-        background: #495b64;;
+        background: linear-gradient(180deg, rgba(24, 31, 48, 0.88), rgba(18, 24, 38, 0.92));
     }
     .budget-progress-bar {
-        background: #5e5e61;
+        background: rgba(99, 135, 197, 0.14);
     }
 }

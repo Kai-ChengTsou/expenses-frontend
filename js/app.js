@@ -86,28 +86,38 @@ function saveLocalSubscriptions(data) {
 
 // Categories Config
 const EXPENSE_CATEGORIES = [
-    { id: 'food', label: '食物', icon: 'fas fa-utensils' },
-    { id: 'rent', label: '租房', icon: 'fas fa-home' },
-    { id: 'mortgage', label: '房貸', icon: 'fas fa-building' },
-    { id: 'transport', label: '交通', icon: 'fas fa-bus' },
-    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check' },
-    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket' },
-    { id: 'cat', label: '貓咪', icon: 'fas fa-paw' },
-    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad' },
-    { id: 'gf', label: '女友', icon: 'fas fa-heart' },
-    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag' },
-    { id: 'investment', label: '投資', icon: 'fas fa-chart-line' },
-    { id: 'other', label: '其他', icon: 'fas fa-box' }
+    { id: 'food', label: '食物', icon: 'fas fa-utensils', color: '#9b7cff', bg: '#2a2441' },
+    { id: 'rent', label: '租房', icon: 'fas fa-home', color: '#ff6d86', bg: '#3a202d' },
+    { id: 'mortgage', label: '房貸', icon: 'fas fa-building', color: '#f29b55', bg: '#382617' },
+    { id: 'transport', label: '交通', icon: 'fas fa-bus', color: '#55a8ff', bg: '#1c2b43' },
+    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check', color: '#62d7d4', bg: '#173738' },
+    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket', color: '#ff9f43', bg: '#382615' },
+    { id: 'cat', label: '貓咪', icon: 'fas fa-paw', color: '#6adf86', bg: '#1d3827' },
+    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad', color: '#c77dff', bg: '#33203f' },
+    { id: 'gf', label: '女友', icon: 'fas fa-heart', color: '#ff7eb6', bg: '#3a2134' },
+    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag', color: '#ff5f93', bg: '#3b2030' },
+    { id: 'investment', label: '投資', icon: 'fas fa-chart-line', color: '#4facfe', bg: '#1c2f44' },
+    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#9aa6c1', bg: '#252b3a' }
 ];
 
 const INCOME_CATEGORIES = [
-    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave' },
-    { id: 'bonus', label: '獎金', icon: 'fas fa-star' },
-    { id: 'invest', label: '投資', icon: 'fas fa-chart-line' },
-    { id: 'gift', label: '禮金', icon: 'fas fa-gift' },
-    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase' },
-    { id: 'other', label: '其他', icon: 'fas fa-box' }
+    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#6adf86', bg: '#1d3827' },
+    { id: 'bonus', label: '獎金', icon: 'fas fa-star', color: '#ffd166', bg: '#3b3117' },
+    { id: 'invest', label: '投資', icon: 'fas fa-chart-line', color: '#4facfe', bg: '#1c2f44' },
+    { id: 'gift', label: '禮金', icon: 'fas fa-gift', color: '#c77dff', bg: '#33203f' },
+    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase', color: '#62d7d4', bg: '#173738' },
+    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#9aa6c1', bg: '#252b3a' }
 ];
+
+function getCategoryVisualStyle(category) {
+    if (!category) return '';
+    return `--category-color: ${category.color}; --category-bg: ${category.bg};`;
+}
+
+function findCategoryConfig(categoryValue, isIncome = false) {
+    const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    return categories.find(c => c.label === categoryValue || c.id === categoryValue);
+}
 
 
 // Main function to load data from localStorage only
@@ -326,25 +336,12 @@ function updateTransactionsList() {
             
             // Get Icon and Color
             let iconClass = 'fas fa-question';
-            let catConfig = null;
-            if (isIncome) {
-                catConfig = INCOME_CATEGORIES.find(c => c.label === t.category || c.id === t.category);
-            } else {
-                catConfig = EXPENSE_CATEGORIES.find(c => c.label === t.category || c.id === t.category);
-            }
+            let catConfig = findCategoryConfig(t.category, isIncome);
             if (catConfig) iconClass = catConfig.icon;
-            
-            // Pick distinct color based on category name
-            // Simple hash function to get consistent color for same category
-            let hash = 0;
-            for (let i = 0; i < t.category.length; i++) {
-                hash = t.category.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const bgIndex = (Math.abs(hash) % 12) + 1; // 1-12
             
             html += `
                 <div class="transaction-item" onclick="/* Open details? */">
-                    <div class="trans-icon-wrapper icon-bg-${bgIndex}">
+                    <div class="trans-icon-wrapper" style="${getCategoryVisualStyle(catConfig)}">
                         <i class="${iconClass}"></i>
                     </div>
                     <div class="trans-content">
@@ -1381,12 +1378,8 @@ function setupBudgetSection() {
         currentEditingId = cat.id;
         
         selectedName.textContent = cat.label;
-        let hash = 0;
-        for (let i = 0; i < cat.label.length; i++) {
-            hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const bgIndex = (Math.abs(hash) % 12) + 1;
-        selectedIcon.className = `selected-budget-icon icon-bg-${bgIndex}`;
+        selectedIcon.className = 'selected-budget-icon';
+        selectedIcon.setAttribute('style', getCategoryVisualStyle(cat));
         selectedIcon.innerHTML = `<i class="${cat.icon}"></i>`;
         
         amountInput.value = categoryBudgets[cat.id] || '';
@@ -1398,15 +1391,9 @@ function setupBudgetSection() {
         
         gridView.innerHTML = EXPENSE_CATEGORIES.map(cat => {
             const hasBudget = categoryBudgets[cat.id] > 0;
-            let hash = 0;
-            for (let i = 0; i < cat.label.length; i++) {
-                hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const bgIndex = (Math.abs(hash) % 12) + 1;
-            
             return `
                 <div class="budget-grid-item" data-id="${cat.id}">
-                    <div class="budget-grid-icon icon-bg-${bgIndex}">
+                    <div class="budget-grid-icon" style="${getCategoryVisualStyle(cat)}">
                         <i class="${cat.icon}"></i>
                         ${hasBudget ? '<span class="budget-grid-badge">✓</span>' : ''}
                     </div>
@@ -1571,18 +1558,11 @@ function updateBudgetUI(categoryBudgets) {
                 if (isOver) progressClass = 'danger';
                 else if (percent > 80) progressClass = 'warning';
                 
-                // Icon color
-                let hash = 0;
-                for (let i = 0; i < cat.label.length; i++) {
-                    hash = cat.label.charCodeAt(i) + ((hash << 5) - hash);
-                }
-                const bgIndex = (Math.abs(hash) % 12) + 1;
-                
                 html += `
-                    <div class="budget-item">
+                    <div class="budget-item" style="${getCategoryVisualStyle(cat)}">
                         <div class="budget-item-header">
                             <div class="budget-cat-info">
-                                <div class="budget-cat-icon icon-bg-${bgIndex}">
+                                <div class="budget-cat-icon" style="${getCategoryVisualStyle(cat)}">
                                     <i class="${cat.icon}"></i>
                                 </div>
                                 <span class="budget-cat-name">${cat.label}</span>
@@ -1710,7 +1690,7 @@ function renderCategories(categories) {
     const grid = document.getElementById('category-grid');
     grid.innerHTML = categories.map(cat => `
         <div class="category-option" onclick="handleCategorySelect('${cat.id}')" data-id="${cat.id}">
-            <div class="cat-icon-circle">
+            <div class="cat-icon-circle" style="${getCategoryVisualStyle(cat)}">
                 <i class="${cat.icon}"></i>
             </div>
             <div class="cat-label">${cat.label}</div>

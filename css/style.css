@@ -6,17 +6,19 @@
 }
 
 :root {
-    --primary-color: #4facfe;
-    --accent-color: #00f2fe;
-    --text-color: #e4e4e7;
-    --text-secondary: #a1a1aa;
-    --background-color: #0f1115;
-    --card-background: #1a1d23;
-    --button-background: #4facfe;
+    --primary-color: #3478f6;
+    --accent-color: #59a8ff;
+    --text-color: #f5f7ff;
+    --text-secondary: #8e98ad;
+    --background-color: #090d18;
+    --card-background: #151b2a;
+    --button-background: #3478f6;
     --button-text: #ffffff;
-    --shadow-color: rgba(0, 0, 0, 0.3);
-    --highlight-color: rgba(79, 172, 254, 0.1);
-    --border-color: rgba(79, 172, 254, 0.2);
+    --shadow-color: rgba(0, 0, 0, 0.45);
+    --highlight-color: rgba(52, 120, 246, 0.14);
+    --border-color: rgba(99, 135, 197, 0.18);
+    --category-color: #59a8ff;
+    --category-bg: #1c2b43;
 }
 
 @font-face {
@@ -26,7 +28,9 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
+    background:
+        radial-gradient(circle at top left, rgba(52, 120, 246, 0.12), transparent 34%),
+        linear-gradient(160deg, #090d18 0%, #101726 52%, #090d18 100%);
     color: var(--text-color);
     min-height: 100vh;
     line-height: 1.6;
@@ -131,13 +135,13 @@ header {
 
 /* Card Styles */
 .card {
-    background: rgba(26, 29, 35, 0.8);
+    background: linear-gradient(180deg, rgba(24, 31, 48, 0.9), rgba(18, 24, 38, 0.92));
     backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 16px;
     box-shadow:
         0 4px 20px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(79, 172, 254, 0.2);
+    border: 1px solid var(--border-color);
     margin-bottom: 12px;
     position: relative;
     overflow: hidden;
@@ -512,8 +516,8 @@ header {
 }
 
 .transaction-day-card {
-    background: rgba(26, 29, 35, 0.6);
-    border: 2px solid rgba(79, 172, 254, 0.3);
+    background: linear-gradient(180deg, rgba(24, 31, 48, 0.78), rgba(17, 23, 37, 0.86));
+    border: 1px solid rgba(99, 135, 197, 0.16);
     border-radius: 16px;
     margin-bottom: 16px;
     overflow: hidden;
@@ -525,7 +529,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #000;
+    border-bottom: 1px solid rgba(99, 135, 197, 0.14);
     font-weight: 700;
     font-size: 16px;
 }
@@ -555,7 +559,7 @@ header {
     display: flex;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid rgba(99, 135, 197, 0.1);
     cursor: pointer;
     transition: background-color 0.2s;
     position: relative;
@@ -578,24 +582,26 @@ header {
     justify-content: center;
     margin-right: 12px;
     font-size: 18px;
-    color: var(--text-color);
-    border: 2px solid var(--border-color);
+    color: var(--category-color);
+    background: var(--category-bg);
+    border: 1px solid color-mix(in srgb, var(--category-color) 58%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--category-color) 24%, transparent);
     flex-shrink: 0;
 }
 
-/* Random-ish background colors for icons - Expanded Palette */
-.icon-bg-1 { background-color: #AEC6CF; } /* Pastel Blue */
-.icon-bg-2 { background-color: #FFB347; } /* Pastel Orange */
-.icon-bg-3 { background-color: #FF6961; } /* Pastel Red */
-.icon-bg-4 { background-color: #77DD77; } /* Pastel Green */
-.icon-bg-5 { background-color: #f1f176; } /* Pastel Yellow */
-.icon-bg-6 { background-color: #CFCFC4; } /* Pastel Grey */
-.icon-bg-7 { background-color: #B39EB5; } /* Pastel Purple */
-.icon-bg-8 { background-color: #FFB7B2; } /* Pastel Pink */
-.icon-bg-9 { background-color: #C1E1C1; } /* Pastel Mint */
-.icon-bg-10 { background-color: #F7C69F; } /* Pastel Apricot */
-.icon-bg-11 { background-color: #A0C4FF; } /* Pastel Sky */
-.icon-bg-12 { background-color: #B9D9EB; } /* Pastel Periwinkle */
+/* Fallback category palette for older saved/generated markup */
+.icon-bg-1 { --category-color: #9b7cff; --category-bg: #2a2441; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-2 { --category-color: #ff9f43; --category-bg: #382615; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-3 { --category-color: #ff6d86; --category-bg: #3a202d; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-4 { --category-color: #6adf86; --category-bg: #1d3827; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-5 { --category-color: #ffd166; --category-bg: #3b3117; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-6 { --category-color: #9aa6c1; --category-bg: #252b3a; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-7 { --category-color: #c77dff; --category-bg: #33203f; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-8 { --category-color: #ff7eb6; --category-bg: #3a2134; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-9 { --category-color: #62d7d4; --category-bg: #173738; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-10 { --category-color: #f29b55; --category-bg: #382617; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-11 { --category-color: #55a8ff; --category-bg: #1c2b43; background: var(--category-bg); color: var(--category-color); }
+.icon-bg-12 { --category-color: #4facfe; --category-bg: #1c2f44; background: var(--category-bg); color: var(--category-color); }
 
 .trans-content {
     flex: 1;
@@ -612,7 +618,7 @@ header {
 
 .trans-desc {
     font-size: 12px;
-    color: #666;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
