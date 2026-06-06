@@ -1,9 +1,15 @@
 /* Calculator Modal Styles */
 .calculator-modal {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     padding-bottom: 0;
     align-items: flex-end; /* Align to bottom for mobile feel */
     z-index: 3000 !important; /* Ensure it covers EVERYTHING including header/nav */
     background-color: var(--background-color); /* Make it opaque background */
+    overflow: hidden;
 }
 
 .calculator-content {

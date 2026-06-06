@@ -17,12 +17,15 @@ let isSubscriptionDeleteMode = false;
 let subscriptionData = []; // Store subscription data for deletion
 let deleteCallback = null; // Store the function to call when delete is confirmed
 let currentView = 'transactions'; // 'transactions' or 'subscriptions'
+let editingTransaction = null; // Tracks the transaction currently being edited in the calculator modal
 
 // Calculator Logic Variables
 let currentCalcAmount = '0';
 let currentCalcType = 'expense'; // 'expense' or 'income'
 let currentCalcDate = new Date();
 let selectedCategoryId = null;
+let currentSubscriptionAmount = '0';
+let lockedScrollY = 0;
 
 // Month Selector Variables
 let selectedMonth = new Date().getMonth() + 1; // 1-12
@@ -86,27 +89,27 @@ function saveLocalSubscriptions(data) {
 
 // Categories Config
 const EXPENSE_CATEGORIES = [
-    { id: 'food', label: '食物', icon: 'fas fa-utensils', color: '#9b7cff', bg: '#2a2441' },
-    { id: 'rent', label: '租房', icon: 'fas fa-home', color: '#ff6d86', bg: '#3a202d' },
-    { id: 'mortgage', label: '房貸', icon: 'fas fa-building', color: '#f29b55', bg: '#382617' },
-    { id: 'transport', label: '交通', icon: 'fas fa-bus', color: '#55a8ff', bg: '#1c2b43' },
-    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check', color: '#62d7d4', bg: '#173738' },
-    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket', color: '#ff9f43', bg: '#382615' },
-    { id: 'cat', label: '貓咪', icon: 'fas fa-paw', color: '#6adf86', bg: '#1d3827' },
-    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad', color: '#c77dff', bg: '#33203f' },
-    { id: 'gf', label: '女友', icon: 'fas fa-heart', color: '#ff7eb6', bg: '#3a2134' },
-    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag', color: '#ff5f93', bg: '#3b2030' },
-    { id: 'investment', label: '投資', icon: 'fas fa-chart-line', color: '#4facfe', bg: '#1c2f44' },
-    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#9aa6c1', bg: '#252b3a' }
+    { id: 'food', label: '食物', icon: 'fas fa-utensils', color: '#9b7cff', bg: '#2a2441', gradient: 'linear-gradient(90deg, #7c3aed, #9b7cff, #c4b5fd)' },
+    { id: 'rent', label: '租房', icon: 'fas fa-home', color: '#ff4f7b', bg: '#3a1f2b', gradient: 'linear-gradient(90deg, #e11d48, #ff4f7b, #fb7185)' },
+    { id: 'mortgage', label: '房貸', icon: 'fas fa-building', color: '#ffb547', bg: '#3a2a16', gradient: 'linear-gradient(90deg, #d97706, #ffb547, #fde68a)' },
+    { id: 'transport', label: '交通', icon: 'fas fa-bus', color: '#45a3ff', bg: '#182e49', gradient: 'linear-gradient(90deg, #2563eb, #45a3ff, #7dd3fc)' },
+    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check', color: '#28d6c8', bg: '#123838', gradient: 'linear-gradient(90deg, #0f766e, #28d6c8, #99f6e4)' },
+    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket', color: '#ff7a1a', bg: '#3d2110', gradient: 'linear-gradient(90deg, #ea580c, #ff7a1a, #fdba74)' },
+    { id: 'cat', label: '貓咪', icon: 'fas fa-paw', color: '#4ade80', bg: '#183824', gradient: 'linear-gradient(90deg, #16a34a, #4ade80, #bbf7d0)' },
+    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad', color: '#d65cff', bg: '#351d42', gradient: 'linear-gradient(90deg, #a21caf, #d65cff, #f0abfc)' },
+    { id: 'gf', label: '女友', icon: 'fas fa-heart', color: '#ff5ab3', bg: '#3b1f35', gradient: 'linear-gradient(90deg, #db2777, #ff5ab3, #f9a8d4)' },
+    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag', color: '#ff3d5a', bg: '#3c1b24', gradient: 'linear-gradient(90deg, #b91c1c, #ff3d5a, #fca5a5)' },
+    { id: 'investment', label: '投資', icon: 'fas fa-chart-line', color: '#2dd4ff', bg: '#143240', gradient: 'linear-gradient(90deg, #0284c7, #2dd4ff, #67e8f9)' },
+    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#b4bdcf', bg: '#252b3a', gradient: 'linear-gradient(90deg, #64748b, #b4bdcf, #e2e8f0)' }
 ];
 
 const INCOME_CATEGORIES = [
-    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#6adf86', bg: '#1d3827' },
-    { id: 'bonus', label: '獎金', icon: 'fas fa-star', color: '#ffd166', bg: '#3b3117' },
-    { id: 'invest', label: '投資', icon: 'fas fa-chart-line', color: '#4facfe', bg: '#1c2f44' },
-    { id: 'gift', label: '禮金', icon: 'fas fa-gift', color: '#c77dff', bg: '#33203f' },
-    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase', color: '#62d7d4', bg: '#173738' },
-    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#9aa6c1', bg: '#252b3a' }
+    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#22c55e', bg: '#153821' },
+    { id: 'bonus', label: '獎金', icon: 'fas fa-star', color: '#facc15', bg: '#3a3210' },
+    { id: 'invest', label: '投資', icon: 'fas fa-chart-line', color: '#38bdf8', bg: '#143247' },
+    { id: 'gift', label: '禮金', icon: 'fas fa-gift', color: '#a78bfa', bg: '#2d2545' },
+    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase', color: '#14b8a6', bg: '#123633' },
+    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#cbd5e1', bg: '#273040' }
 ];
 
 function getCategoryVisualStyle(category) {
@@ -340,7 +343,7 @@ function updateTransactionsList() {
             if (catConfig) iconClass = catConfig.icon;
             
             html += `
-                <div class="transaction-item" onclick="/* Open details? */">
+                <div class="transaction-item" data-transaction-id="${t.index}" role="button" tabindex="0" aria-label="Edit transaction">
                     <div class="trans-icon-wrapper" style="${getCategoryVisualStyle(catConfig)}">
                         <i class="${iconClass}"></i>
                     </div>
@@ -375,6 +378,106 @@ function updateTransactionsList() {
     }
     
     setupDeleteButtons();
+    setupTransactionEditHandlers();
+    setupTransactionSwipeHandlers();
+}
+
+function setupTransactionEditHandlers() {
+    document.querySelectorAll('.transaction-item[data-transaction-id]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (item.dataset.skipClick === 'true') {
+                item.dataset.skipClick = 'false';
+                return;
+            }
+            if (isDeleteMode) return;
+            if (e.target.closest('.list-delete-btn')) return;
+            if (item.classList.contains('swipe-revealed')) {
+                closeSwipedTransaction(item);
+                return;
+            }
+            openEditTransaction(item.dataset.transactionId);
+        });
+
+        item.addEventListener('keydown', (e) => {
+            if (isDeleteMode) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openEditTransaction(item.dataset.transactionId);
+            }
+        });
+    });
+}
+
+function setupTransactionSwipeHandlers() {
+    document.querySelectorAll('.transaction-item[data-transaction-id]').forEach(item => {
+        let startX = 0;
+        let startY = 0;
+        let latestX = 0;
+        let isDragging = false;
+        let isHorizontalSwipe = false;
+
+        item.addEventListener('pointerdown', (e) => {
+            if (isDeleteMode || e.target.closest('.list-delete-btn')) return;
+            startX = e.clientX;
+            startY = e.clientY;
+            latestX = e.clientX;
+            isDragging = true;
+            isHorizontalSwipe = false;
+            closeSwipedTransaction(item);
+        });
+
+        item.addEventListener('pointermove', (e) => {
+            if (!isDragging || isDeleteMode) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            if (!isHorizontalSwipe && Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                isHorizontalSwipe = true;
+            }
+
+            if (!isHorizontalSwipe) return;
+
+            latestX = e.clientX;
+            const translateX = Math.max(Math.min(deltaX, 0), -76);
+            item.style.transform = `translateX(${translateX}px)`;
+            item.dataset.skipClick = 'true';
+            e.preventDefault();
+        });
+
+        item.addEventListener('pointerup', () => finishTransactionSwipe(item));
+        item.addEventListener('pointercancel', () => finishTransactionSwipe(item));
+
+        function finishTransactionSwipe(currentItem) {
+            if (!isDragging) return;
+
+            const deltaX = latestX - startX;
+            isDragging = false;
+
+            if (isHorizontalSwipe && deltaX < -48) {
+                openSwipedTransaction(currentItem);
+                return;
+            }
+
+            closeSwipedTransaction(currentItem);
+        }
+    });
+}
+
+function openSwipedTransaction(item) {
+    closeSwipedTransaction(item);
+    item.classList.add('swipe-revealed');
+    item.style.transform = '';
+    item.dataset.skipClick = 'true';
+}
+
+function closeSwipedTransaction(exceptItem = null) {
+    document.querySelectorAll('.transaction-item.swipe-revealed').forEach(item => {
+        if (item !== exceptItem) {
+            item.classList.remove('swipe-revealed');
+            item.style.transform = '';
+        }
+    });
 }
 
 // Function to update expense charts (Refactored to use local transactionData)
@@ -1520,12 +1623,13 @@ function updateBudgetUI(categoryBudgets) {
     const circle = document.getElementById('budget-progress-circle');
     if (circle) {
         circle.setAttribute('stroke-dasharray', `${spentPercentage}, 100`);
+        circle.style.stroke = 'url(#budget-circle-gradient)';
         if (remaining < 0) {
-            circle.style.stroke = '#ff3b30'; // Red
+            updateBudgetCircleGradient('#ff7a1a', '#ff3d5a', '#c026d3');
         } else if (spentPercentage > 80) {
-            circle.style.stroke = '#ff9500'; // Orange
+            updateBudgetCircleGradient('#ffd166', '#ff9500', '#ff7a1a');
         } else {
-            circle.style.stroke = '#4cd964'; // Green
+            updateBudgetCircleGradient('#4ade80', '#28d6c8', '#45a3ff');
         }
     }
     
@@ -1572,7 +1676,7 @@ function updateBudgetUI(categoryBudgets) {
                             </div>
                         </div>
                         <div class="budget-progress-bar">
-                            <div class="budget-progress-fill ${progressClass}" style="width: ${percent}%"></div>
+                            <div class="budget-progress-fill ${progressClass}" style="width: ${percent}%; background: ${cat.gradient};"></div>
                         </div>
                     </div>
                 `;
@@ -1581,6 +1685,15 @@ function updateBudgetUI(categoryBudgets) {
             listContainer.innerHTML = html;
         }
     }
+}
+
+function updateBudgetCircleGradient(startColor, middleColor, endColor) {
+    const stops = document.querySelectorAll('#budget-circle-gradient stop');
+    if (stops.length < 3) return;
+
+    stops[0].setAttribute('stop-color', startColor);
+    stops[1].setAttribute('stop-color', middleColor);
+    stops[2].setAttribute('stop-color', endColor);
 }
 
 // Hook into updateBalance/fetchData to refresh budget UI when data changes
@@ -1637,14 +1750,10 @@ function setupCalculatorModal() {
     }
 
     // Close handlers
-    if (closeBtn) closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    });
+    if (closeBtn) closeBtn.addEventListener('click', closeCalculatorModal);
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
+            closeCalculatorModal();
         }
     });
 }
@@ -1655,6 +1764,7 @@ function openCalculatorModal(type = 'expense') {
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
     
     // Reset State
+    editingTransaction = null;
     currentCalcAmount = '0';
     currentCalcDate = new Date();
     document.getElementById('calc-description').value = '';
@@ -1667,6 +1777,49 @@ function openCalculatorModal(type = 'expense') {
     // Select default category
     const defaultCat = type === 'expense' ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0];
     selectCategory(defaultCat);
+}
+
+function closeCalculatorModal() {
+    const modal = document.getElementById('add-modal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+    editingTransaction = null;
+}
+
+function openEditTransaction(transactionId) {
+    const allTransactions = [...transactionData, ...incomeData];
+    const transaction = allTransactions.find(t => String(t.index) === String(transactionId));
+    if (!transaction) return;
+
+    editingTransaction = {
+        index: transaction.index,
+        originalType: transaction.type === 'income' ? 'income' : 'expense'
+    };
+
+    const type = transaction.type === 'income' ? 'income' : 'expense';
+    const modal = document.getElementById('add-modal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    currentCalcDate = parseLocalDate(transaction.date);
+    currentCalcAmount = String(Math.abs(parseFloat(String(transaction.amount).replace(/[^0-9.-]+/g, '')) || 0));
+    document.getElementById('calc-description').value = transaction.description || '';
+    updateAmountDisplay();
+    updateDateDisplay();
+
+    switchCalcType(type);
+
+    const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    const categoryObj = categories.find(c => c.label === transaction.category || c.id === transaction.category) || categories[0];
+    selectCategory(categoryObj);
+}
+
+function parseLocalDate(dateValue) {
+    const key = toLocalDateKey(dateValue);
+    if (!key) return new Date();
+
+    const [year, month, day] = key.split('-').map(Number);
+    return new Date(year, month - 1, day);
 }
 
 function switchCalcType(type) {
@@ -1811,21 +1964,35 @@ async function submitTransaction() {
     
     // Show quiet "Saving..." message
     const statusMsg = document.getElementById('status-message');
-    if (statusMsg) statusMsg.textContent = 'Saving...';
+    const savingText = editingTransaction ? 'Updating...' : 'Saving...';
+    const successText = editingTransaction ? 'Updated!' : 'Saved!';
+    if (statusMsg) statusMsg.textContent = savingText;
 
-    // Add transaction to localStorage
+    // Add or update transaction in localStorage
     try {
-        await addTransactionToSheet(
-            currentCalcDate,
-            amount,
-            categoryLabel,
-            description,
-            currentCalcType // 'expense' or 'income'
-        );
+        if (editingTransaction) {
+            await updateTransactionInStorage(
+                editingTransaction.index,
+                currentCalcDate,
+                amount,
+                categoryLabel,
+                description,
+                currentCalcType
+            );
+        } else {
+            await addTransactionToSheet(
+                currentCalcDate,
+                amount,
+                categoryLabel,
+                description,
+                currentCalcType // 'expense' or 'income'
+            );
+        }
+        editingTransaction = null;
         
-        if (statusMsg && statusMsg.textContent === 'Saving...') {
-            statusMsg.textContent = 'Saved!';
-            setTimeout(() => { if (statusMsg.textContent === 'Saved!') statusMsg.textContent = ''; }, 2000);
+        if (statusMsg && statusMsg.textContent === savingText) {
+            statusMsg.textContent = successText;
+            setTimeout(() => { if (statusMsg.textContent === successText) statusMsg.textContent = ''; }, 2000);
         }
         
         // Data is already in localStorage, just refresh all UI components
@@ -1837,7 +2004,7 @@ async function submitTransaction() {
         
     } catch (error) {
         console.error('Background sync error (will retry at midnight):', error);
-        if (statusMsg && statusMsg.textContent === 'Saving...') {
+        if (statusMsg && statusMsg.textContent === savingText) {
             statusMsg.textContent = 'Error saving';
             setTimeout(() => { if (statusMsg.textContent === 'Error saving') statusMsg.textContent = ''; }, 3000);
         }
@@ -2070,6 +2237,52 @@ async function addTransactionToSheet(date, amount, category, description, type =
         return true;
     } catch (error) {
         console.error('Error adding transaction to localStorage:', error);
+        throw error;
+    }
+}
+
+async function updateTransactionInStorage(index, date, amount, category, description, type = 'expense') {
+    try {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        const numericAmount = parseFloat(amount);
+
+        const updatedTransaction = {
+            index: index,
+            date: formattedDate,
+            amount: numericAmount,
+            category: category,
+            description: description || '',
+            type: type
+        };
+
+        const transactionList = getLocalStorageTransactions();
+        const incomeList = getLocalStorageIncome();
+        const transactionIndex = transactionList.findIndex(t => String(t.index) === String(index));
+        const incomeIndex = incomeList.findIndex(t => String(t.index) === String(index));
+
+        if (transactionIndex === -1 && incomeIndex === -1) {
+            throw new Error('Transaction not found');
+        }
+
+        if (transactionIndex > -1) transactionList.splice(transactionIndex, 1);
+        if (incomeIndex > -1) incomeList.splice(incomeIndex, 1);
+
+        if (type === 'income') {
+            incomeList.push(updatedTransaction);
+        } else {
+            transactionList.push(updatedTransaction);
+        }
+
+        saveLocalStorageTransactions(transactionList);
+        saveLocalStorageIncome(incomeList);
+
+        return true;
+    } catch (error) {
+        console.error('Error updating transaction in localStorage:', error);
         throw error;
     }
 }
@@ -3486,10 +3699,17 @@ function updateSubscriptionDeleteButtons() {
 function setupSubscriptionManagement() {
     const addSubscriptionModal = document.getElementById('add-subscription-modal');
     const closeAddSubscriptionBtn = document.querySelector('.close-add-subscription-modal');
-    const cancelAddBtn = document.getElementById('cancel-add-subscription');
     const addForm = document.getElementById('add-subscription-form');
     const addInlineBtn = document.getElementById('add-subscription-inline-btn');
     const deleteSubscriptionModeBtn = document.getElementById('delete-subscription-mode-btn');
+    const prevBillingBtn = document.getElementById('sub-prev-day');
+    const nextBillingBtn = document.getElementById('sub-next-day');
+
+    // Keep this full-screen modal outside transformed sections so fixed positioning
+    // is always relative to the viewport, matching the transaction calculator.
+    if (addSubscriptionModal && addSubscriptionModal.parentElement !== document.body) {
+        document.body.appendChild(addSubscriptionModal);
+    }
     
     // Setup view toggle buttons
     const toggleBtns = document.querySelectorAll('.view-toggle-btn');
@@ -3502,10 +3722,14 @@ function setupSubscriptionManagement() {
     // Add subscription button (inline)
     if (addInlineBtn) {
         addInlineBtn.addEventListener('click', () => {
-            addSubscriptionModal.style.display = 'flex';
-            addForm.reset();
+            openSubscriptionCalculator();
         });
     }
+
+    setupSubscriptionKeypad();
+
+    if (prevBillingBtn) prevBillingBtn.addEventListener('click', () => changeSubscriptionBillingDay(-1));
+    if (nextBillingBtn) nextBillingBtn.addEventListener('click', () => changeSubscriptionBillingDay(1));
     
     // Delete mode button for subscriptions
     if (deleteSubscriptionModeBtn) {
@@ -3519,13 +3743,7 @@ function setupSubscriptionManagement() {
     // Close add subscription modal
     if (closeAddSubscriptionBtn) {
         closeAddSubscriptionBtn.addEventListener('click', () => {
-            addSubscriptionModal.style.display = 'none';
-        });
-    }
-    
-    if (cancelAddBtn) {
-        cancelAddBtn.addEventListener('click', () => {
-            addSubscriptionModal.style.display = 'none';
+            closeSubscriptionCalculator();
         });
     }
     
@@ -3533,18 +3751,29 @@ function setupSubscriptionManagement() {
     if (addForm) {
         addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            updateSubscriptionAmountDisplay();
+
+            const amount = parseFloat(currentSubscriptionAmount);
+            const billingDate = parseInt(document.getElementById('sub-billing-date').value, 10);
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            if (!billingDate || billingDate < 1 || billingDate > 31) {
+                alert('Please enter a billing day between 1 and 31');
+                return;
+            }
             
             const subscription = {
-                name: document.getElementById('sub-name').value,
+                name: document.getElementById('sub-name').value.trim(),
                 amount: document.getElementById('sub-amount').value,
                 billingDate: document.getElementById('sub-billing-date').value,
-                payment: document.getElementById('sub-payment').value
+                payment: document.getElementById('sub-payment').value.trim()
             };
             
             try {
                 await addSubscriptionToGoogle(subscription);
-                addSubscriptionModal.style.display = 'none';
-                addForm.reset();
+                closeSubscriptionCalculator();
                 renderSubscriptionListInline();
             } catch (error) {
                 alert('Failed to add subscription. Please try again.');
@@ -3555,7 +3784,7 @@ function setupSubscriptionManagement() {
     // Close modal on outside click
     window.addEventListener('click', (e) => {
         if (e.target === addSubscriptionModal) {
-            addSubscriptionModal.style.display = 'none';
+            closeSubscriptionCalculator();
         }
     });
     
@@ -3563,4 +3792,98 @@ function setupSubscriptionManagement() {
     fetchSubscriptionsFromGoogle().then(() => {
         renderSubscriptionListInline();
     });
+}
+
+function openSubscriptionCalculator() {
+    const modal = document.getElementById('add-subscription-modal');
+    const form = document.getElementById('add-subscription-form');
+    if (!modal || !form) return;
+
+    form.reset();
+    currentSubscriptionAmount = '0';
+    document.getElementById('sub-billing-date').value = new Date().getDate();
+    updateSubscriptionAmountDisplay();
+    modal.style.display = 'flex';
+    lockPageScroll();
+}
+
+function closeSubscriptionCalculator() {
+    const modal = document.getElementById('add-subscription-modal');
+    const form = document.getElementById('add-subscription-form');
+    if (modal) modal.style.display = 'none';
+    if (form) form.reset();
+    currentSubscriptionAmount = '0';
+    updateSubscriptionAmountDisplay();
+    unlockPageScroll();
+}
+
+function lockPageScroll() {
+    lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+}
+
+function unlockPageScroll() {
+    document.documentElement.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo(0, lockedScrollY);
+}
+
+function setupSubscriptionKeypad() {
+    document.querySelectorAll('.sub-keypad-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            createRipple(e);
+
+            if (btn.type === 'submit') return;
+
+            const val = btn.dataset.val;
+            const action = btn.id;
+
+            if (action === 'sub-btn-ac') {
+                currentSubscriptionAmount = '0';
+            } else if (action === 'sub-btn-backspace') {
+                currentSubscriptionAmount = currentSubscriptionAmount.length > 1
+                    ? currentSubscriptionAmount.slice(0, -1)
+                    : '0';
+            } else if (val) {
+                if (['+', '-', '*', '/'].includes(val)) return;
+                if (currentSubscriptionAmount === '0' && val !== '.') {
+                    currentSubscriptionAmount = val;
+                } else {
+                    if (val === '.' && currentSubscriptionAmount.includes('.')) return;
+                    if (currentSubscriptionAmount.length < 10) currentSubscriptionAmount += val;
+                }
+            }
+
+            updateSubscriptionAmountDisplay();
+        });
+    });
+}
+
+function updateSubscriptionAmountDisplay() {
+    const display = document.getElementById('sub-display-amount');
+    const input = document.getElementById('sub-amount');
+    if (display) display.textContent = currentSubscriptionAmount;
+    if (input) input.value = currentSubscriptionAmount;
+}
+
+function changeSubscriptionBillingDay(delta) {
+    const input = document.getElementById('sub-billing-date');
+    if (!input) return;
+
+    const currentDay = parseInt(input.value, 10) || 1;
+    let nextDay = currentDay + delta;
+    if (nextDay < 1) nextDay = 31;
+    if (nextDay > 31) nextDay = 1;
+    input.value = nextDay;
 }
