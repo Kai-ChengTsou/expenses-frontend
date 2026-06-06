@@ -561,10 +561,14 @@ header {
     padding: 12px 16px;
     border-bottom: 1px solid rgba(99, 135, 197, 0.1);
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s ease;
+    transition: background-color 0.2s, transform 0.18s ease-out;
     position: relative;
     touch-action: pan-y;
     will-change: transform;
+}
+
+.transaction-item.swiping {
+    transition: background-color 0.2s;
 }
 
 .transaction-item:last-child {
@@ -636,20 +640,32 @@ header {
 
 /* Delete Button in List */
 .trans-delete-wrapper {
-    margin-left: 12px;
     display: none;
+    position: absolute;
+    right: -54px;
+    top: 50%;
+    width: 48px;
+    transform: translateY(-50%);
+    justify-content: center;
+    align-items: center;
+    margin-left: 0;
 }
 
 .delete-mode .trans-delete-wrapper {
     display: block;
+    position: static;
+    width: auto;
+    transform: none;
+    margin-left: 12px;
 }
 
 .transaction-item.swipe-revealed {
-    transform: translateX(-56px);
+    transform: translateX(-64px);
 }
 
+.transaction-item.swiping .trans-delete-wrapper,
 .transaction-item.swipe-revealed .trans-delete-wrapper {
-    display: block;
+    display: flex;
 }
 
 .delete-mode .transaction-item {

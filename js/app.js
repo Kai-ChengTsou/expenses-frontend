@@ -392,7 +392,7 @@ function setupTransactionEditHandlers() {
             if (isDeleteMode) return;
             if (e.target.closest('.list-delete-btn')) return;
             if (item.classList.contains('swipe-revealed')) {
-                closeSwipedTransaction(item);
+                closeTransactionSwipeItem(item);
                 return;
             }
             openEditTransaction(item.dataset.transactionId);
@@ -413,6 +413,8 @@ function setupTransactionSwipeHandlers() {
         let startX = 0;
         let startY = 0;
         let latestX = 0;
+        let startTranslateX = 0;
+        let latestTranslateX = 0;
         let isDragging = false;
         let isHorizontalSwipe = false;
 
@@ -421,9 +423,12 @@ function setupTransactionSwipeHandlers() {
             startX = e.clientX;
             startY = e.clientY;
             latestX = e.clientX;
+            startTranslateX = item.classList.contains('swipe-revealed') ? -64 : 0;
+            latestTranslateX = startTranslateX;
             isDragging = true;
             isHorizontalSwipe = false;
-            closeSwipedTransaction(item);
+            closeOtherSwipedTransactions(item);
+            item.setPointerCapture?.(e.pointerId);
         });
 
         item.addEventListener('pointermove', (e) => {
@@ -439,7 +444,10 @@ function setupTransactionSwipeHandlers() {
             if (!isHorizontalSwipe) return;
 
             latestX = e.clientX;
-            const translateX = Math.max(Math.min(deltaX, 0), -76);
+            item.classList.add('swiping');
+            item.classList.remove('swipe-revealed');
+            const translateX = Math.max(Math.min(startTranslateX + deltaX, 0), -76);
+            latestTranslateX = translateX;
             item.style.transform = `translateX(${translateX}px)`;
             item.dataset.skipClick = 'true';
             e.preventDefault();
@@ -453,29 +461,39 @@ function setupTransactionSwipeHandlers() {
 
             const deltaX = latestX - startX;
             isDragging = false;
+            currentItem.classList.remove('swiping');
 
-            if (isHorizontalSwipe && deltaX < -48) {
+            if (isHorizontalSwipe && latestTranslateX < -38) {
                 openSwipedTransaction(currentItem);
                 return;
             }
 
-            closeSwipedTransaction(currentItem);
+            if (isHorizontalSwipe || Math.abs(deltaX) > 6) {
+                currentItem.dataset.skipClick = 'true';
+            }
+            closeTransactionSwipeItem(currentItem);
         }
     });
 }
 
 function openSwipedTransaction(item) {
-    closeSwipedTransaction(item);
+    closeOtherSwipedTransactions(item);
+    item.classList.remove('swiping');
     item.classList.add('swipe-revealed');
     item.style.transform = '';
     item.dataset.skipClick = 'true';
 }
 
-function closeSwipedTransaction(exceptItem = null) {
+function closeTransactionSwipeItem(item) {
+    if (!item) return;
+    item.classList.remove('swiping', 'swipe-revealed');
+    item.style.transform = '';
+}
+
+function closeOtherSwipedTransactions(exceptItem = null) {
     document.querySelectorAll('.transaction-item.swipe-revealed').forEach(item => {
         if (item !== exceptItem) {
-            item.classList.remove('swipe-revealed');
-            item.style.transform = '';
+            closeTransactionSwipeItem(item);
         }
     });
 }
