@@ -1329,111 +1329,216 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // --- EXPORT TO EXCEL FUNCTION ---
 
-function exportToExcel() {
-    try {
-        // Get all data from localStorage
-        const transactions = getLocalStorageTransactions() || [];
-        const income = getLocalStorageIncome() || [];
-        const subscriptions = getLocalSubscriptions() || [];
-        
-        // Combine expenses and income
-        const allTransactions = [...transactions, ...income];
-        
-        // Sort by date (newest first)
-        allTransactions.sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return dateB - dateA;
-        });
-        
-        // Create CSV content
-        let csvContent = '';
-        
-        // Add Transactions/Income section
-        csvContent += 'TRANSACTIONS & INCOME\n';
-        csvContent += 'Date,Amount,Category,Description,Type\n';
-        
-        allTransactions.forEach(item => {
-            const date = item.date || '';
-            const amount = item.amount || 0;
-            const category = item.category || '';
-            const description = (item.description || '').replace(/,/g, ';'); // Replace commas to avoid CSV issues
-            const type = item.type || 'expense';
-            
-            csvContent += `${date},${amount},${category},${description},${type}\n`;
-        });
-        
-        // Add empty line
-        csvContent += '\n';
-        
-        // Add Subscriptions section
-        csvContent += 'SUBSCRIPTIONS\n';
-        csvContent += 'Service,Account,Price,Billing Cycle,Category,Next Payment,Payment Method,Description\n';
-        
-        subscriptions.forEach(sub => {
-            const service = (sub.service || sub.name || '').replace(/,/g, ';');
-            const account = (sub.account || sub.payment || '').replace(/,/g, ';');
-            const price = sub.price || sub.amount || 0;
-            const billingCycle = (sub.billingCycle || 'Monthly').replace(/,/g, ';');
-            const category = (sub.category || '').replace(/,/g, ';');
-            const nextPayment = sub.nextPaymentDate || sub.billingDate || '';
-            const paymentMethod = (sub.paymentMethod || '').replace(/,/g, ';');
-            const description = (sub.description || '').replace(/,/g, ';');
-            
-            csvContent += `${service},${account},${price},${billingCycle},${category},${nextPayment},${paymentMethod},${description}\n`;
-        });
-        
-        // Create blob and download
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        // Generate filename with current date
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const filename = `Tommy_Expense_Export_${dateStr}.csv`;
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Show success message
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) {
-            statusMsg.textContent = 'Exported successfully!';
-            setTimeout(() => {
-                statusMsg.textContent = '';
-            }, 2000);
-        }
-        
-    } catch (error) {
-        console.error('Error exporting to Excel:', error);
-        const statusMsg = document.getElementById('status-message');
-        if (statusMsg) {
-            statusMsg.textContent = 'Export failed';
-            setTimeout(() => {
-                statusMsg.textContent = '';
-            }, 2000);
+// Small helper to flash a message in the status bar
+function showStatusMessage(text, duration = 2500) {
+    const statusMsg = document.getElementById('status-message');
+    if (statusMsg) {
+        statusMsg.textContent = text;
+        if (duration > 0) {
+            setTimeout(() => { statusMsg.textContent = ''; }, duration);
         }
     }
 }
 
-// Setup export button
+function exportToExcel() {
+    try {
+        if (typeof XLSX === 'undefined') {
+            showStatusMessage('Excel library not loaded. Check your connection.');
+            return;
+        }
+
+        // Get all data from localStorage
+        const transactions = getLocalStorageTransactions() || [];
+        const income = getLocalStorageIncome() || [];
+        const subscriptions = getLocalSubscriptions() || [];
+
+        // Combine expenses and income, newest first
+        const allTransactions = [...transactions, ...income];
+        allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Build one clean row per transaction
+        const txRows = allTransactions.map(item => ({
+            Date: item.date || '',
+            Type: item.type || 'expense',
+            Category: item.category || '',
+            Amount: Number(item.amount) || 0,
+            Description: item.description || ''
+        }));
+
+        const wb = XLSX.utils.book_new();
+
+        const txHeader = ['Date', 'Type', 'Category', 'Amount', 'Description'];
+        const txSheet = XLSX.utils.json_to_sheet(txRows, { header: txHeader });
+        txSheet['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 12 }, { wch: 32 }];
+        XLSX.utils.book_append_sheet(wb, txSheet, 'Transactions');
+
+        // Subscriptions on their own sheet
+        const subRows = subscriptions.map(sub => ({
+            Service: sub.service || sub.name || '',
+            Account: sub.account || sub.payment || '',
+            Price: Number(sub.price || sub.amount) || 0,
+            'Billing Cycle': sub.billingCycle || 'Monthly',
+            Category: sub.category || '',
+            'Next Payment': sub.nextPaymentDate || sub.billingDate || '',
+            'Payment Method': sub.paymentMethod || '',
+            Description: sub.description || ''
+        }));
+        const subHeader = ['Service', 'Account', 'Price', 'Billing Cycle', 'Category', 'Next Payment', 'Payment Method', 'Description'];
+        const subSheet = XLSX.utils.json_to_sheet(subRows, { header: subHeader });
+        subSheet['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 28 }];
+        XLSX.utils.book_append_sheet(wb, subSheet, 'Subscriptions');
+
+        // Filename with current date
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        XLSX.writeFile(wb, `Tommy_Expense_Export_${dateStr}.xlsx`);
+
+        showStatusMessage(`Exported ${txRows.length} transactions!`);
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        showStatusMessage('Export failed');
+    }
+}
+
+// Read an uploaded Excel/CSV file and merge its rows into localStorage
+function importFromExcel(file) {
+    if (!file) return;
+
+    if (typeof XLSX === 'undefined') {
+        showStatusMessage('Excel library not loaded. Check your connection.');
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array', cellDates: true });
+
+            if (!wb.SheetNames.length) {
+                showStatusMessage('That file has no data');
+                return;
+            }
+
+            // --- Transactions / Income ---
+            const txSheetName = wb.SheetNames.find(n => /transaction|income|expense/i.test(n)) || wb.SheetNames[0];
+            const txRows = XLSX.utils.sheet_to_json(wb.Sheets[txSheetName], { defval: '' });
+
+            const existingTx = getLocalStorageTransactions() || [];
+            const existingInc = getLocalStorageIncome() || [];
+
+            const txSignature = t => `${t.date}|${t.amount}|${t.category}|${t.description}|${t.type}`;
+            const seenTx = new Set([...existingTx, ...existingInc].map(txSignature));
+
+            let importedCount = 0;
+            let uid = Date.now();
+
+            txRows.forEach(row => {
+                const date = toLocalDateKey(row.Date ?? row.date ?? '');
+                const amount = parseFloat(row.Amount ?? row.amount) || 0;
+                const category = String(row.Category ?? row.category ?? '').trim();
+                const description = String(row.Description ?? row.description ?? '').trim();
+                let type = String(row.Type ?? row.type ?? 'expense').trim().toLowerCase();
+                if (type !== 'income') type = 'expense';
+
+                // Skip blank rows
+                if (!date && !amount && !category && !description) return;
+
+                const entry = { index: uid++, date, amount, category, description, type };
+                const sig = txSignature(entry);
+                if (seenTx.has(sig)) return; // skip duplicates already in memory
+                seenTx.add(sig);
+
+                if (type === 'income') existingInc.push(entry);
+                else existingTx.push(entry);
+                importedCount++;
+            });
+
+            saveLocalStorageTransactions(existingTx);
+            saveLocalStorageIncome(existingInc);
+
+            // --- Subscriptions (optional sheet) ---
+            const subSheetName = wb.SheetNames.find(n => /subscription/i.test(n));
+            if (subSheetName) {
+                const subRows = XLSX.utils.sheet_to_json(wb.Sheets[subSheetName], { defval: '' });
+                const existingSubs = getLocalSubscriptions() || [];
+                const subSignature = s => `${s.service}|${s.price}|${s.nextPaymentDate}`;
+                const seenSubs = new Set(existingSubs.map(subSignature));
+
+                subRows.forEach(row => {
+                    const service = String(row.Service ?? row.service ?? '').trim();
+                    if (!service) return;
+                    const entry = {
+                        index: uid++,
+                        service,
+                        account: String(row.Account ?? '').trim(),
+                        price: parseFloat(row.Price) || 0,
+                        billingCycle: String(row['Billing Cycle'] ?? 'Monthly').trim() || 'Monthly',
+                        category: String(row.Category ?? '').trim(),
+                        nextPaymentDate: toLocalDateKey(row['Next Payment'] ?? ''),
+                        paymentMethod: String(row['Payment Method'] ?? '').trim(),
+                        description: String(row.Description ?? '').trim()
+                    };
+                    const sig = subSignature(entry);
+                    if (seenSubs.has(sig)) return;
+                    seenSubs.add(sig);
+                    existingSubs.push(entry);
+                });
+
+                saveLocalSubscriptions(existingSubs);
+            }
+
+            showStatusMessage(`Imported ${importedCount} transactions! Refreshing...`, 0);
+            setTimeout(() => location.reload(), 1200);
+        } catch (error) {
+            console.error('Error importing file:', error);
+            showStatusMessage('Import failed. Use a file exported from this app.');
+        }
+    };
+
+    reader.onerror = function() {
+        showStatusMessage('Could not read that file');
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// Setup export and import buttons
 function setupExportButton() {
     const exportBtn = document.getElementById('export-excel-btn');
     if (exportBtn) {
         exportBtn.addEventListener('click', exportToExcel);
-        
-        // Add hover effect
+
         exportBtn.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-2px)';
             this.style.boxShadow = '0 8px 16px rgba(102, 126, 234, 0.4)';
         });
-        
+
         exportBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    }
+
+    const importBtn = document.getElementById('import-excel-btn');
+    const importInput = document.getElementById('import-excel-input');
+    if (importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+
+        importInput.addEventListener('change', function() {
+            const file = this.files && this.files[0];
+            if (file) importFromExcel(file);
+            // Reset so selecting the same file again still fires change
+            this.value = '';
+        });
+
+        importBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 8px 16px rgba(17, 153, 142, 0.4)';
+        });
+
+        importBtn.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
             this.style.boxShadow = 'none';
         });
