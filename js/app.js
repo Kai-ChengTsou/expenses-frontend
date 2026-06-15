@@ -1372,21 +1372,31 @@ function exportToExcel() {
         txSheet['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 12 }, { wch: 32 }];
         XLSX.utils.book_append_sheet(wb, txSheet, 'Transactions');
 
-        // Subscriptions on their own sheet
+        // Subscriptions on their own sheet (columns match the app's real schema)
         const subRows = subscriptions.map(sub => ({
-            Service: sub.service || sub.name || '',
-            Account: sub.account || sub.payment || '',
-            Price: Number(sub.price || sub.amount) || 0,
-            'Billing Cycle': sub.billingCycle || 'Monthly',
-            Category: sub.category || '',
-            'Next Payment': sub.nextPaymentDate || sub.billingDate || '',
-            'Payment Method': sub.paymentMethod || '',
-            Description: sub.description || ''
+            Name: sub.name || sub.service || '',
+            Amount: Number(sub.amount ?? sub.price) || 0,
+            'Payment Method': sub.payment || sub.paymentMethod || sub.account || '',
+            'Billing Day': sub.billingDate ?? sub.nextPaymentDate ?? ''
         }));
-        const subHeader = ['Service', 'Account', 'Price', 'Billing Cycle', 'Category', 'Next Payment', 'Payment Method', 'Description'];
+        const subHeader = ['Name', 'Amount', 'Payment Method', 'Billing Day'];
         const subSheet = XLSX.utils.json_to_sheet(subRows, { header: subHeader });
-        subSheet['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 28 }];
+        subSheet['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }];
         XLSX.utils.book_append_sheet(wb, subSheet, 'Subscriptions');
+
+        // Category budgets on their own sheet
+        const categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+        const budgetRows = EXPENSE_CATEGORIES
+            .filter(cat => Number(categoryBudgets[cat.id]) > 0)
+            .map(cat => ({
+                'Category ID': cat.id,
+                Category: cat.label,
+                Budget: Number(categoryBudgets[cat.id]) || 0
+            }));
+        const budgetHeader = ['Category ID', 'Category', 'Budget'];
+        const budgetSheet = XLSX.utils.json_to_sheet(budgetRows, { header: budgetHeader });
+        budgetSheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }];
+        XLSX.utils.book_append_sheet(wb, budgetSheet, 'Budgets');
 
         // Filename with current date
         const now = new Date();
@@ -1463,22 +1473,21 @@ function importFromExcel(file) {
             if (subSheetName) {
                 const subRows = XLSX.utils.sheet_to_json(wb.Sheets[subSheetName], { defval: '' });
                 const existingSubs = getLocalSubscriptions() || [];
-                const subSignature = s => `${s.service}|${s.price}|${s.nextPaymentDate}`;
+                const subSignature = s => `${s.name}|${s.amount}|${s.billingDate}`;
                 const seenSubs = new Set(existingSubs.map(subSignature));
 
                 subRows.forEach(row => {
-                    const service = String(row.Service ?? row.service ?? '').trim();
-                    if (!service) return;
+                    // Support both the current export columns and any older/legacy names
+                    const name = String(row.Name ?? row.name ?? row.Service ?? row.service ?? '').trim();
+                    if (!name) return;
                     const entry = {
                         index: uid++,
-                        service,
-                        account: String(row.Account ?? '').trim(),
-                        price: parseFloat(row.Price) || 0,
-                        billingCycle: String(row['Billing Cycle'] ?? 'Monthly').trim() || 'Monthly',
-                        category: String(row.Category ?? '').trim(),
-                        nextPaymentDate: toLocalDateKey(row['Next Payment'] ?? ''),
-                        paymentMethod: String(row['Payment Method'] ?? '').trim(),
-                        description: String(row.Description ?? '').trim()
+                        name,
+                        amount: parseFloat(row.Amount ?? row.amount ?? row.Price ?? row.price) || 0,
+                        payment: String(row['Payment Method'] ?? row.payment ?? row.paymentMethod ?? row.Account ?? '').trim(),
+                        billingDate: String(row['Billing Day'] ?? row.billingDate ?? row['Next Payment'] ?? row.nextPaymentDate ?? '').trim(),
+                        status: 'active',
+                        createdAt: new Date().toISOString()
                     };
                     const sig = subSignature(entry);
                     if (seenSubs.has(sig)) return;
@@ -1487,6 +1496,29 @@ function importFromExcel(file) {
                 });
 
                 saveLocalSubscriptions(existingSubs);
+            }
+
+            // --- Category budgets (optional sheet) ---
+            const budgetSheetName = wb.SheetNames.find(n => /budget/i.test(n));
+            if (budgetSheetName) {
+                const budgetRows = XLSX.utils.sheet_to_json(wb.Sheets[budgetSheetName], { defval: '' });
+                const categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+
+                budgetRows.forEach(row => {
+                    // Match by Category ID first, then fall back to the category label
+                    let catId = String(row['Category ID'] ?? row['Category Id'] ?? row.id ?? '').trim();
+                    const catLabel = String(row.Category ?? row.category ?? '').trim();
+                    if (!catId && catLabel) {
+                        const match = EXPENSE_CATEGORIES.find(c => c.label === catLabel || c.id === catLabel);
+                        if (match) catId = match.id;
+                    }
+                    const amount = parseFloat(row.Budget ?? row.budget ?? row.Amount) || 0;
+                    if (catId && amount > 0) {
+                        categoryBudgets[catId] = amount;
+                    }
+                });
+
+                localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
             }
 
             showStatusMessage(`Imported ${importedCount} transactions! Refreshing...`, 0);
