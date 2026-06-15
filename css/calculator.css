@@ -1,12 +1,17 @@
 /* Calculator Modal Styles */
 .calculator-modal {
     position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
+    /* Anchor to all four edges so it always fills the real screen on iOS PWAs.
+       Using top/bottom = 0 is more reliable than 100vh/100dvh, which can come
+       out shorter than the physical screen in standalone mode and leave a gap. */
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
     padding-bottom: 0;
-    align-items: flex-end; /* Align to bottom for mobile feel */
+    align-items: stretch; /* Let content fill the full height */
     z-index: 3000 !important; /* Ensure it covers EVERYTHING including header/nav */
     background-color: var(--background-color); /* Make it opaque background */
     overflow: hidden;
@@ -20,8 +25,7 @@
     max-width: 100%;
     width: 100%; /* Full width */
     margin: 0;
-    height: 100%; /* Full height */
-    height: 100dvh; /* Dynamic viewport height */
+    height: 100%; /* Fill the modal, which is anchored to the full screen */
     display: flex;
     flex-direction: column;
     box-shadow: none;
