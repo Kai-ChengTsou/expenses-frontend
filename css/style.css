@@ -2406,14 +2406,7 @@ section h2 {
 }
 
 .subscription-calculator-header h3 {
-    margin: 0;
-    padding: 6px 22px;
-    border-radius: 18px;
-    background: rgba(24, 31, 48, 0.86);
-    border: 1px solid rgba(99, 135, 197, 0.14);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-color);
+    display: none;
 }
 
 .subscription-calculator-header .close-add-subscription-modal {
@@ -3040,7 +3033,7 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
-    padding-bottom: clamp(12px, env(safe-area-inset-bottom), 24px);
+    padding-bottom: 12px !important;
 }
 
 /* Theme compatibility layer for legacy hardcoded sections */
