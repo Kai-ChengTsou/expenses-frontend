@@ -46,6 +46,7 @@
     --app-height: 100dvh;
     --subscription-modal-background:
         linear-gradient(180deg, #090d18 0%, #101726 48%, #090d18 100%);
+    --subscription-modal-bottom-color: #090d18;
 }
 
 [data-theme="cute"] {
@@ -89,6 +90,7 @@
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --subscription-modal-background:
         linear-gradient(180deg, #fff5fb 0%, #fff7fc 48%, #ffeaf4 100%);
+    --subscription-modal-bottom-color: #ffeaf4;
 }
 
 @font-face {
@@ -2475,6 +2477,9 @@ section h2 {
 .subscription-icon-preview {
     width: clamp(66px, 10.5svh, 88px);
     height: clamp(66px, 10.5svh, 88px);
+    min-width: clamp(66px, 10.5svh, 88px);
+    flex: 0 0 auto;
+    aspect-ratio: 1;
     border-radius: clamp(20px, 3.2svh, 26px);
     margin: 0 auto;
     display: flex;
@@ -2549,8 +2554,7 @@ section h2 {
 }
 
 .sub-keypad-btn {
-    min-height: 0;
-    height: 100%;
+    height: clamp(48px, 6.4svh, 58px);
     border-radius: 26px;
     border: none;
     font-size: 22px;
@@ -3065,17 +3069,12 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
-    height: clamp(380px, 46svh, 460px);
-    display: flex;
-    flex-direction: column;
     padding-top: clamp(8px, 1.2svh, 12px) !important;
     padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 48px 0 var(--subscription-modal-bottom-color);
 }
 
 .subscription-keypad-area .keypad-grid {
-    flex: 1;
-    min-height: 0;
-    grid-template-rows: repeat(5, minmax(0, 1fr));
     gap: clamp(8px, 1.2svh, 12px);
 }
 
@@ -3083,6 +3082,7 @@ section h2 {
     .subscription-icon-preview {
         width: 58px;
         height: 58px;
+        min-width: 58px;
         border-radius: 18px;
     }
 
@@ -3096,12 +3096,7 @@ section h2 {
     }
 
     .sub-keypad-btn {
-        height: 100%;
-    }
-
-    .subscription-keypad-area {
-        height: clamp(320px, 44svh, 380px);
-        padding-bottom: 8px !important;
+        height: 44px;
     }
 
     .subscription-keypad-area .keypad-grid {

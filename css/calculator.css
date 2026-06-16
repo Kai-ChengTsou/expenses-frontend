@@ -251,24 +251,18 @@
 }
 
 .subscription-keypad-area {
-    height: clamp(380px, 46svh, 460px);
-    display: flex;
-    flex-direction: column;
     padding-top: clamp(8px, 1.2svh, 12px) !important;
     padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
     flex-shrink: 0;
+    box-shadow: 0 48px 0 var(--subscription-modal-bottom-color);
 }
 
 .subscription-keypad-area .keypad-grid {
-    flex: 1;
-    min-height: 0;
-    grid-template-rows: repeat(5, minmax(0, 1fr));
     gap: clamp(8px, 1.2svh, 12px);
 }
 
 @media (max-height: 740px) {
     .subscription-keypad-area {
-        height: clamp(320px, 44svh, 380px);
         padding-bottom: 8px !important;
     }
 
