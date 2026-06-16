@@ -2401,7 +2401,7 @@ section h2 {
        display:none and JS sets display:flex inline when opening the modal. */
     flex-direction: column !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;      /* top:0 + bottom:0 define height — covers full physical screen incl. safe area */
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
