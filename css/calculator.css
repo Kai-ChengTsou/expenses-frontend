@@ -5,9 +5,9 @@
     right: 0;
     bottom: 0;
     left: 0;
-    /* Column direction so .calculator-content uses flex: 1 to fill height.
-       This is more reliable than height: 100%/dvh on iOS standalone PWAs. */
-    display: flex;
+    /* flex-direction: column so .calculator-content fills height with flex: 1.
+       display is NOT set here — base .modal keeps display:none and JS sets
+       display:flex inline when opening, which already handles the flex context. */
     flex-direction: column;
     width: 100%;
     height: 100%;

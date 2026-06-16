@@ -2395,10 +2395,10 @@ section h2 {
     right: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
-    /* Use column direction so the single content child fills height with flex: 1.
-       Do NOT use height: 100%/dvh on the child — percentage heights are unreliable
-       inside position:fixed flex containers on iOS standalone PWA (WebKit bug). */
-    display: flex !important;
+    /* flex-direction: column so .subscription-calculator-content fills the height
+       with flex: 1 instead of unreliable % heights on iOS standalone PWA.
+       NOTE: display is intentionally NOT set here — the base .modal keeps
+       display:none and JS sets display:flex inline when opening the modal. */
     flex-direction: column !important;
     width: 100% !important;
     height: 100% !important;
