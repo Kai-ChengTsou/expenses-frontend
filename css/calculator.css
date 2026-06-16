@@ -251,8 +251,14 @@
 }
 
 .subscription-keypad-area {
-    padding-bottom: 12px !important;
+    margin-top: auto;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     flex-shrink: 0;
+}
+
+.subscription-keypad-area .keypad-grid {
+    gap: 8px;
 }
 
 .keypad-grid {

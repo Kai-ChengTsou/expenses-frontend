@@ -2383,7 +2383,7 @@ section h2 {
        same full-page viewport instead of calculating a shorter custom height. */
     top: 0 !important;
     right: 0 !important;
-    bottom: -88px !important;
+    bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: auto !important;
@@ -2424,8 +2424,8 @@ section h2 {
 }
 
 .subscription-calculator-form {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     height: 100%;
     min-height: 0;
@@ -2433,19 +2433,20 @@ section h2 {
 }
 
 .subscription-form-panel {
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 22px 16px;
+    padding: clamp(12px, 2svh, 20px) 16px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 18px;
+    justify-content: flex-end;
+    gap: clamp(10px, 1.6svh, 16px);
 }
 
 .subscription-icon-preview {
-    width: 72px;
-    height: 72px;
-    border-radius: 22px;
+    width: clamp(58px, 9svh, 72px);
+    height: clamp(58px, 9svh, 72px);
+    border-radius: clamp(18px, 2.8svh, 22px);
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -2459,7 +2460,7 @@ section h2 {
 
 .subscription-form-fields {
     display: grid;
-    gap: 12px;
+    gap: clamp(8px, 1.3svh, 12px);
 }
 
 .subscription-form-fields input,
@@ -2474,7 +2475,7 @@ section h2 {
 }
 
 .subscription-form-fields input {
-    padding: 15px 16px;
+    padding: clamp(11px, 1.7svh, 15px) 16px;
     font-size: 16px;
 }
 
@@ -2486,6 +2487,7 @@ section h2 {
 
 .subscription-display-area {
     flex-shrink: 0;
+    padding-block: clamp(8px, 1.5svh, 12px);
 }
 
 .subscription-selected-icon i {
@@ -2495,6 +2497,7 @@ section h2 {
 .subscription-billing-bar {
     gap: 14px;
     flex-shrink: 0;
+    padding-block: clamp(6px, 1.2svh, 10px);
 }
 
 .subscription-billing-label {
@@ -2517,7 +2520,7 @@ section h2 {
 }
 
 .sub-keypad-btn {
-    height: 52px;
+    height: clamp(44px, 5.8svh, 52px);
     border-radius: 26px;
     border: none;
     font-size: 22px;
@@ -3032,8 +3035,13 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
-    padding-bottom: 12px !important;
-    align-self: end;
+    margin-top: auto;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+
+.subscription-keypad-area .keypad-grid {
+    gap: 8px;
 }
 
 /* Theme compatibility layer for legacy hardcoded sections */
