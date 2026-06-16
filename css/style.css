@@ -89,8 +89,8 @@
     --tooltip-text-color: #4f2d46;
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --subscription-modal-background:
-        linear-gradient(180deg, #fff5fb 0%, #fff7fc 48%, #ffeaf4 100%);
-    --subscription-modal-bottom-color: #ffeaf4;
+        linear-gradient(180deg, #fff5fb 0%, #fff2fa 48%, #ffdceb 100%);
+    --subscription-modal-bottom-color: #ffdceb;
 }
 
 @font-face {
@@ -105,7 +105,7 @@ html {
 html.subscription-calculator-open,
 body.subscription-calculator-open {
     background: var(--subscription-modal-background) !important;
-    background-color: var(--background-color) !important;
+    background-color: var(--subscription-modal-bottom-color) !important;
 }
 
 body {
@@ -3447,6 +3447,10 @@ section h2 {
 [data-theme="cute"] .sub-keypad-btn.action {
     background: #ffe8f3;
     color: var(--primary-color);
+}
+
+[data-theme="cute"] .subscription-keypad-area {
+    box-shadow: 0 64px 0 var(--subscription-modal-bottom-color);
 }
 
 [data-theme="cute"] .close-subscription-detail,

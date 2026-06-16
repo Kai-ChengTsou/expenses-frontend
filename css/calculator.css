@@ -446,6 +446,10 @@
     box-shadow: none;
 }
 
+[data-theme="cute"] .subscription-keypad-area {
+    box-shadow: 0 64px 0 var(--subscription-modal-bottom-color);
+}
+
 [data-theme="cute"] .subscription-form-fields input,
 [data-theme="cute"] .subscription-billing-label input {
     background: #fffafd;
