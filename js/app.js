@@ -16,7 +16,6 @@ const THEMES = {
 
 const THEME_META = {
     neon: {
-        label: 'Neon',
         icon: 'fas fa-bolt',
         colorScheme: '#090d18',
         monthlyGradient: ['rgba(14, 165, 233, 0.8)', 'rgba(6, 182, 212, 0.8)'],
@@ -39,7 +38,6 @@ const THEME_META = {
         ]
     },
     cute: {
-        label: 'Cute',
         icon: 'fas fa-heart',
         colorScheme: '#fff5fb',
         monthlyGradient: ['rgba(255, 158, 199, 0.82)', 'rgba(169, 121, 255, 0.82)'],
@@ -105,9 +103,7 @@ function updateThemeToggleUI() {
     const meta = THEME_META[currentTheme];
     toggle.setAttribute('aria-pressed', String(isCute));
     toggle.setAttribute('aria-label', isCute ? 'Switch to neon theme' : 'Switch to cute theme');
-    const label = toggle.querySelector('.theme-toggle-text');
     const icon = toggle.querySelector('.theme-toggle-thumb i');
-    if (label) label.textContent = meta.label;
     if (icon) icon.className = meta.icon;
 }
 

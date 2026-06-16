@@ -353,3 +353,55 @@
         background: rgba(99, 135, 197, 0.14);
     }
 }
+
+[data-theme="cute"] .budget-stat-item,
+[data-theme="cute"] .budget-item {
+    background: var(--card-gradient);
+    border-color: var(--border-color);
+    box-shadow: 0 12px 28px rgba(204, 121, 162, 0.16);
+}
+
+[data-theme="cute"] .circle-bg {
+    stroke: rgba(232, 93, 158, 0.18);
+}
+
+[data-theme="cute"] .stat-value.spent {
+    color: var(--danger-color);
+}
+
+[data-theme="cute"] .budget-progress-bar {
+    background: rgba(232, 93, 158, 0.14);
+}
+
+[data-theme="cute"] .budget-progress-fill {
+    background: linear-gradient(90deg, var(--category-color, var(--primary-color)), #ff9ec7, var(--accent-color));
+}
+
+[data-theme="cute"] .budget-progress-fill.warning {
+    background: linear-gradient(90deg, #ffd166, #ffb35c, #ff8fab);
+}
+
+[data-theme="cute"] .budget-progress-fill.danger {
+    background: linear-gradient(90deg, #ff8fab, #d9446a, #a979ff);
+}
+
+[data-theme="cute"] .budget-grid-item:active {
+    background: rgba(255, 158, 199, 0.14);
+}
+
+[data-theme="cute"] .budget-amount-input,
+[data-theme="cute"] .btn-back {
+    background: rgba(255, 247, 252, 0.92);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="cute"] .budget-amount-input:focus {
+    background: rgba(255, 232, 243, 0.92);
+    border-color: var(--primary-color);
+}
+
+[data-theme="cute"] .btn-save-single {
+    background: var(--logo-gradient);
+    color: var(--button-text);
+}

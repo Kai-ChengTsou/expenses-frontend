@@ -18,10 +18,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.4">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.3">
-    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
-    <link rel="stylesheet" href="css/budget.css?v=1.0.1">
+    <link rel="stylesheet" href="css/style.css?v=1.0.5">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.4">
+    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -136,7 +136,6 @@
                             <i class="fas fa-bolt"></i>
                         </span>
                     </span>
-                    <span class="theme-toggle-text">Neon</span>
                 </button>
                 <div class="status-message" id="status-message"></div>
             </div>
@@ -553,11 +552,11 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.5"></script>
+    <script src="js/app.js?v=1.0.6"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.7')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.8')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

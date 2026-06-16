@@ -154,7 +154,8 @@ header {
 
 .theme-toggle {
     min-height: 44px;
-    padding: 6px 10px 6px 6px;
+    width: 64px;
+    padding: 6px;
     border: 1px solid var(--border-color);
     border-radius: 999px;
     background: var(--control-background);
@@ -179,7 +180,7 @@ header {
 }
 
 .theme-toggle-track {
-    width: 52px;
+    width: 50px;
     height: 28px;
     border-radius: 999px;
     padding: 3px;
@@ -204,13 +205,7 @@ header {
 }
 
 [data-theme="cute"] .theme-toggle-thumb {
-    transform: translateX(24px);
-}
-
-.theme-toggle-text {
-    min-width: 36px;
-    font-size: 12px;
-    font-weight: 700;
+    transform: translateX(22px);
 }
 
 /* Refresh Button */
@@ -3070,6 +3065,28 @@ section h2 {
 [data-theme="cute"] input,
 [data-theme="cute"] select,
 [data-theme="cute"] textarea,
+[data-theme="cute"] table,
+[data-theme="cute"] thead,
+[data-theme="cute"] tbody,
+[data-theme="cute"] tr,
+[data-theme="cute"] .transaction-day-card,
+[data-theme="cute"] .day-header,
+[data-theme="cute"] .transaction-list,
+[data-theme="cute"] .category-item,
+[data-theme="cute"] .category-info,
+[data-theme="cute"] .category-insights,
+[data-theme="cute"] .insight-item,
+[data-theme="cute"] .month-selector,
+[data-theme="cute"] .month-dropdown,
+[data-theme="cute"] .quick-add-tabs,
+[data-theme="cute"] .quick-add-tab,
+[data-theme="cute"] .subscription-card,
+[data-theme="cute"] .subscription-detail-card,
+[data-theme="cute"] .detail-row,
+[data-theme="cute"] .detail-meta,
+[data-theme="cute"] .modal-header,
+[data-theme="cute"] .modal-footer,
+[data-theme="cute"] .btn-cancel,
 [data-theme="cute"] .budget-amount-input,
 [data-theme="cute"] .keypad-btn,
 [data-theme="cute"] .date-bar,
@@ -3080,6 +3097,43 @@ section h2 {
     background: var(--control-background);
     color: var(--text-color);
     border-color: var(--border-color);
+}
+
+[data-theme="cute"] .transaction-day-card,
+[data-theme="cute"] .category-item,
+[data-theme="cute"] .insight-item,
+[data-theme="cute"] .detail-row,
+[data-theme="cute"] .quick-add-tab,
+[data-theme="cute"] .month-selector {
+    box-shadow: 0 8px 20px rgba(204, 121, 162, 0.12);
+}
+
+[data-theme="cute"] .icon-bg-1 { --category-color: #e85d9e; --category-bg: #ffe8f3; }
+[data-theme="cute"] .icon-bg-2 { --category-color: #ff8f6b; --category-bg: #fff0e8; }
+[data-theme="cute"] .icon-bg-3 { --category-color: #a979ff; --category-bg: #f0e7ff; }
+[data-theme="cute"] .icon-bg-4 { --category-color: #2a9d72; --category-bg: #e1f7ee; }
+[data-theme="cute"] .icon-bg-5 { --category-color: #d9891f; --category-bg: #fff3d6; }
+[data-theme="cute"] .icon-bg-6 { --category-color: #896778; --category-bg: #f7edf3; }
+[data-theme="cute"] .icon-bg-7 { --category-color: #a979ff; --category-bg: #f0e7ff; }
+[data-theme="cute"] .icon-bg-8 { --category-color: #e85d9e; --category-bg: #ffe4f1; }
+[data-theme="cute"] .icon-bg-9 { --category-color: #5cc6b7; --category-bg: #e5f8f5; }
+[data-theme="cute"] .icon-bg-10 { --category-color: #d9891f; --category-bg: #fff1d8; }
+[data-theme="cute"] .icon-bg-11 { --category-color: #4c9fe8; --category-bg: #e5f4ff; }
+[data-theme="cute"] .icon-bg-12 { --category-color: #5c9ded; --category-bg: #e8f3ff; }
+
+[data-theme="cute"] .status-message,
+[data-theme="cute"] .detail-value.warning-text {
+    background: rgba(255, 158, 199, 0.18);
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .empty-subscriptions,
+[data-theme="cute"] .category-loading,
+[data-theme="cute"] .no-data,
+[data-theme="cute"] .detail-label,
+[data-theme="cute"] .subscription-meta,
+[data-theme="cute"] .quick-add-description {
+    color: var(--text-secondary);
 }
 
 [data-theme="cute"] .keypad-btn.operator,
