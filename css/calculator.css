@@ -5,12 +5,11 @@
     right: 0;
     bottom: 0;
     left: 0;
-    /* flex-direction: column so .calculator-content fills height with flex: 1.
-       display is NOT set here — base .modal keeps display:none and JS sets
-       display:flex inline when opening, which already handles the flex context. */
+    /* flex-direction:column so .calculator-content uses flex:1 to fill height.
+       display is NOT set here — JS controls show/hide via inline style. */
     flex-direction: column;
     width: 100%;
-    height: auto;       /* top:0 + bottom:0 define height — no separate height needed */
+    height: 100%;
     padding-bottom: 0;
     z-index: 3000 !important;
     background-color: var(--background-color);

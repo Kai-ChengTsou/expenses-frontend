@@ -2389,19 +2389,19 @@ section h2 {
 }
 
 /* Full-screen Add Subscription Calculator */
+/* NOTE: display is controlled by JS (modal.style.display = 'flex'/'none').
+   Do NOT set display here — it would override the JS close logic. */
 .subscription-calculator-modal {
     position: fixed !important;
     top: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
-    /* flex-direction: column so .subscription-calculator-content fills the height
-       with flex: 1 instead of unreliable % heights on iOS standalone PWA.
-       NOTE: display is intentionally NOT set here — the base .modal keeps
-       display:none and JS sets display:flex inline when opening the modal. */
+    /* flex-direction:column ensures the content child stacks vertically and
+       can use flex:1 to fill height instead of unreliable % heights on iOS. */
     flex-direction: column !important;
     width: 100% !important;
-    height: auto !important;      /* top:0 + bottom:0 define height — covers full physical screen incl. safe area */
+    height: 100% !important;
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
