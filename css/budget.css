@@ -283,7 +283,7 @@
 .budget-amount-input-container {
     position: relative;
     width: 100%;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
 
 .currency-prefix {
@@ -312,6 +312,53 @@
 .budget-amount-input:focus {
     border-color: var(--primary-color);
     background: rgba(79, 172, 254, 0.2);
+}
+
+.budget-calculator-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.budget-calc-key {
+    min-height: 46px;
+    border: none;
+    border-radius: 18px;
+    background: rgba(26, 29, 35, 0.78);
+    color: var(--text-color);
+    font-size: 1.15rem;
+    font-weight: 700;
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.2s ease, box-shadow 0.2s ease;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.budget-calc-key:active {
+    transform: scale(0.96);
+    background: rgba(79, 172, 254, 0.2);
+}
+
+.budget-calc-key.action {
+    background: rgba(31, 43, 66, 0.95);
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+.budget-calc-key.zero {
+    grid-column: span 2;
+}
+
+.budget-calc-key.save {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: #ffffff;
+    box-shadow: 0 10px 24px var(--glow-shadow);
 }
 
 .budget-input-actions {
@@ -390,10 +437,14 @@
 }
 
 [data-theme="cute"] .budget-amount-input,
-[data-theme="cute"] .btn-back {
+[data-theme="cute"] .btn-back,
+[data-theme="cute"] .budget-calc-key {
     background: rgba(255, 247, 252, 0.92);
     color: var(--text-color);
     border-color: var(--border-color);
+    box-shadow:
+        4px 4px 12px rgba(204, 121, 162, 0.14),
+        -2px -2px 10px rgba(255, 255, 255, 0.85);
 }
 
 [data-theme="cute"] .budget-amount-input:focus {
@@ -404,4 +455,15 @@
 [data-theme="cute"] .btn-save-single {
     background: var(--logo-gradient);
     color: var(--button-text);
+}
+
+[data-theme="cute"] .budget-calc-key.action {
+    background: #ffe8f3;
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .budget-calc-key.save {
+    background: var(--logo-gradient);
+    color: var(--button-text);
+    box-shadow: 0 10px 24px var(--glow-shadow);
 }

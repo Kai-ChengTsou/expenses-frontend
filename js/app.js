@@ -1755,6 +1755,7 @@ function setupBudgetSection() {
     const amountInput = document.getElementById('single-budget-input');
     const backBtn = document.getElementById('back-to-grid-btn');
     const saveBtn = document.getElementById('save-single-budget-btn');
+    const budgetCalcKeys = document.querySelectorAll('.budget-calc-key');
     
     let currentEditingId = null;
     
@@ -1776,7 +1777,6 @@ function setupBudgetSection() {
         selectedIcon.innerHTML = `<i class="${cat.icon}"></i>`;
         
         amountInput.value = categoryBudgets[cat.id] || '';
-        amountInput.focus();
     }
     
     function renderBudgetGrid() {
@@ -1818,21 +1818,55 @@ function setupBudgetSection() {
         });
     }
     
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            if (currentEditingId) {
-                const val = parseFloat(amountInput.value);
-                if (!isNaN(val) && val > 0) {
-                    categoryBudgets[currentEditingId] = val;
-                } else {
-                    delete categoryBudgets[currentEditingId];
-                }
-                localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
-                updateBudgetUI(categoryBudgets);
-                renderBudgetGrid();
-                showGridView();
+    function saveCurrentBudget() {
+        if (currentEditingId) {
+            const val = parseFloat(amountInput.value);
+            if (!isNaN(val) && val > 0) {
+                categoryBudgets[currentEditingId] = val;
+            } else {
+                delete categoryBudgets[currentEditingId];
             }
+            localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+            updateBudgetUI(categoryBudgets);
+            renderBudgetGrid();
+            showGridView();
+        }
+    }
+
+    function appendBudgetDigit(key) {
+        const current = amountInput.value || '';
+        if (key === 'clear') {
+            amountInput.value = '';
+            return;
+        }
+        if (key === 'backspace') {
+            amountInput.value = current.slice(0, -1);
+            return;
+        }
+        if (key === '.') {
+            if (!current.includes('.')) amountInput.value = current ? `${current}.` : '0.';
+            return;
+        }
+        if (current === '0' && key !== '00') {
+            amountInput.value = key;
+            return;
+        }
+        amountInput.value = `${current}${key}`;
+    }
+
+    budgetCalcKeys.forEach(keyBtn => {
+        keyBtn.addEventListener('click', () => {
+            const key = keyBtn.dataset.budgetKey;
+            if (key === 'save') {
+                saveCurrentBudget();
+                return;
+            }
+            appendBudgetDigit(key);
         });
+    });
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveCurrentBudget);
     }
     
     if (closeBtn) {

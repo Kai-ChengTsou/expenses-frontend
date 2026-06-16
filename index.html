@@ -18,10 +18,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.9">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.7">
+    <link rel="stylesheet" href="css/style.css?v=1.0.10">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.8">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
-    <link rel="stylesheet" href="css/budget.css?v=1.0.2">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -515,7 +515,24 @@
                                 <div id="selected-budget-name" class="selected-budget-name">食物</div>
                                 <div class="budget-amount-input-container">
                                     <span class="currency-prefix">$</span>
-                                    <input type="number" id="single-budget-input" class="budget-amount-input" placeholder="0">
+                                    <input type="text" id="single-budget-input" class="budget-amount-input" placeholder="0" inputmode="none" readonly>
+                                </div>
+                                <div class="budget-calculator-grid" aria-label="Budget calculator">
+                                    <button type="button" class="budget-calc-key" data-budget-key="7">7</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="8">8</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="9">9</button>
+                                    <button type="button" class="budget-calc-key action" data-budget-key="backspace"><i class="fas fa-backspace"></i></button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="4">4</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="5">5</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="6">6</button>
+                                    <button type="button" class="budget-calc-key action" data-budget-key="clear">AC</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="1">1</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="2">2</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="3">3</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key="00">00</button>
+                                    <button type="button" class="budget-calc-key zero" data-budget-key="0">0</button>
+                                    <button type="button" class="budget-calc-key" data-budget-key=".">.</button>
+                                    <button type="button" class="budget-calc-key save" data-budget-key="save">OK</button>
                                 </div>
                                 <div class="budget-input-actions">
                                     <button id="back-to-grid-btn" class="btn-back">Back</button>
@@ -552,11 +569,11 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.9"></script>
+    <script src="js/app.js?v=1.0.10"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.12')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.13')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

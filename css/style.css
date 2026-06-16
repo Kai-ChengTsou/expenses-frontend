@@ -2383,7 +2383,7 @@ section h2 {
        same full-page viewport instead of calculating a shorter custom height. */
     top: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: -10px !important;
     left: 0 !important;
     width: 100% !important;
     height: auto !important;
