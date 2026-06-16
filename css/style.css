@@ -2379,15 +2379,15 @@ section h2 {
 /* Full-screen Add Subscription Calculator */
 .subscription-calculator-modal {
     position: fixed !important;
-    /* Anchor to every edge instead of using viewport-height units, which can be
-       shorter than the real screen on iOS standalone PWAs and leave a bottom gap. */
+    /* Match the transaction calculator exactly so iOS standalone mode fills the
+       same full-page viewport instead of calculating a shorter custom height. */
     top: 0 !important;
     right: 0 !important;
-    bottom: auto !important;
+    bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: var(--app-height, 100dvh) !important;
-    min-height: var(--app-height, 100dvh) !important;
+    height: auto !important;
+    min-height: 0 !important;
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
