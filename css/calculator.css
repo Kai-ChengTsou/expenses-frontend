@@ -335,8 +335,7 @@
 }
 
 [data-theme="cute"] .subscription-calculator-content {
-    background:
-        linear-gradient(180deg, #fff5fb 0%, #fff8fc 46%, #fff0f7 100%);
+    background: var(--subscription-modal-background);
 }
 
 [data-theme="cute"] .subscription-calculator-content::before {

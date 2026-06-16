@@ -4137,6 +4137,8 @@ function openSubscriptionCalculator() {
     if (!modal || !form) return;
 
     syncAppViewportHeight();
+    document.documentElement.classList.add('subscription-calculator-open');
+    document.body.classList.add('subscription-calculator-open');
     form.reset();
     currentSubscriptionAmount = '0';
     document.getElementById('sub-billing-date').value = new Date().getDate();
@@ -4151,6 +4153,8 @@ function closeSubscriptionCalculator() {
     const form = document.getElementById('add-subscription-form');
     if (modal) modal.style.display = 'none';
     if (form) form.reset();
+    document.documentElement.classList.remove('subscription-calculator-open');
+    document.body.classList.remove('subscription-calculator-open');
     currentSubscriptionAmount = '0';
     updateSubscriptionAmountDisplay();
     unlockPageScroll();
