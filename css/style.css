@@ -2549,7 +2549,8 @@ section h2 {
 }
 
 .sub-keypad-btn {
-    height: clamp(48px, 6.4svh, 58px);
+    min-height: 0;
+    height: 100%;
     border-radius: 26px;
     border: none;
     font-size: 22px;
@@ -3064,11 +3065,17 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
+    height: clamp(380px, 46svh, 460px);
+    display: flex;
+    flex-direction: column;
     padding-top: clamp(8px, 1.2svh, 12px) !important;
-    padding-bottom: clamp(10px, 1.4svh, 14px) !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
 }
 
 .subscription-keypad-area .keypad-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
     gap: clamp(8px, 1.2svh, 12px);
 }
 
@@ -3089,7 +3096,12 @@ section h2 {
     }
 
     .sub-keypad-btn {
-        height: 44px;
+        height: 100%;
+    }
+
+    .subscription-keypad-area {
+        height: clamp(320px, 44svh, 380px);
+        padding-bottom: 8px !important;
     }
 
     .subscription-keypad-area .keypad-grid {
