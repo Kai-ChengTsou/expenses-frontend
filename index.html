@@ -6,7 +6,7 @@
     
     <title>Tommy Expense</title>
 
-    <meta name="theme-color" content="#0f1115">
+    <meta name="theme-color" content="#090d18">
     <meta name="description" content="Track and visualize your expenses with Tommy Expense">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +18,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.3">
+    <link rel="stylesheet" href="css/style.css?v=1.0.4">
     <link rel="stylesheet" href="css/calculator.css?v=1.0.3">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.1">
     <link rel="stylesheet" href="css/budget.css?v=1.0.1">
@@ -129,7 +129,17 @@
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <div class="status-message" id="status-message"></div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to cute theme" aria-pressed="false">
+                    <span class="theme-toggle-track" aria-hidden="true">
+                        <span class="theme-toggle-thumb">
+                            <i class="fas fa-bolt"></i>
+                        </span>
+                    </span>
+                    <span class="theme-toggle-text">Neon</span>
+                </button>
+                <div class="status-message" id="status-message"></div>
+            </div>
         </header>
 
         <div class="container">
@@ -143,11 +153,11 @@
                     <div class="summary-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
                         <div class="card summary-card income-card">
                             <h2 style="font-size: 16px;">Income (Mo)</h2>
-                            <div class="total-amount" id="total-income" style="font-size: 1.5rem; color: #4cd964; -webkit-text-fill-color: #4cd964;">$0.00</div>
+                            <div class="total-amount amount-positive" id="total-income">$0.00</div>
                         </div>
                         <div class="card summary-card expense-card">
                             <h2 style="font-size: 16px;">Expense (Mo)</h2>
-                            <div class="total-amount" id="total-expenses" style="font-size: 1.5rem; color: #ff3b30; -webkit-text-fill-color: #ff3b30;">$0.00</div>
+                            <div class="total-amount amount-negative" id="total-expenses">$0.00</div>
                         </div>
                     </div>
 
@@ -159,11 +169,11 @@
                     </div>
 
                     <div class="card">
-                        <button id="export-excel-btn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s;">
+                        <button id="export-excel-btn" class="excel-action-btn export-action">
                             <i class="fas fa-file-excel"></i>
                             <span>Export to Excel</span>
                         </button>
-                        <button id="import-excel-btn" style="width: 100%; margin-top: 12px; padding: 16px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s;">
+                        <button id="import-excel-btn" class="excel-action-btn import-action">
                             <i class="fas fa-file-import"></i>
                             <span>Import Data</span>
                         </button>
@@ -543,11 +553,11 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.4"></script>
+    <script src="js/app.js?v=1.0.5"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.6')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.7')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

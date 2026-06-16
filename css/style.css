@@ -8,17 +8,82 @@
 :root {
     --primary-color: #3478f6;
     --accent-color: #59a8ff;
+    --secondary-color: #4169e1;
     --text-color: #f5f7ff;
     --text-secondary: #8e98ad;
     --background-color: #090d18;
     --card-background: #151b2a;
+    --header-background: rgba(26, 29, 35, 0.8);
+    --card-gradient: linear-gradient(180deg, rgba(24, 31, 48, 0.9), rgba(18, 24, 38, 0.92));
+    --body-background:
+        radial-gradient(circle at top left, rgba(52, 120, 246, 0.12), transparent 34%),
+        linear-gradient(160deg, #090d18 0%, #101726 52%, #090d18 100%);
+    --control-background: rgba(26, 29, 35, 0.8);
+    --soft-panel-background: rgba(24, 31, 48, 0.78);
     --button-background: #3478f6;
     --button-text: #ffffff;
     --shadow-color: rgba(0, 0, 0, 0.45);
+    --glow-shadow: rgba(79, 172, 254, 0.3);
     --highlight-color: rgba(52, 120, 246, 0.14);
     --border-color: rgba(99, 135, 197, 0.18);
     --category-color: #59a8ff;
     --category-bg: #1c2b43;
+    --success-color: #4cd964;
+    --danger-color: #ff3b30;
+    --warning-color: #ffb547;
+    --logo-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --section-line-gradient: linear-gradient(90deg, #4facfe 0%, #00f2fe 50%, transparent 100%);
+    --export-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --import-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --focus-ring: rgba(52, 120, 246, 0.24);
+    --chart-grid-color: rgba(161, 161, 170, 0.4);
+    --chart-label-color: rgba(161, 161, 170, 0.8);
+    --chart-empty-color: rgba(14, 165, 233, 0.2);
+    --chart-border-color: #0f1115;
+    --tooltip-background: rgba(28, 31, 38, 0.92);
+    --tooltip-text-color: #ffffff;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+[data-theme="cute"] {
+    --primary-color: #e85d9e;
+    --accent-color: #ff9ec7;
+    --secondary-color: #a979ff;
+    --text-color: #4f2d46;
+    --text-secondary: #896778;
+    --background-color: #fff5fb;
+    --card-background: #ffffff;
+    --header-background: rgba(255, 247, 252, 0.92);
+    --card-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 252, 0.95));
+    --body-background:
+        radial-gradient(circle at top left, rgba(255, 158, 199, 0.34), transparent 36%),
+        radial-gradient(circle at bottom right, rgba(169, 121, 255, 0.22), transparent 32%),
+        linear-gradient(160deg, #fff5fb 0%, #fff9ed 54%, #f7f0ff 100%);
+    --control-background: rgba(255, 247, 252, 0.9);
+    --soft-panel-background: rgba(255, 250, 253, 0.9);
+    --button-background: #e85d9e;
+    --button-text: #ffffff;
+    --shadow-color: rgba(204, 121, 162, 0.24);
+    --glow-shadow: rgba(232, 93, 158, 0.22);
+    --highlight-color: rgba(255, 158, 199, 0.18);
+    --border-color: rgba(232, 93, 158, 0.2);
+    --category-color: #e85d9e;
+    --category-bg: #ffe8f3;
+    --success-color: #2a9d72;
+    --danger-color: #d9446a;
+    --warning-color: #d9891f;
+    --logo-gradient: linear-gradient(135deg, #e85d9e 0%, #ff9ec7 48%, #a979ff 100%);
+    --section-line-gradient: linear-gradient(90deg, #ff9ec7 0%, #ffd166 50%, transparent 100%);
+    --export-gradient: linear-gradient(135deg, #e85d9e 0%, #a979ff 100%);
+    --import-gradient: linear-gradient(135deg, #ffb35c 0%, #ff7fae 100%);
+    --focus-ring: rgba(232, 93, 158, 0.24);
+    --chart-grid-color: rgba(137, 103, 120, 0.3);
+    --chart-label-color: rgba(79, 45, 70, 0.78);
+    --chart-empty-color: rgba(255, 158, 199, 0.36);
+    --chart-border-color: #fff7fc;
+    --tooltip-background: rgba(255, 247, 252, 0.96);
+    --tooltip-text-color: #4f2d46;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @font-face {
@@ -28,22 +93,18 @@
 
 html {
     background-color: var(--background-color);
-    /* Paint the safe-area / overscroll regions dark instead of default white */
-    background-color: #090d18;
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #090d18;
-    background:
-        radial-gradient(circle at top left, rgba(52, 120, 246, 0.12), transparent 34%),
-        linear-gradient(160deg, #090d18 0%, #101726 52%, #090d18 100%);
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    background: var(--body-background);
     color: var(--text-color);
     min-height: 100vh;
     min-height: 100dvh;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    transition: all ease-in-out 0.3s;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .app-container {
@@ -59,12 +120,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(26, 29, 35, 0.8);
+    background: var(--header-background);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(79, 172, 254, 0.2);
+        0 4px 20px var(--shadow-color);
+    border: 1px solid var(--border-color);
 }
 
 .logo {
@@ -78,10 +139,78 @@ header {
     font-size: 24px;
     font-weight: 600;
     color: var(--text-color);
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: var(--logo-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.theme-toggle {
+    min-height: 44px;
+    padding: 6px 10px 6px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--control-background);
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px var(--shadow-color);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.theme-toggle:hover {
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 24px var(--glow-shadow);
+}
+
+.theme-toggle:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.theme-toggle-track {
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    background: var(--logo-gradient);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transform: translateX(0);
+    transition: transform 0.24s ease, color 0.24s ease;
+}
+
+[data-theme="cute"] .theme-toggle-thumb {
+    transform: translateX(24px);
+}
+
+.theme-toggle-text {
+    min-width: 36px;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 /* Refresh Button */
@@ -89,7 +218,7 @@ header {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: var(--logo-gradient);
     color: white;
     border: none;
     font-size: 16px;
@@ -99,14 +228,14 @@ header {
     margin-left: 12px;
     cursor: pointer;
     box-shadow:
-        0 4px 15px rgba(79, 172, 254, 0.3);
+        0 4px 15px var(--glow-shadow);
     transition: all 0.3s ease;
 }
 
 .refresh-btn:hover {
     transform: translateY(-2px);
     box-shadow:
-        0 6px 20px rgba(79, 172, 254, 0.5);
+        0 6px 20px var(--glow-shadow);
 }
 
 .refresh-btn:active {
@@ -129,7 +258,7 @@ header {
     font-size: 0.8rem;
     padding: 5px 12px;
     border-radius: 20px;
-    background-color: rgba(65, 105, 225, 0.1);
+    background-color: var(--highlight-color);
     color: var(--primary-color);
 }
 
@@ -143,12 +272,12 @@ header {
 
 /* Card Styles */
 .card {
-    background: linear-gradient(180deg, rgba(24, 31, 48, 0.9), rgba(18, 24, 38, 0.92));
+    background: var(--card-gradient);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 16px;
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.5);
+        0 4px 20px var(--shadow-color);
     border: 1px solid var(--border-color);
     margin-bottom: 12px;
     position: relative;
@@ -159,8 +288,8 @@ header {
 .card:hover {
     transform: translateY(-2px);
     box-shadow:
-        0 8px 30px rgba(79, 172, 254, 0.3);
-    border-color: rgba(79, 172, 254, 0.4);
+        0 8px 30px var(--glow-shadow);
+    border-color: var(--primary-color);
 }
 
 .card h2 {
@@ -178,7 +307,7 @@ header {
     content: '';
     flex-grow: 1;
     height: 2px;
-    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 50%, transparent 100%);
+    background: var(--section-line-gradient);
     margin-left: 10px;
 }
 
@@ -195,7 +324,7 @@ header {
 }
 
 .quick-add-btn {
-    background: linear-gradient(145deg, rgba(26, 29, 35, 0.6), rgba(26, 29, 35, 0.8));
+    background: var(--control-background);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 16px;
@@ -210,6 +339,46 @@ header {
     min-height: 80px;
     position: relative;
     overflow: hidden;
+}
+
+.amount-positive {
+    color: var(--success-color);
+    -webkit-text-fill-color: var(--success-color);
+}
+
+.amount-negative {
+    color: var(--danger-color);
+    -webkit-text-fill-color: var(--danger-color);
+}
+
+.excel-action-btn {
+    width: 100%;
+    padding: 16px;
+    color: var(--button-text);
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.excel-action-btn:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.export-action {
+    background: var(--export-gradient);
+}
+
+.import-action {
+    margin-top: 12px;
+    background: var(--import-gradient);
 }
 
 .quick-add-btn:hover {
@@ -473,19 +642,37 @@ header {
 /* Summary Card */
 .summary-card {
     text-align: center;
-    background: rgba(26, 29, 35, 0.8);
+    background: var(--header-background);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(79, 172, 254, 0.2);
+    border: 1px solid var(--border-color);
 }
 
 .total-amount {
     font-size: 2.2rem;
     font-weight: 600;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: var(--logo-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 15px 0;
+}
+
+.summary-row .total-amount {
+    font-size: 1.5rem;
+}
+
+.total-amount.amount-positive,
+.trans-amount.amount-positive {
+    background: none;
+    color: var(--success-color);
+    -webkit-text-fill-color: var(--success-color);
+}
+
+.total-amount.amount-negative,
+.trans-amount.amount-negative {
+    background: none;
+    color: var(--danger-color);
+    -webkit-text-fill-color: var(--danger-color);
 }
 
 /* Chart Card */
@@ -2842,4 +3029,134 @@ section h2 {
 .btn-delete:active {
     transform: translateY(0);
     box-shadow: 0 0 12px rgba(238, 90, 82, 0.3);
+}
+
+/* Theme compatibility layer for legacy hardcoded sections */
+[data-theme="cute"] header,
+[data-theme="cute"] .card,
+[data-theme="cute"] .budget-stat-item,
+[data-theme="cute"] .budget-item,
+[data-theme="cute"] .transaction-item,
+[data-theme="cute"] .subscription-item,
+[data-theme="cute"] .quick-add-btn,
+[data-theme="cute"] .quick-add-item,
+[data-theme="cute"] .quick-add-modal-content,
+[data-theme="cute"] .modal-content,
+[data-theme="cute"] .bottom-nav {
+    background: var(--card-gradient);
+    border-color: var(--border-color);
+    box-shadow: 0 12px 30px var(--shadow-color);
+}
+
+[data-theme="cute"] .bottom-nav {
+    background: rgba(255, 247, 252, 0.96);
+}
+
+[data-theme="cute"] .nav-item {
+    color: var(--text-secondary);
+}
+
+[data-theme="cute"] .nav-item.active,
+[data-theme="cute"] .nav-item.active i,
+[data-theme="cute"] .nav-item.active span {
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .nav-item.active {
+    background: linear-gradient(135deg, rgba(255, 158, 199, 0.24), rgba(169, 121, 255, 0.18));
+    box-shadow: 0 0 20px rgba(232, 93, 158, 0.18);
+}
+
+[data-theme="cute"] input,
+[data-theme="cute"] select,
+[data-theme="cute"] textarea,
+[data-theme="cute"] .budget-amount-input,
+[data-theme="cute"] .keypad-btn,
+[data-theme="cute"] .date-bar,
+[data-theme="cute"] .keypad-area,
+[data-theme="cute"] .input-display-area,
+[data-theme="cute"] .type-toggle,
+[data-theme="cute"] .close-add-modal {
+    background: var(--control-background);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="cute"] .keypad-btn.operator,
+[data-theme="cute"] .keypad-btn.action {
+    background: rgba(255, 232, 243, 0.92);
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .calculator-content {
+    background: var(--body-background);
+}
+
+[data-theme="cute"] .calculator-modal {
+    background-color: var(--background-color);
+}
+
+[data-theme="cute"] .btn-primary,
+[data-theme="cute"] .btn-save-single,
+[data-theme="cute"] .submit-btn,
+[data-theme="cute"] .type-btn.active,
+[data-theme="cute"] .refresh-btn,
+[data-theme="cute"] .add-btn,
+[data-theme="cute"] .save-btn,
+[data-theme="cute"] .floating-add-btn {
+    background: var(--logo-gradient);
+    color: var(--button-text);
+    box-shadow: 0 10px 24px var(--glow-shadow);
+}
+
+[data-theme="cute"] .btn-danger,
+[data-theme="cute"] .delete-btn,
+[data-theme="cute"] .list-delete-btn,
+[data-theme="cute"] .btn-open,
+[data-theme="cute"] .btn-delete {
+    background: linear-gradient(145deg, #ff7fae, #d9446a);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(217, 68, 106, 0.24);
+}
+
+[data-theme="cute"] .btn-close,
+[data-theme="cute"] .bell-style,
+[data-theme="cute"] .check-style {
+    background: linear-gradient(145deg, #ffb35c, #ff9ec7);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(255, 158, 199, 0.24);
+}
+
+[data-theme="cute"] .delete-modal-content.cute-popup {
+    background: linear-gradient(180deg, #fffafd, #ffe8f3);
+    border: 1px solid rgba(232, 93, 158, 0.18);
+}
+
+[data-theme="cute"] .delete-modal-content h3,
+[data-theme="cute"] .popup-body p {
+    color: var(--text-color);
+}
+
+[data-theme="cute"] .popup-star {
+    color: #ffb35c;
+}
+
+[data-theme="cute"] .circle-bg {
+    stroke: rgba(232, 93, 158, 0.18);
+}
+
+[data-theme="cute"] .budget-progress-bar {
+    background: rgba(232, 93, 158, 0.14);
+}
+
+[data-theme="cute"] .budget-progress-fill.warning {
+    background: linear-gradient(90deg, #ffd166, #ffb35c, #ff8fab);
+}
+
+[data-theme="cute"] .budget-progress-fill.danger {
+    background: linear-gradient(90deg, #ff8fab, #d9446a, #a979ff);
+}
+
+[data-theme="cute"] .modal {
+    background-color: rgba(79, 45, 70, 0.42);
 }
