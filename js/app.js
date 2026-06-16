@@ -2043,10 +2043,100 @@ updateBalance = function() {
 
 // --- End Budget Page Logic ---
 
+function resetSwipeDismissState(modal) {
+    const content = modal?.querySelector('.calculator-content');
+    if (!content) return;
+    modal.classList.remove('swipe-dismiss-active');
+    content.classList.remove('swipe-dismiss-dragging', 'swipe-dismiss-settling', 'swipe-dismiss-closing');
+    content.style.removeProperty('--swipe-dismiss-y');
+}
+
+function setupSwipeDownToClose(modal, content, closeHandler) {
+    if (!modal || !content || typeof closeHandler !== 'function') return;
+
+    let startX = 0;
+    let startY = 0;
+    let currentY = 0;
+    let startTime = 0;
+    let activePointerId = null;
+    let isDragging = false;
+
+    const isInteractiveTarget = (target) => Boolean(
+        target.closest('button, input, textarea, select, label, .keypad-grid, .category-grid-container')
+    );
+
+    const finishSwipe = (shouldClose) => {
+        if (shouldClose) {
+            content.classList.remove('swipe-dismiss-dragging');
+            content.classList.add('swipe-dismiss-closing');
+            content.style.setProperty('--swipe-dismiss-y', '110vh');
+            setTimeout(() => {
+                closeHandler();
+                content.classList.remove('swipe-dismiss-closing');
+            }, 180);
+            return;
+        }
+
+        content.classList.remove('swipe-dismiss-dragging');
+        content.classList.add('swipe-dismiss-settling');
+        content.style.setProperty('--swipe-dismiss-y', '0px');
+        setTimeout(() => {
+            resetSwipeDismissState(modal);
+        }, 180);
+    };
+
+    content.addEventListener('pointerdown', (event) => {
+        if (modal.style.display === 'none' || isInteractiveTarget(event.target)) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+        startX = event.clientX;
+        startY = event.clientY;
+        currentY = startY;
+        startTime = performance.now();
+        activePointerId = event.pointerId;
+        isDragging = false;
+        content.setPointerCapture?.(event.pointerId);
+    });
+
+    content.addEventListener('pointermove', (event) => {
+        if (activePointerId !== event.pointerId) return;
+        const deltaY = event.clientY - startY;
+        const deltaX = Math.abs(event.clientX - startX);
+        currentY = event.clientY;
+
+        if (deltaY <= 0 || deltaX > deltaY * 1.15) return;
+        if (!isDragging && deltaY < 12) return;
+
+        isDragging = true;
+        event.preventDefault();
+        modal.classList.add('swipe-dismiss-active');
+        content.classList.add('swipe-dismiss-dragging');
+        content.classList.remove('swipe-dismiss-settling');
+        content.style.setProperty('--swipe-dismiss-y', `${Math.min(deltaY, 260)}px`);
+    }, { passive: false });
+
+    const endDrag = (event) => {
+        if (activePointerId !== event.pointerId) return;
+        const elapsed = Math.max(performance.now() - startTime, 1);
+        const deltaY = currentY - startY;
+        const velocity = deltaY / elapsed;
+        const shouldClose = isDragging && (deltaY > 120 || (deltaY > 64 && velocity > 0.55));
+
+        activePointerId = null;
+        isDragging = false;
+        content.releasePointerCapture?.(event.pointerId);
+        finishSwipe(shouldClose);
+    };
+
+    content.addEventListener('pointerup', endDrag);
+    content.addEventListener('pointercancel', endDrag);
+}
+
 // Setup Calculator Modal
 function setupCalculatorModal() {
     const modal = document.getElementById('add-modal');
     const closeBtn = document.querySelector('.close-add-modal');
+    const content = modal?.querySelector('.calculator-content');
     
     // Toggle Buttons
     const typeBtns = document.querySelectorAll('.type-btn');
@@ -2088,6 +2178,7 @@ function setupCalculatorModal() {
 
     // Close handlers
     if (closeBtn) closeBtn.addEventListener('click', closeCalculatorModal);
+    setupSwipeDownToClose(modal, content, closeCalculatorModal);
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
             closeCalculatorModal();
@@ -2098,6 +2189,7 @@ function setupCalculatorModal() {
 function openCalculatorModal(type = 'expense') {
     const modal = document.getElementById('add-modal');
     modal.style.display = 'flex'; // Use flex to center/align
+    resetSwipeDismissState(modal);
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
     
     // Reset State
@@ -2118,6 +2210,7 @@ function openCalculatorModal(type = 'expense') {
 
 function closeCalculatorModal() {
     const modal = document.getElementById('add-modal');
+    resetSwipeDismissState(modal);
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = '';
     editingTransaction = null;
@@ -2136,6 +2229,7 @@ function openEditTransaction(transactionId) {
     const type = transaction.type === 'income' ? 'income' : 'expense';
     const modal = document.getElementById('add-modal');
     modal.style.display = 'flex';
+    resetSwipeDismissState(modal);
     document.body.style.overflow = 'hidden';
 
     currentCalcDate = parseLocalDate(transaction.date);
@@ -2296,6 +2390,7 @@ async function submitTransaction() {
     }
     
     // Close modal immediately
+    resetSwipeDismissState(document.getElementById('add-modal'));
     document.getElementById('add-modal').style.display = 'none';
     document.body.style.overflow = '';
     
@@ -4036,6 +4131,7 @@ function updateSubscriptionDeleteButtons() {
 function setupSubscriptionManagement() {
     const addSubscriptionModal = document.getElementById('add-subscription-modal');
     const closeAddSubscriptionBtn = document.querySelector('.close-add-subscription-modal');
+    const addSubscriptionContent = addSubscriptionModal?.querySelector('.subscription-calculator-content');
     const addForm = document.getElementById('add-subscription-form');
     const addInlineBtn = document.getElementById('add-subscription-inline-btn');
     const deleteSubscriptionModeBtn = document.getElementById('delete-subscription-mode-btn');
@@ -4083,6 +4179,8 @@ function setupSubscriptionManagement() {
             closeSubscriptionCalculator();
         });
     }
+
+    setupSwipeDownToClose(addSubscriptionModal, addSubscriptionContent, closeSubscriptionCalculator);
     
     // Handle add subscription form submission
     if (addForm) {
@@ -4144,6 +4242,7 @@ function openSubscriptionCalculator() {
     document.getElementById('sub-billing-date').value = new Date().getDate();
     updateSubscriptionAmountDisplay();
     modal.style.display = 'flex';
+    resetSwipeDismissState(modal);
     lockPageScroll();
     requestAnimationFrame(syncAppViewportHeight);
 }
@@ -4151,6 +4250,7 @@ function openSubscriptionCalculator() {
 function closeSubscriptionCalculator() {
     const modal = document.getElementById('add-subscription-modal');
     const form = document.getElementById('add-subscription-form');
+    resetSwipeDismissState(modal);
     if (modal) modal.style.display = 'none';
     if (form) form.reset();
     document.documentElement.classList.remove('subscription-calculator-open');

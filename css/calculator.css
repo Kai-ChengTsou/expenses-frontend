@@ -29,7 +29,18 @@
     display: flex;
     flex-direction: column;
     box-shadow: none;
+    transform: translateY(var(--swipe-dismiss-y, 0));
+    touch-action: pan-y;
     animation: slideUp 0.2s ease-out;
+}
+
+.calculator-content.swipe-dismiss-dragging {
+    transition: none !important;
+}
+
+.calculator-content.swipe-dismiss-settling,
+.calculator-content.swipe-dismiss-closing {
+    transition: transform 0.18s ease-out;
 }
 
 @keyframes slideUp {
@@ -46,6 +57,18 @@
     background: transparent;
     border-bottom: none;
     flex-shrink: 0;
+}
+
+.calculator-header::before {
+    content: "";
+    position: absolute;
+    top: max(6px, env(safe-area-inset-top));
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-secondary) 46%, transparent);
+    transform: translateX(-50%);
 }
 
 .type-toggle {
