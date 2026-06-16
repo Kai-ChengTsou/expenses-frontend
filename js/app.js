@@ -121,6 +121,22 @@ function setupThemeSwitch() {
     });
 }
 
+function syncAppViewportHeight() {
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    if (!viewportHeight) return;
+    document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
+}
+
+syncAppViewportHeight();
+window.addEventListener('resize', syncAppViewportHeight);
+window.addEventListener('orientationchange', () => {
+    setTimeout(syncAppViewportHeight, 250);
+});
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncAppViewportHeight);
+    window.visualViewport.addEventListener('scroll', syncAppViewportHeight);
+}
+
 applyTheme(currentTheme, false);
 
 // Global variables for delete functionality
@@ -1346,6 +1362,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Initializing app...');
+        syncAppViewportHeight();
         
         // Hide all modals
         document.querySelectorAll('.modal').forEach(modal => {
@@ -4085,12 +4102,14 @@ function openSubscriptionCalculator() {
     const form = document.getElementById('add-subscription-form');
     if (!modal || !form) return;
 
+    syncAppViewportHeight();
     form.reset();
     currentSubscriptionAmount = '0';
     document.getElementById('sub-billing-date').value = new Date().getDate();
     updateSubscriptionAmountDisplay();
     modal.style.display = 'flex';
     lockPageScroll();
+    requestAnimationFrame(syncAppViewportHeight);
 }
 
 function closeSubscriptionCalculator() {
