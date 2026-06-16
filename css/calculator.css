@@ -251,13 +251,13 @@
 }
 
 .subscription-keypad-area {
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    padding-top: clamp(8px, 1.2svh, 12px) !important;
+    padding-bottom: clamp(10px, 1.4svh, 14px) !important;
     flex-shrink: 0;
 }
 
 .subscription-keypad-area .keypad-grid {
-    gap: 8px;
+    gap: clamp(8px, 1.2svh, 12px);
 }
 
 .keypad-grid {
@@ -353,7 +353,7 @@
 [data-theme="cute"] .subscription-display-area,
 [data-theme="cute"] .subscription-billing-bar,
 [data-theme="cute"] .subscription-keypad-area {
-    background: var(--background-color);
+    background: transparent;
     border-color: transparent;
     box-shadow: none;
 }
@@ -431,7 +431,7 @@
 [data-theme="cute"] .subscription-display-area,
 [data-theme="cute"] .subscription-billing-bar,
 [data-theme="cute"] .subscription-keypad-area {
-    background: var(--background-color);
+    background: transparent;
     border-color: transparent;
     box-shadow: none;
 }

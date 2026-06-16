@@ -2453,17 +2453,17 @@ section h2 {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: clamp(12px, 2svh, 20px) 16px;
+    padding: clamp(14px, 2.4svh, 24px) 16px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: clamp(10px, 1.6svh, 16px);
+    justify-content: space-evenly;
+    gap: clamp(12px, 2svh, 20px);
 }
 
 .subscription-icon-preview {
-    width: clamp(58px, 9svh, 72px);
-    height: clamp(58px, 9svh, 72px);
-    border-radius: clamp(18px, 2.8svh, 22px);
+    width: clamp(66px, 10.5svh, 88px);
+    height: clamp(66px, 10.5svh, 88px);
+    border-radius: clamp(20px, 3.2svh, 26px);
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -2477,7 +2477,7 @@ section h2 {
 
 .subscription-form-fields {
     display: grid;
-    gap: clamp(8px, 1.3svh, 12px);
+    gap: clamp(10px, 1.6svh, 14px);
 }
 
 .subscription-form-fields input,
@@ -2492,7 +2492,7 @@ section h2 {
 }
 
 .subscription-form-fields input {
-    padding: clamp(11px, 1.7svh, 15px) 16px;
+    padding: clamp(13px, 2.1svh, 18px) 16px;
     font-size: 16px;
 }
 
@@ -2504,7 +2504,7 @@ section h2 {
 
 .subscription-display-area {
     flex-shrink: 0;
-    padding-block: clamp(8px, 1.5svh, 12px);
+    padding-block: clamp(10px, 1.9svh, 16px);
 }
 
 .subscription-selected-icon i {
@@ -2514,7 +2514,7 @@ section h2 {
 .subscription-billing-bar {
     gap: 14px;
     flex-shrink: 0;
-    padding-block: clamp(6px, 1.2svh, 10px);
+    padding-block: clamp(8px, 1.6svh, 14px);
 }
 
 .subscription-billing-label {
@@ -2537,7 +2537,7 @@ section h2 {
 }
 
 .sub-keypad-btn {
-    height: clamp(44px, 5.8svh, 52px);
+    height: clamp(48px, 6.4svh, 58px);
     border-radius: 26px;
     border: none;
     font-size: 22px;
@@ -3052,12 +3052,37 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    padding-top: clamp(8px, 1.2svh, 12px) !important;
+    padding-bottom: clamp(10px, 1.4svh, 14px) !important;
 }
 
 .subscription-keypad-area .keypad-grid {
-    gap: 8px;
+    gap: clamp(8px, 1.2svh, 12px);
+}
+
+@media (max-height: 740px) {
+    .subscription-icon-preview {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+    }
+
+    .subscription-form-panel {
+        padding-block: 10px;
+        gap: 8px;
+    }
+
+    .subscription-form-fields input {
+        padding-block: 11px;
+    }
+
+    .sub-keypad-btn {
+        height: 44px;
+    }
+
+    .subscription-keypad-area .keypad-grid {
+        gap: 8px;
+    }
 }
 
 /* Theme compatibility layer for legacy hardcoded sections */
