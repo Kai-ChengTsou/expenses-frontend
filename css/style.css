@@ -2391,19 +2391,20 @@ section h2 {
 /* Full-screen Add Subscription Calculator */
 .subscription-calculator-modal {
     position: fixed !important;
-    /* Match the transaction calculator exactly so iOS standalone mode fills the
-       same full-page viewport instead of calculating a shorter custom height. */
     top: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
+    /* Use column direction so the single content child fills height with flex: 1.
+       Do NOT use height: 100%/dvh on the child — percentage heights are unreliable
+       inside position:fixed flex containers on iOS standalone PWA (WebKit bug). */
+    display: flex !important;
+    flex-direction: column !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
+    height: 100% !important;
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
-    align-items: stretch !important;
     background: var(--subscription-modal-background) !important;
     overflow: hidden !important;
     z-index: 5000 !important;
@@ -2414,7 +2415,9 @@ section h2 {
     background: var(--subscription-modal-background) !important;
     width: 100% !important;
     max-width: none !important;
-    height: 100% !important;
+    /* flex: 1 + min-height: 0 fills the remaining space in the column modal
+       without relying on percentage heights which break on iOS. */
+    flex: 1 1 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
@@ -2457,8 +2460,7 @@ section h2 {
 .subscription-calculator-form {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    height: 100%;
+    flex: 1 1 0;
     min-height: 0;
     overflow: hidden;
 }
@@ -3070,8 +3072,7 @@ section h2 {
 .subscription-keypad-area {
     flex-shrink: 0;
     padding-top: clamp(8px, 1.2svh, 12px) !important;
-    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
-    box-shadow: 0 48px 0 var(--subscription-modal-bottom-color);
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
 }
 
 .subscription-keypad-area .keypad-grid {
@@ -3450,7 +3451,7 @@ section h2 {
 }
 
 [data-theme="cute"] .subscription-keypad-area {
-    box-shadow: 0 64px 0 var(--subscription-modal-bottom-color);
+    /* No gap-painting needed — flex layout now fills the full screen */
 }
 
 [data-theme="cute"] .close-subscription-detail,
