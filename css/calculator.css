@@ -59,18 +59,6 @@
     flex-shrink: 0;
 }
 
-.calculator-header::before {
-    content: "";
-    position: absolute;
-    top: max(6px, env(safe-area-inset-top));
-    left: 50%;
-    width: 42px;
-    height: 4px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--text-secondary) 46%, transparent);
-    transform: translateX(-50%);
-}
-
 .type-toggle {
     background: rgba(24, 31, 48, 0.86);
     border: 1px solid rgba(99, 135, 197, 0.14);
