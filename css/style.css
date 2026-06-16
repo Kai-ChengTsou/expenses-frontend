@@ -150,6 +150,8 @@ header {
     align-items: flex-end;
     flex-direction: column;
     gap: 8px;
+    align-self: center;
+    justify-content: center;
 }
 
 .theme-toggle {
@@ -334,6 +336,10 @@ header {
     min-height: 80px;
     position: relative;
     overflow: hidden;
+}
+
+.status-message:empty {
+    display: none;
 }
 
 .amount-positive {
@@ -3213,4 +3219,166 @@ section h2 {
 
 [data-theme="cute"] .modal {
     background-color: rgba(79, 45, 70, 0.42);
+}
+
+/* Final cute-mode coverage for late legacy selectors */
+[data-theme="cute"] .month-selector-btn,
+[data-theme="cute"] .month-picker-dropdown,
+[data-theme="cute"] #month-picker-year-label,
+[data-theme="cute"] .year-nav-btn,
+[data-theme="cute"] .month-btn,
+[data-theme="cute"] .view-toggle-card,
+[data-theme="cute"] .view-toggle-btn,
+[data-theme="cute"] .subscription-day-card,
+[data-theme="cute"] .subscription-list-item-inline,
+[data-theme="cute"] .subscription-detail-content,
+[data-theme="cute"] .subscription-detail-content .modal-header,
+[data-theme="cute"] .subscription-detail-body,
+[data-theme="cute"] .detail-section,
+[data-theme="cute"] .detail-item,
+[data-theme="cute"] .subscription-form-panel,
+[data-theme="cute"] .subscription-calculator-header,
+[data-theme="cute"] .subscription-billing-bar,
+[data-theme="cute"] .subscription-display-area,
+[data-theme="cute"] .subscription-keypad-area,
+[data-theme="cute"] .sub-keypad-btn,
+[data-theme="cute"] .loading-message {
+    background: var(--soft-panel-background);
+    border-color: var(--border-color);
+    color: var(--text-color);
+    box-shadow: 0 10px 24px rgba(204, 121, 162, 0.14);
+}
+
+[data-theme="cute"] .month-selector-btn,
+[data-theme="cute"] .view-toggle-btn,
+[data-theme="cute"] .month-btn,
+[data-theme="cute"] .year-nav-btn,
+[data-theme="cute"] .sub-keypad-btn,
+[data-theme="cute"] .delete-transaction-btn-top,
+[data-theme="cute"] .add-transaction-btn-top,
+[data-theme="cute"] .subscription-item-delete {
+    box-shadow:
+        4px 4px 12px rgba(204, 121, 162, 0.16),
+        -2px -2px 10px rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="cute"] .month-selector-btn:hover,
+[data-theme="cute"] .view-toggle-btn:hover,
+[data-theme="cute"] .month-btn:hover,
+[data-theme="cute"] .year-nav-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 12px 24px var(--glow-shadow);
+}
+
+[data-theme="cute"] .month-selector-btn:active,
+[data-theme="cute"] .month-btn:active,
+[data-theme="cute"] .year-nav-btn:active,
+[data-theme="cute"] .view-toggle-btn:active {
+    box-shadow:
+        inset 3px 3px 8px rgba(204, 121, 162, 0.18),
+        inset -2px -2px 8px rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="cute"] .month-btn.selected,
+[data-theme="cute"] .view-toggle-btn.active,
+[data-theme="cute"] .sub-keypad-btn.submit-btn,
+[data-theme="cute"] .add-transaction-btn-top {
+    background: var(--logo-gradient);
+    border-color: transparent;
+    color: var(--button-text);
+    box-shadow: 0 10px 24px var(--glow-shadow);
+}
+
+[data-theme="cute"] .delete-transaction-btn-top,
+[data-theme="cute"] .subscription-item-delete {
+    background: linear-gradient(145deg, #ff7fae, #d9446a);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+[data-theme="cute"] .delete-transaction-btn-top.active {
+    background: linear-gradient(145deg, #d9446a, #b83258);
+    color: #ffffff;
+}
+
+[data-theme="cute"] .transaction-day-card,
+[data-theme="cute"] .subscription-day-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 252, 0.94));
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="cute"] .day-header,
+[data-theme="cute"] .transaction-item,
+[data-theme="cute"] .subscription-list-item-inline {
+    border-color: rgba(232, 93, 158, 0.14);
+}
+
+[data-theme="cute"] .transaction-item:active,
+[data-theme="cute"] .subscription-list-item-inline:hover {
+    background: rgba(255, 232, 243, 0.86);
+}
+
+[data-theme="cute"] .subscription-list-item-inline.warning {
+    background: linear-gradient(145deg, #fff0e8, #ffe4f1);
+    border: 1px solid rgba(217, 137, 31, 0.18);
+}
+
+[data-theme="cute"] .subscription-item-icon,
+[data-theme="cute"] .subscription-icon-preview,
+[data-theme="cute"] .detail-icon,
+[data-theme="cute"] .insight-icon {
+    background: linear-gradient(145deg, #ffe8f3, #f0e7ff);
+    color: var(--primary-color);
+    border: 1px solid rgba(232, 93, 158, 0.2);
+    box-shadow: 0 10px 20px rgba(232, 93, 158, 0.16);
+}
+
+[data-theme="cute"] .insight-icon i,
+[data-theme="cute"] .detail-icon i,
+[data-theme="cute"] .subscription-icon-preview i,
+[data-theme="cute"] .subscription-item-icon i {
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .category-amount,
+[data-theme="cute"] .subscription-item-amount,
+[data-theme="cute"] .detail-value,
+[data-theme="cute"] .subscription-detail-content .price,
+[data-theme="cute"] .subscription-amount {
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .category-percentage,
+[data-theme="cute"] .insight-title,
+[data-theme="cute"] .subscription-item-billing,
+[data-theme="cute"] .detail-label,
+[data-theme="cute"] .subscription-billing-label span {
+    color: var(--text-secondary);
+}
+
+[data-theme="cute"] .subscription-form-fields input,
+[data-theme="cute"] .subscription-billing-label input {
+    background: rgba(255, 247, 252, 0.94);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="cute"] .subscription-form-fields input:focus,
+[data-theme="cute"] .subscription-billing-label input:focus {
+    background: #fffafd;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+[data-theme="cute"] .sub-keypad-btn.operator,
+[data-theme="cute"] .sub-keypad-btn.action {
+    background: #ffe8f3;
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .close-subscription-detail,
+[data-theme="cute"] .close-add-subscription-modal,
+[data-theme="cute"] .close-quick-add-config {
+    color: var(--text-secondary);
 }

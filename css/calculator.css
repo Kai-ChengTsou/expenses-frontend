@@ -368,6 +368,59 @@
     color: var(--primary-color);
 }
 
+[data-theme="cute"] .subscription-form-panel,
+[data-theme="cute"] .subscription-calculator-header,
+[data-theme="cute"] .subscription-display-area,
+[data-theme="cute"] .subscription-billing-bar,
+[data-theme="cute"] .subscription-keypad-area,
+[data-theme="cute"] .sub-keypad-btn {
+    background: rgba(255, 247, 252, 0.92);
+    border-color: var(--border-color);
+    color: var(--text-color);
+    box-shadow: 0 10px 24px rgba(204, 121, 162, 0.14);
+}
+
+[data-theme="cute"] .subscription-form-fields input,
+[data-theme="cute"] .subscription-billing-label input {
+    background: #fffafd;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="cute"] .subscription-form-fields input::placeholder {
+    color: var(--text-secondary);
+}
+
+[data-theme="cute"] .subscription-form-fields input:focus,
+[data-theme="cute"] .subscription-billing-label input:focus {
+    background: #ffffff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+[data-theme="cute"] .subscription-icon-preview,
+[data-theme="cute"] .subscription-selected-icon i {
+    background: linear-gradient(145deg, #ffe8f3, #f0e7ff);
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .subscription-billing-label span,
+[data-theme="cute"] .subscription-selected-icon span {
+    color: var(--text-secondary);
+}
+
+[data-theme="cute"] .sub-keypad-btn.operator,
+[data-theme="cute"] .sub-keypad-btn.action {
+    background: #ffe8f3;
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] .sub-keypad-btn.submit-btn {
+    background: var(--logo-gradient);
+    color: var(--button-text);
+    box-shadow: 0 10px 24px var(--glow-shadow);
+}
+
 @media (min-width: 768px) {
     [data-theme="cute"] .calculator-modal {
         background-color: rgba(79, 45, 70, 0.28);
