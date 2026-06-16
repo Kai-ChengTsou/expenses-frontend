@@ -2397,6 +2397,7 @@ section h2 {
 }
 
 .subscription-calculator-content {
+    position: relative !important;
     width: 100% !important;
     max-width: none !important;
     height: 100% !important;
@@ -2405,8 +2406,24 @@ section h2 {
     border-radius: 0 !important;
 }
 
+.subscription-calculator-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(79, 172, 254, 0.08), transparent 30%),
+        linear-gradient(0deg, rgba(0, 242, 254, 0.06), transparent 34%);
+}
+
 .subscription-calculator-header h3 {
     display: none;
+}
+
+.subscription-calculator-header,
+.subscription-calculator-form {
+    position: relative;
+    z-index: 1;
 }
 
 .subscription-calculator-header .close-add-subscription-modal {
@@ -2433,13 +2450,13 @@ section h2 {
 }
 
 .subscription-form-panel {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     padding: clamp(12px, 2svh, 20px) 16px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: center;
     gap: clamp(10px, 1.6svh, 16px);
 }
 
@@ -3035,7 +3052,6 @@ section h2 {
 
 .subscription-keypad-area {
     flex-shrink: 0;
-    margin-top: auto;
     padding-top: 8px !important;
     padding-bottom: 8px !important;
 }

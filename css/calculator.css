@@ -251,7 +251,6 @@
 }
 
 .subscription-keypad-area {
-    margin-top: auto;
     padding-top: 8px !important;
     padding-bottom: 8px !important;
     flex-shrink: 0;
@@ -333,6 +332,17 @@
 
 [data-theme="cute"] .calculator-content {
     background: var(--background-color);
+}
+
+[data-theme="cute"] .subscription-calculator-content {
+    background:
+        linear-gradient(180deg, #fff5fb 0%, #fff8fc 46%, #fff0f7 100%);
+}
+
+[data-theme="cute"] .subscription-calculator-content::before {
+    background:
+        linear-gradient(180deg, rgba(255, 158, 199, 0.18), transparent 28%),
+        linear-gradient(0deg, rgba(232, 93, 158, 0.12), transparent 24%);
 }
 
 [data-theme="cute"] .input-display-area,
