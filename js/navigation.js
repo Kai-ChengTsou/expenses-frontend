@@ -33,9 +33,6 @@ function setupNavigation() {
                     // Add active class to clicked nav item
                     this.classList.add('active');
                     
-                    // Add ripple effect
-                    createRipple(e);
-                    
                     // Get the target section ID
                     const targetSectionId = this.getAttribute('data-section');
                     
