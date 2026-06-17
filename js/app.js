@@ -1097,6 +1097,11 @@ window.addEventListener('DOMContentLoaded', async () => {
             addTransBtn.parentNode.replaceChild(newBtn, addTransBtn);
             newBtn.addEventListener('click', () => openCalculatorModal('expense'));
         }
+
+        const navAddBtn = document.getElementById('nav-add-transaction');
+        if (navAddBtn) {
+            navAddBtn.addEventListener('click', () => openCalculatorModal('expense'));
+        }
         
         // Add Income Button (Removed from UI but keeping check just in case)
         const addIncomeBtn = document.getElementById('add-income-btn');
