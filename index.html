@@ -18,7 +18,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.20">
+    <link rel="stylesheet" href="css/style.css?v=1.0.27">
     <link rel="stylesheet" href="css/calculator.css?v=1.0.19">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
     <link rel="stylesheet" href="css/budget.css?v=1.0.3">
@@ -149,13 +149,13 @@
                         <div class="total-amount" id="total-balance">$0.00</div>
                     </div>
                     
-                    <div class="summary-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
+                    <div class="summary-row">
                         <div class="card summary-card income-card">
-                            <h2 style="font-size: 16px;">Income (Mo)</h2>
+                            <h2 class="summary-card-title-sm">Income (Mo)</h2>
                             <div class="total-amount amount-positive" id="total-income">$0.00</div>
                         </div>
                         <div class="card summary-card expense-card">
-                            <h2 style="font-size: 16px;">Expense (Mo)</h2>
+                            <h2 class="summary-card-title-sm">Expense (Mo)</h2>
                             <div class="total-amount amount-negative" id="total-expenses">$0.00</div>
                         </div>
                     </div>
@@ -569,11 +569,21 @@
         </nav>
     </div>
 
-    <script src="js/app.js?v=1.0.13"></script>
+    <script src="js/config.js?v=1.0.27"></script>
+    <script src="js/state.js?v=1.0.27"></script>
+    <script src="js/viewport.js?v=1.0.27"></script>
+    <script src="js/storage.js?v=1.0.27"></script>
+    <script src="js/theme.js?v=1.0.27"></script>
+    <script src="js/categories.js?v=1.0.27"></script>
+    <script src="js/pwa.js?v=1.0.27"></script>
+    <script src="js/data-transfer.js?v=1.0.27"></script>
+    <script src="js/time-utils.js?v=1.0.27"></script>
+    <script src="js/navigation.js?v=1.0.27"></script>
+    <script src="js/app.js?v=1.0.27"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.25')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.27')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

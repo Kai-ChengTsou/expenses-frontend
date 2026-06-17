@@ -20,6 +20,14 @@
         linear-gradient(160deg, #090d18 0%, #101726 52%, #090d18 100%);
     --control-background: rgba(26, 29, 35, 0.8);
     --soft-panel-background: rgba(24, 31, 48, 0.78);
+    --surface-raised: rgba(24, 31, 48, 0.9);
+    --surface-subtle: rgba(17, 23, 37, 0.86);
+    --nav-background: rgba(14, 20, 34, 0.94);
+    --nav-active-background: rgba(79, 172, 254, 0.15);
+    --nav-active-color: #4facfe;
+    --nav-border-color: rgba(79, 172, 254, 0.2);
+    --nav-glow: rgba(79, 172, 254, 0.25);
+    --pressed-surface: rgba(79, 172, 254, 0.1);
     --button-background: #3478f6;
     --button-text: #ffffff;
     --shadow-color: rgba(0, 0, 0, 0.45);
@@ -65,6 +73,14 @@
         linear-gradient(160deg, #fff5fb 0%, #fff9ed 54%, #f7f0ff 100%);
     --control-background: rgba(255, 247, 252, 0.9);
     --soft-panel-background: rgba(255, 250, 253, 0.9);
+    --surface-raised: rgba(255, 255, 255, 0.96);
+    --surface-subtle: rgba(255, 247, 252, 0.92);
+    --nav-background: rgba(255, 247, 252, 0.96);
+    --nav-active-background: rgba(255, 158, 199, 0.22);
+    --nav-active-color: #e85d9e;
+    --nav-border-color: rgba(232, 93, 158, 0.18);
+    --nav-glow: rgba(232, 93, 158, 0.18);
+    --pressed-surface: rgba(255, 158, 199, 0.14);
     --button-background: #e85d9e;
     --button-text: #ffffff;
     --shadow-color: rgba(204, 121, 162, 0.24);
@@ -118,6 +134,31 @@ body {
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     transition: background 0.3s ease, color 0.3s ease;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button,
+a,
+[role="button"],
+.quick-add-btn {
+    touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.quick-add-btn:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 .app-container {
@@ -308,7 +349,7 @@ header {
     margin-bottom: 16px;
     color: var(--text-color);
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0;
     display: flex;
     align-items: center;
 }
@@ -341,7 +382,7 @@ header {
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 2px 2px 5px var(--shadow-color), 0px 0px 6px #ffffff;
+    box-shadow: 0 10px 24px var(--shadow-color);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -397,13 +438,14 @@ header {
 
 .quick-add-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 4px 4px 8px var(--shadow-color), 0px 0px 8px #ffffff;
+    box-shadow: 0 14px 28px var(--glow-shadow);
     border-color: var(--primary-color);
 }
 
 .quick-add-btn:active {
     transform: translateY(0);
-    box-shadow: inset 2px 2px 5px var(--shadow-color), inset 0px 0px 5px #ffffff;
+    background: var(--pressed-surface);
+    box-shadow: inset 0 0 0 1px var(--border-color);
 }
 
 .quick-add-btn i {
@@ -671,6 +713,17 @@ header {
     margin: 15px 0;
 }
 
+.summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+}
+
+.summary-card-title-sm {
+    font-size: 16px;
+}
+
 .summary-row .total-amount {
     font-size: 1.5rem;
 }
@@ -725,8 +778,8 @@ header {
 }
 
 .transaction-day-card {
-    background: linear-gradient(180deg, rgba(24, 31, 48, 0.78), rgba(17, 23, 37, 0.86));
-    border: 1px solid rgba(99, 135, 197, 0.16);
+    background: linear-gradient(180deg, var(--soft-panel-background), var(--surface-subtle));
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     margin-bottom: 16px;
     overflow: hidden;
@@ -785,7 +838,7 @@ header {
 }
 
 .transaction-item:active {
-    background-color: rgba(79, 172, 254, 0.1);
+    background-color: var(--pressed-surface);
 }
 
 .trans-icon-wrapper {
@@ -987,13 +1040,13 @@ header {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(26, 29, 35, 0.95);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  background: var(--nav-background);
+  box-shadow: 0 -12px 28px var(--shadow-color);
   display: flex;
   justify-content: space-around;
   padding: 12px 0;
   z-index: 1000;
-  border-top: 1px solid rgba(79, 172, 254, 0.2);
+  border-top: 1px solid var(--nav-border-color);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
@@ -1019,7 +1072,7 @@ header {
   left: 0;
   right: 0;
   height: 0;
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.15));
+  background: var(--nav-active-background);
   transition: height 0.3s ease;
   z-index: -1;
   border-radius: 14px;
@@ -1030,9 +1083,9 @@ header {
 }
 
 .nav-item.active {
-  color: #4facfe;
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.15));
-  box-shadow: 0 0 20px rgba(79, 172, 254, 0.25);
+  color: var(--nav-active-color);
+  background: var(--nav-active-background);
+  box-shadow: 0 0 20px var(--nav-glow);
   transform: translateY(-5px);
 }
 
@@ -1044,9 +1097,9 @@ header {
   transform: translateX(-50%);
   width: 6px;
   height: 6px;
-  background: #4fc7ff;
+  background: var(--nav-active-color);
   border-radius: 50%;
-    box-shadow: 0 0 10px #4169e1, 0 0 20px #4169e1;
+    box-shadow: 0 0 10px var(--nav-active-color), 0 0 20px var(--nav-glow);
 }
 
 .nav-item i {
@@ -1058,7 +1111,7 @@ header {
 
 .nav-item.active i {
   transform: translateY(-2px) scale(1.1);
-  text-shadow: 0 0 10px rgba(65, 105, 225, 0.5);
+  text-shadow: 0 0 10px var(--nav-glow);
 }
 
 .nav-item span {
@@ -1079,7 +1132,7 @@ header {
   transform: translateX(-50%);
   width: 25px;
   height: 3px;
-    background: linear-gradient(90deg, #4169e1, #2b4bb8);
+    background: var(--logo-gradient);
   border-radius: 3px;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -1360,11 +1413,11 @@ section h2 {
 /* Enhance the nav item hover state */
 .nav-item:hover:not(.active) i {
   transform: translateY(-3px);
-  color: rgba(65, 105, 225, 0.7);
+  color: var(--nav-active-color);
 }
 
 .nav-item:hover:not(.active) span {
-  color: rgba(65, 105, 225, 0.7);
+  color: var(--nav-active-color);
 }
 
 /* Add a subtle pulse animation to the active nav indicator */
@@ -1373,9 +1426,9 @@ section h2 {
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 5px rgba(65, 105, 225, 0.5); }
-  50% { box-shadow: 0 0 10px rgba(65, 105, 225, 0.8); }
-  100% { box-shadow: 0 0 5px rgba(65, 105, 225, 0.5); }
+  0% { box-shadow: 0 0 5px var(--nav-glow); }
+  50% { box-shadow: 0 0 10px var(--nav-active-color); }
+  100% { box-shadow: 0 0 5px var(--nav-glow); }
 }
 
 /* Modal Styles */
@@ -2852,6 +2905,10 @@ section h2 {
     background: linear-gradient(135deg, var(--highlight-color), transparent);
 }
 
+.subscription-detail-modal-visible {
+    display: flex;
+}
+
 .subscription-detail-content .modal-header h2 {
     font-size: 22px;
     font-weight: 700;
@@ -2948,6 +3005,10 @@ section h2 {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     margin-bottom: 20px;
+}
+
+.detail-grid-single {
+    grid-template-columns: 1fr;
 }
 
 @media (max-width: 380px) {

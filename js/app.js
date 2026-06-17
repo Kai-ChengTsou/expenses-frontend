@@ -1,275 +1,4 @@
-// App version
-const APP_VERSION = Date.now();
-
-// ===== LOCAL STORAGE KEYS =====
-const STORAGE_KEYS = {
-    TRANSACTIONS: 'tommy_expenses_transactions',
-    INCOME: 'tommy_expenses_income',
-    SUBSCRIPTIONS: 'tommy_expenses_subscriptions',
-    THEME: 'tommy_expense_theme'
-};
-
-const THEMES = {
-    NEON: 'neon',
-    CUTE: 'cute'
-};
-
-const THEME_META = {
-    neon: {
-        icon: 'fas fa-bolt',
-        colorScheme: '#090d18',
-        monthlyGradient: ['rgba(14, 165, 233, 0.8)', 'rgba(6, 182, 212, 0.8)'],
-        categoryChartColors: [
-            'rgba(14, 165, 233, 0.85)',
-            'rgba(236, 72, 153, 0.85)',
-            'rgba(34, 197, 94, 0.85)',
-            'rgba(250, 204, 21, 0.85)',
-            'rgba(168, 85, 247, 0.85)',
-            'rgba(249, 115, 22, 0.85)',
-            'rgba(6, 182, 212, 0.85)',
-            'rgba(16, 185, 129, 0.85)',
-            'rgba(239, 68, 68, 0.85)',
-            'rgba(79, 70, 229, 0.85)',
-            'rgba(20, 184, 166, 0.85)',
-            'rgba(245, 158, 11, 0.85)',
-            'rgba(217, 70, 239, 0.85)',
-            'rgba(59, 130, 246, 0.85)',
-            'rgba(132, 204, 22, 0.85)'
-        ]
-    },
-    cute: {
-        icon: 'fas fa-heart',
-        colorScheme: '#fff5fb',
-        monthlyGradient: ['rgba(255, 158, 199, 0.82)', 'rgba(169, 121, 255, 0.82)'],
-        categoryChartColors: [
-            'rgba(232, 93, 158, 0.86)',
-            'rgba(255, 158, 199, 0.86)',
-            'rgba(169, 121, 255, 0.86)',
-            'rgba(255, 179, 92, 0.86)',
-            'rgba(42, 157, 114, 0.86)',
-            'rgba(255, 143, 171, 0.86)',
-            'rgba(124, 199, 255, 0.86)',
-            'rgba(255, 209, 102, 0.86)',
-            'rgba(217, 68, 106, 0.86)',
-            'rgba(190, 149, 255, 0.86)',
-            'rgba(92, 198, 183, 0.86)',
-            'rgba(255, 187, 204, 0.86)'
-        ]
-    }
-};
-
-const CUTE_CATEGORY_OVERRIDES = {
-    food: { color: '#e85d9e', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #e85d9e, #ff9ec7, #ffd1e3)' },
-    rent: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #d7c2ff)' },
-    mortgage: { color: '#d9891f', bg: '#fff1d8', gradient: 'linear-gradient(90deg, #d9891f, #ffb35c, #ffd166)' },
-    transport: { color: '#4c9fe8', bg: '#e5f4ff', gradient: 'linear-gradient(90deg, #4c9fe8, #7cc7ff, #c8ecff)' },
-    subscription: { color: '#2a9d72', bg: '#e1f7ee', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #b9f3dd)' },
-    daily: { color: '#ff8f6b', bg: '#fff0e8', gradient: 'linear-gradient(90deg, #ff8f6b, #ffb35c, #ffd1a8)' },
-    cat: { color: '#d9446a', bg: '#ffe8ef', gradient: 'linear-gradient(90deg, #d9446a, #ff8fab, #ffd1dc)' },
-    entertainment: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #ff9ec7)' },
-    gf: { color: '#e85d9e', bg: '#ffe4f1', gradient: 'linear-gradient(90deg, #d9446a, #e85d9e, #ffb3cf)' },
-    shopping: { color: '#ff7fae', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #ff7fae, #ff9ec7, #ffd1e3)' },
-    investment: { color: '#5cc6b7', bg: '#e5f8f5', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #c4f1ec)' },
-    salary: { color: '#2a9d72', bg: '#e1f7ee', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #b9f3dd)' },
-    bonus: { color: '#d9891f', bg: '#fff3d6', gradient: 'linear-gradient(90deg, #d9891f, #ffb35c, #ffd166)' },
-    invest: { color: '#5c9ded', bg: '#e8f3ff', gradient: 'linear-gradient(90deg, #5c9ded, #7cc7ff, #c8ecff)' },
-    gift: { color: '#e85d9e', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #e85d9e, #ff9ec7, #ffd1e3)' },
-    parttime: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #d7c2ff)' },
-    other: { color: '#896778', bg: '#f7edf3', gradient: 'linear-gradient(90deg, #896778, #c79caf, #f0c8d9)' }
-};
-
-let currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) || THEMES.NEON;
-if (!Object.values(THEMES).includes(currentTheme)) currentTheme = THEMES.NEON;
-
-function getCssVar(name, fallback) {
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return value || fallback;
-}
-
-function applyTheme(theme, shouldPersist = true) {
-    currentTheme = theme === THEMES.CUTE ? THEMES.CUTE : THEMES.NEON;
-    document.documentElement.dataset.theme = currentTheme;
-    document.body?.setAttribute('data-theme', currentTheme);
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) metaThemeColor.setAttribute('content', THEME_META[currentTheme].colorScheme);
-    if (shouldPersist) localStorage.setItem(STORAGE_KEYS.THEME, currentTheme);
-    updateThemeToggleUI();
-}
-
-function updateThemeToggleUI() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
-    const isCute = currentTheme === THEMES.CUTE;
-    const meta = THEME_META[currentTheme];
-    toggle.setAttribute('aria-pressed', String(isCute));
-    toggle.setAttribute('aria-label', isCute ? 'Switch to neon theme' : 'Switch to cute theme');
-    const icon = toggle.querySelector('.theme-toggle-thumb i');
-    if (icon) icon.className = meta.icon;
-}
-
-function setupThemeSwitch() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
-    updateThemeToggleUI();
-    toggle.addEventListener('click', () => {
-        applyTheme(currentTheme === THEMES.CUTE ? THEMES.NEON : THEMES.CUTE);
-        updateTransactionsList();
-        updateExpenseCharts();
-        updateBalance();
-        const budgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
-        if (typeof updateBudgetUI === 'function') updateBudgetUI(budgets);
-    });
-}
-
-function syncAppViewportHeight() {
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    if (!viewportHeight) return;
-    document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
-}
-
-syncAppViewportHeight();
-window.addEventListener('resize', syncAppViewportHeight);
-window.addEventListener('orientationchange', () => {
-    setTimeout(syncAppViewportHeight, 250);
-});
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', syncAppViewportHeight);
-    window.visualViewport.addEventListener('scroll', syncAppViewportHeight);
-}
-
-applyTheme(currentTheme, false);
-
-// Global variables for delete functionality
-let isDeleteMode = false;
-let transactionData = []; // Store transaction data for deletion
-let incomeData = []; // Store income data
-let isIncomeDeleteMode = false;
-let isSubscriptionDeleteMode = false;
-let subscriptionData = []; // Store subscription data for deletion
-let deleteCallback = null; // Store the function to call when delete is confirmed
-let currentView = 'transactions'; // 'transactions' or 'subscriptions'
-let editingTransaction = null; // Tracks the transaction currently being edited in the calculator modal
-
-// Calculator Logic Variables
-let currentCalcAmount = '0';
-let currentCalcType = 'expense'; // 'expense' or 'income'
-let currentCalcDate = new Date();
-let selectedCategoryId = null;
-let currentSubscriptionAmount = '0';
-let lockedScrollY = 0;
-
-// Month Selector Variables
-let selectedMonth = new Date().getMonth() + 1; // 1-12
-let selectedYear = new Date().getFullYear();     // e.g., 2026
-
-// ===== LOCAL STORAGE UTILITIES =====
-function getLocalStorageTransactions() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading transactions from localStorage:', e);
-        return [];
-    }
-}
-
-function getLocalStorageIncome() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.INCOME);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading income from localStorage:', e);
-        return [];
-    }
-}
-
-function saveLocalStorageTransactions(data) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data));
-    } catch (e) {
-        console.error('Error saving transactions to localStorage:', e);
-    }
-}
-
-function saveLocalStorageIncome(data) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(data));
-    } catch (e) {
-        console.error('Error saving income to localStorage:', e);
-    }
-}
-
-function getLocalSubscriptions() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading subscriptions from localStorage:', e);
-        return [];
-    }
-}
-
-function saveLocalSubscriptions(data) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(data));
-    } catch (e) {
-        console.error('Error saving subscriptions to localStorage:', e);
-    }
-}
-
-
-// Categories Config
-const EXPENSE_CATEGORIES = [
-    { id: 'food', label: '食物', icon: 'fas fa-utensils', color: '#9b7cff', bg: '#2a2441', gradient: 'linear-gradient(90deg, #7c3aed, #9b7cff, #c4b5fd)' },
-    { id: 'rent', label: '租房', icon: 'fas fa-home', color: '#ff4f7b', bg: '#3a1f2b', gradient: 'linear-gradient(90deg, #e11d48, #ff4f7b, #fb7185)' },
-    { id: 'mortgage', label: '房貸', icon: 'fas fa-building', color: '#ffb547', bg: '#3a2a16', gradient: 'linear-gradient(90deg, #d97706, #ffb547, #fde68a)' },
-    { id: 'transport', label: '交通', icon: 'fas fa-bus', color: '#45a3ff', bg: '#182e49', gradient: 'linear-gradient(90deg, #2563eb, #45a3ff, #7dd3fc)' },
-    { id: 'subscription', label: '訂閱', icon: 'fas fa-calendar-check', color: '#28d6c8', bg: '#123838', gradient: 'linear-gradient(90deg, #0f766e, #28d6c8, #99f6e4)' },
-    { id: 'daily', label: '日常用品', icon: 'fas fa-shopping-basket', color: '#ff7a1a', bg: '#3d2110', gradient: 'linear-gradient(90deg, #ea580c, #ff7a1a, #fdba74)' },
-    { id: 'cat', label: '貓咪', icon: 'fas fa-paw', color: '#4ade80', bg: '#183824', gradient: 'linear-gradient(90deg, #16a34a, #4ade80, #bbf7d0)' },
-    { id: 'entertainment', label: '娛樂', icon: 'fas fa-gamepad', color: '#d65cff', bg: '#351d42', gradient: 'linear-gradient(90deg, #a21caf, #d65cff, #f0abfc)' },
-    { id: 'gf', label: '女友', icon: 'fas fa-heart', color: '#ff5ab3', bg: '#3b1f35', gradient: 'linear-gradient(90deg, #db2777, #ff5ab3, #f9a8d4)' },
-    { id: 'shopping', label: '購物', icon: 'fas fa-shopping-bag', color: '#ff3d5a', bg: '#3c1b24', gradient: 'linear-gradient(90deg, #b91c1c, #ff3d5a, #fca5a5)' },
-    { id: 'investment', label: '投資', icon: 'fas fa-chart-line', color: '#2dd4ff', bg: '#143240', gradient: 'linear-gradient(90deg, #0284c7, #2dd4ff, #67e8f9)' },
-    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#b4bdcf', bg: '#252b3a', gradient: 'linear-gradient(90deg, #64748b, #b4bdcf, #e2e8f0)' }
-];
-
-const INCOME_CATEGORIES = [
-    { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#22c55e', bg: '#153821' },
-    { id: 'bonus', label: '獎金', icon: 'fas fa-star', color: '#facc15', bg: '#3a3210' },
-    { id: 'invest', label: '投資', icon: 'fas fa-chart-line', color: '#38bdf8', bg: '#143247' },
-    { id: 'gift', label: '禮金', icon: 'fas fa-gift', color: '#a78bfa', bg: '#2d2545' },
-    { id: 'parttime', label: '兼職', icon: 'fas fa-briefcase', color: '#14b8a6', bg: '#123633' },
-    { id: 'other', label: '其他', icon: 'fas fa-box', color: '#cbd5e1', bg: '#273040' }
-];
-
-function getCategoryVisualStyle(category) {
-    if (!category) return '';
-    const themedCategory = getThemedCategory(category);
-    return `--category-color: ${themedCategory.color}; --category-bg: ${themedCategory.bg};`;
-}
-
-function getThemedCategory(category) {
-    if (!category) return null;
-    const cute = CUTE_CATEGORY_OVERRIDES[category.id];
-    if (currentTheme === THEMES.CUTE && cute) {
-        return {
-            ...category,
-            color: cute.color,
-            bg: cute.bg,
-            gradient: cute.gradient || category.gradient
-        };
-    }
-    return category;
-}
-
-function findCategoryConfig(categoryValue, isIncome = false) {
-    const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-    return categories.find(c => c.label === categoryValue || c.id === categoryValue);
-}
-
-
-// Main function to load data from localStorage only
+﻿// Main function to load data from localStorage only
 async function fetchExpenseData() {
     try {
         // Load from localStorage
@@ -444,7 +173,7 @@ function updateTransactionsList() {
             }
         });
         
-        // Format Date Header (e.g. 2026/02/09 星期一) — parse as local date so it matches sheet
+        // Format Date Header (e.g. 2026/02/09 星期一) - parse as local date so it matches sheet
         const [y, mo, d] = dateKey.split('-').map(Number);
         const dateObj = new Date(y, mo - 1, d);
         const dateDisplay = dateObj.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' });
@@ -1322,41 +1051,6 @@ function updateCategoryInsights(categoryTotals) {
     document.getElementById('category-count').textContent = categories.length.toString();
 }
 
-// Add to Home Screen functionality
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent Chrome 67 and earlier from automatically showing the prompt
-    e.preventDefault();
-    // Stash the event so it can be triggered later
-    deferredPrompt = e;
-    
-    // Create and show the Add to Home button
-    const addToHomeBtn = document.createElement('button');
-    addToHomeBtn.className = 'add-to-home';
-    addToHomeBtn.innerHTML = '+';
-    addToHomeBtn.title = 'Add to Home Screen';
-    document.body.appendChild(addToHomeBtn);
-    
-    addToHomeBtn.addEventListener('click', () => {
-        // Show the install prompt
-        deferredPrompt.prompt();
-        
-        // Wait for the user to respond to the prompt
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
-            }
-            // Clear the saved prompt since it can't be used again
-            deferredPrompt = null;
-            
-            // Hide the button
-            addToHomeBtn.classList.add('hidden');
-        });
-    });
-});
 
 // Initialize the app
 window.addEventListener('DOMContentLoaded', async () => {
@@ -1462,281 +1156,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (statusMsg) statusMsg.textContent = 'Error loading app';
     }
 
-// --- EXPORT TO EXCEL FUNCTION ---
-
-// Small helper to flash a message in the status bar
-function showStatusMessage(text, duration = 2500) {
-    const statusMsg = document.getElementById('status-message');
-    if (statusMsg) {
-        statusMsg.textContent = text;
-        if (duration > 0) {
-            setTimeout(() => { statusMsg.textContent = ''; }, duration);
-        }
-    }
-}
-
-function exportToExcel() {
-    try {
-        if (typeof XLSX === 'undefined') {
-            showStatusMessage('Excel library not loaded. Check your connection.');
-            return;
-        }
-
-        // Get all data from localStorage
-        const transactions = getLocalStorageTransactions() || [];
-        const income = getLocalStorageIncome() || [];
-        const subscriptions = getLocalSubscriptions() || [];
-
-        // Combine expenses and income, newest first
-        const allTransactions = [...transactions, ...income];
-        allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        // Build one clean row per transaction
-        const txRows = allTransactions.map(item => ({
-            Date: item.date || '',
-            Type: item.type || 'expense',
-            Category: item.category || '',
-            Amount: Number(item.amount) || 0,
-            Description: item.description || ''
-        }));
-
-        const wb = XLSX.utils.book_new();
-
-        const txHeader = ['Date', 'Type', 'Category', 'Amount', 'Description'];
-        const txSheet = XLSX.utils.json_to_sheet(txRows, { header: txHeader });
-        txSheet['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 12 }, { wch: 32 }];
-        XLSX.utils.book_append_sheet(wb, txSheet, 'Transactions');
-
-        // Subscriptions on their own sheet (columns match the app's real schema)
-        const subRows = subscriptions.map(sub => ({
-            Name: sub.name || sub.service || '',
-            Amount: Number(sub.amount ?? sub.price) || 0,
-            'Payment Method': sub.payment || sub.paymentMethod || sub.account || '',
-            'Billing Day': sub.billingDate ?? sub.nextPaymentDate ?? ''
-        }));
-        const subHeader = ['Name', 'Amount', 'Payment Method', 'Billing Day'];
-        const subSheet = XLSX.utils.json_to_sheet(subRows, { header: subHeader });
-        subSheet['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, subSheet, 'Subscriptions');
-
-        // Category budgets on their own sheet
-        const categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
-        const budgetRows = EXPENSE_CATEGORIES
-            .filter(cat => Number(categoryBudgets[cat.id]) > 0)
-            .map(cat => ({
-                'Category ID': cat.id,
-                Category: cat.label,
-                Budget: Number(categoryBudgets[cat.id]) || 0
-            }));
-        const budgetHeader = ['Category ID', 'Category', 'Budget'];
-        const budgetSheet = XLSX.utils.json_to_sheet(budgetRows, { header: budgetHeader });
-        budgetSheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, budgetSheet, 'Budgets');
-
-        // Filename with current date
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        XLSX.writeFile(wb, `Tommy_Expense_Export_${dateStr}.xlsx`);
-
-        showStatusMessage(`Exported ${txRows.length} transactions!`);
-    } catch (error) {
-        console.error('Error exporting to Excel:', error);
-        showStatusMessage('Export failed');
-    }
-}
-
-// Read an uploaded Excel/CSV file and merge its rows into localStorage
-function importFromExcel(file) {
-    if (!file) return;
-
-    if (typeof XLSX === 'undefined') {
-        showStatusMessage('Excel library not loaded. Check your connection.');
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, { type: 'array', cellDates: true });
-
-            if (!wb.SheetNames.length) {
-                showStatusMessage('That file has no data');
-                return;
-            }
-
-            // --- Transactions / Income ---
-            const txSheetName = wb.SheetNames.find(n => /transaction|income|expense/i.test(n)) || wb.SheetNames[0];
-            const txRows = XLSX.utils.sheet_to_json(wb.Sheets[txSheetName], { defval: '' });
-
-            const existingTx = getLocalStorageTransactions() || [];
-            const existingInc = getLocalStorageIncome() || [];
-
-            const txSignature = t => `${t.date}|${t.amount}|${t.category}|${t.description}|${t.type}`;
-            const seenTx = new Set([...existingTx, ...existingInc].map(txSignature));
-
-            let importedCount = 0;
-            let uid = Date.now();
-
-            txRows.forEach(row => {
-                const date = toLocalDateKey(row.Date ?? row.date ?? '');
-                const amount = parseFloat(row.Amount ?? row.amount) || 0;
-                const category = String(row.Category ?? row.category ?? '').trim();
-                const description = String(row.Description ?? row.description ?? '').trim();
-                let type = String(row.Type ?? row.type ?? 'expense').trim().toLowerCase();
-                if (type !== 'income') type = 'expense';
-
-                // Skip blank rows
-                if (!date && !amount && !category && !description) return;
-
-                const entry = { index: uid++, date, amount, category, description, type };
-                const sig = txSignature(entry);
-                if (seenTx.has(sig)) return; // skip duplicates already in memory
-                seenTx.add(sig);
-
-                if (type === 'income') existingInc.push(entry);
-                else existingTx.push(entry);
-                importedCount++;
-            });
-
-            saveLocalStorageTransactions(existingTx);
-            saveLocalStorageIncome(existingInc);
-
-            // --- Subscriptions (optional sheet) ---
-            const subSheetName = wb.SheetNames.find(n => /subscription/i.test(n));
-            if (subSheetName) {
-                const subRows = XLSX.utils.sheet_to_json(wb.Sheets[subSheetName], { defval: '' });
-                const existingSubs = getLocalSubscriptions() || [];
-                const subSignature = s => `${s.name}|${s.amount}|${s.billingDate}`;
-                const seenSubs = new Set(existingSubs.map(subSignature));
-
-                subRows.forEach(row => {
-                    // Support both the current export columns and any older/legacy names
-                    const name = String(row.Name ?? row.name ?? row.Service ?? row.service ?? '').trim();
-                    if (!name) return;
-                    const entry = {
-                        index: uid++,
-                        name,
-                        amount: parseFloat(row.Amount ?? row.amount ?? row.Price ?? row.price) || 0,
-                        payment: String(row['Payment Method'] ?? row.payment ?? row.paymentMethod ?? row.Account ?? '').trim(),
-                        billingDate: String(row['Billing Day'] ?? row.billingDate ?? row['Next Payment'] ?? row.nextPaymentDate ?? '').trim(),
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    };
-                    const sig = subSignature(entry);
-                    if (seenSubs.has(sig)) return;
-                    seenSubs.add(sig);
-                    existingSubs.push(entry);
-                });
-
-                saveLocalSubscriptions(existingSubs);
-            }
-
-            // --- Category budgets (optional sheet) ---
-            const budgetSheetName = wb.SheetNames.find(n => /budget/i.test(n));
-            if (budgetSheetName) {
-                const budgetRows = XLSX.utils.sheet_to_json(wb.Sheets[budgetSheetName], { defval: '' });
-                const categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
-
-                budgetRows.forEach(row => {
-                    // Match by Category ID first, then fall back to the category label
-                    let catId = String(row['Category ID'] ?? row['Category Id'] ?? row.id ?? '').trim();
-                    const catLabel = String(row.Category ?? row.category ?? '').trim();
-                    if (!catId && catLabel) {
-                        const match = EXPENSE_CATEGORIES.find(c => c.label === catLabel || c.id === catLabel);
-                        if (match) catId = match.id;
-                    }
-                    const amount = parseFloat(row.Budget ?? row.budget ?? row.Amount) || 0;
-                    if (catId && amount > 0) {
-                        categoryBudgets[catId] = amount;
-                    }
-                });
-
-                localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
-            }
-
-            showStatusMessage(`Imported ${importedCount} transactions! Refreshing...`, 0);
-            setTimeout(() => location.reload(), 1200);
-        } catch (error) {
-            console.error('Error importing file:', error);
-            showStatusMessage('Import failed. Use a file exported from this app.');
-        }
-    };
-
-    reader.onerror = function() {
-        showStatusMessage('Could not read that file');
-    };
-
-    reader.readAsArrayBuffer(file);
-}
-
-// Setup export and import buttons
-function setupExportButton() {
-    const exportBtn = document.getElementById('export-excel-btn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportToExcel);
-
-        exportBtn.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.boxShadow = `0 8px 16px ${getCssVar('--glow-shadow', 'rgba(102, 126, 234, 0.4)')}`;
-        });
-
-        exportBtn.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = 'none';
-        });
-    }
-
-    const importBtn = document.getElementById('import-excel-btn');
-    const importInput = document.getElementById('import-excel-input');
-    if (importBtn && importInput) {
-        importBtn.addEventListener('click', () => importInput.click());
-
-        importInput.addEventListener('change', function() {
-            const file = this.files && this.files[0];
-            if (file) importFromExcel(file);
-            // Reset so selecting the same file again still fires change
-            this.value = '';
-        });
-
-        importBtn.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.boxShadow = `0 8px 16px ${getCssVar('--glow-shadow', 'rgba(17, 153, 142, 0.4)')}`;
-        });
-
-        importBtn.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = 'none';
-        });
-    }
-}
 });
 
-// --- SYNC SCHEDULING FUNCTIONS ---
-
-// Get time until next event (in milliseconds)
-function getTimeUntilNextMidnight() {
-    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-    const tomorrow = new Date(taiwanTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    
-    return tomorrow.getTime() - taiwanTime.getTime();
-}
-
-function getTimeUntil6AM() {
-    const taiwanTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-    const target = new Date(taiwanTime);
-    target.setHours(6, 0, 0, 0);
-    
-    if (target.getTime() <= taiwanTime.getTime()) {
-        // If it's already past 6 AM, set for tomorrow
-        target.setDate(target.getDate() + 1);
-    }
-    
-    return target.getTime() - taiwanTime.getTime();
-}
 
 // --- Budget Page Logic ---
 
@@ -1911,7 +1332,7 @@ function updateBudgetUI(categoryBudgets) {
                      totalSpent += absAmount;
                      
                      // Find category ID from label
-                     // Note: item.category stores the Label (e.g. "食物"), not ID.
+                     // Note: item.category stores the label (e.g. "食物"), not ID.
                      // We need to map label back to ID or just use label if consistent.
                      // The app uses Labels for display and storage.
                      // Let's try to match label to ID from EXPENSE_CATEGORIES
@@ -2083,7 +1504,7 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
         setTimeout(() => {
             resetSwipeDismissState(modal);
         }, 180);
-    };
+    }
 
     content.addEventListener('pointerdown', (event) => {
         if (modal.style.display === 'none' || isInteractiveTarget(event.target)) return;
@@ -2126,7 +1547,7 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
         isDragging = false;
         content.releasePointerCapture?.(event.pointerId);
         finishSwipe(shouldClose);
-    };
+    }
 
     content.addEventListener('pointerup', endDrag);
     content.addEventListener('pointercancel', endDrag);
@@ -2273,13 +1694,24 @@ function switchCalcType(type) {
 function renderCategories(categories) {
     const grid = document.getElementById('category-grid');
     grid.innerHTML = categories.map(cat => `
-        <div class="category-option" onclick="handleCategorySelect('${cat.id}')" data-id="${cat.id}">
+        <div class="category-option" data-id="${cat.id}" role="button" tabindex="0">
             <div class="cat-icon-circle" style="${getCategoryVisualStyle(cat)}">
                 <i class="${cat.icon}"></i>
             </div>
             <div class="cat-label">${cat.label}</div>
         </div>
     `).join('');
+
+    grid.querySelectorAll('.category-option').forEach(option => {
+        const select = () => handleCategorySelect(option.dataset.id);
+        option.addEventListener('click', select);
+        option.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                select();
+            }
+        });
+    });
 }
 
 function handleCategorySelect(id) {
@@ -2287,7 +1719,7 @@ function handleCategorySelect(id) {
     const category = categories.find(c => c.id === id);
     if (category) selectCategory(category);
 }
-// Exporting handleCategorySelect to window for onclick handlers in HTML
+// Keep this global for backward compatibility with older saved markup.
 window.handleCategorySelect = handleCategorySelect;
 
 function selectCategory(category) {
@@ -2443,194 +1875,6 @@ async function submitTransaction() {
     }
 }
 
-// Function to initialize sections
-function initializeSections() {
-    // Hide all sections except the active one
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(section => {
-        if (!section.classList.contains('active')) {
-            section.style.display = 'none';
-        }
-    });
-}
-
-// Handle bottom navigation
-function setupNavigation() {
-    try {
-        const navItems = document.querySelectorAll('.nav-item');
-        const sections = document.querySelectorAll('.section');
-        
-        if (!navItems || navItems.length === 0) {
-            console.warn('No nav items found');
-            return;
-        }
-        
-        navItems.forEach(item => {
-            item.addEventListener('click', function(e) {
-                try {
-                    e.preventDefault();
-                    
-                    // Remove active class from all nav items
-                    navItems.forEach(navItem => {
-                        navItem.classList.remove('active');
-                    });
-                    
-                    // Add active class to clicked nav item
-                    this.classList.add('active');
-                    
-                    // Add ripple effect
-                    createRipple(e);
-                    
-                    // Get the target section ID
-                    const targetSectionId = this.getAttribute('data-section');
-                    
-                    // Hide all sections
-                    sections.forEach(section => {
-                        section.classList.remove('active');
-                        section.style.display = 'none';
-                    });
-                    
-                    // Show only the target section
-                    const targetSection = document.getElementById(targetSectionId);
-                    if (targetSection) {
-                        targetSection.classList.add('active');
-                        targetSection.style.display = 'block';
-                    } else {
-                        console.warn('Target section not found:', targetSectionId);
-                    }
-                } catch (err) {
-                    console.error('Error in nav click handler:', err);
-                }
-            });
-        });
-    } catch (e) {
-        console.error('Error setting up navigation:', e);
-    }
-}
-
-// Function to create ripple effect
-function createRipple(event) {
-    const button = event.currentTarget;
-    
-    // Remove any existing ripples
-    const ripples = button.querySelectorAll('.ripple');
-    ripples.forEach(ripple => ripple.remove());
-    
-    const circle = document.createElement('span');
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-    
-    // Get position relative to the button
-    const rect = button.getBoundingClientRect();
-    let x = event.clientX ? event.clientX - rect.left : event.touches[0].clientX - rect.left;
-    let y = event.clientY ? event.clientY - rect.top : event.touches[0].clientY - rect.top;
-    
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${x - radius}px`;
-    circle.style.top = `${y - radius}px`;
-    circle.classList.add('ripple');
-    
-    button.appendChild(circle);
-    
-    // Remove ripple after animation completes
-    setTimeout(() => {
-        circle.remove();
-    }, 600);
-}
-
-// Setup Month Selector
-function setupMonthSelector() {
-    const btn = document.getElementById('month-selector-btn');
-    const dropdown = document.getElementById('month-picker-dropdown');
-    const grid = document.getElementById('month-picker-grid');
-    const label = document.getElementById('month-selector-label');
-    const yearLabel = document.getElementById('month-picker-year-label');
-    const yearPrevBtn = document.getElementById('year-prev');
-    const yearNextBtn = document.getElementById('year-next');
-    
-    if (!btn || !dropdown || !grid) return;
-    
-    // Generate month buttons
-    function renderMonths() {
-        grid.innerHTML = '';
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        monthNames.forEach((name, index) => {
-            const monthNum = index + 1;
-            const monthBtn = document.createElement('button');
-            monthBtn.type = 'button';
-            monthBtn.className = 'month-btn';
-            monthBtn.textContent = name;
-            monthBtn.dataset.month = monthNum;
-            
-            // Highlight the currently selected month
-            if (monthNum === selectedMonth && selectedYear === new Date().getFullYear()) {
-                monthBtn.classList.add('selected');
-            }
-            
-            monthBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Update global variables
-                selectedMonth = monthNum;
-                
-                // Update all month buttons
-                grid.querySelectorAll('.month-btn').forEach(m => m.classList.remove('selected'));
-                monthBtn.classList.add('selected');
-                
-                // Update label
-                label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
-                
-                // Update data displays
-                updateTransactionsList();
-                updateBalance();
-                updateExpenseCharts();
-                
-                // Close dropdown
-                dropdown.classList.remove('active');
-                btn.setAttribute('aria-expanded', 'false');
-            });
-            
-            grid.appendChild(monthBtn);
-        });
-        
-        yearLabel.textContent = `${selectedYear}年`;
-    }
-    
-    // Toggle dropdown
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        dropdown.classList.toggle('active');
-        btn.setAttribute('aria-expanded', dropdown.classList.contains('active'));
-        if (dropdown.classList.contains('active')) {
-            renderMonths();
-        }
-    });
-    
-    // Year navigation
-    yearPrevBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        selectedYear--;
-        renderMonths();
-    });
-    
-    yearNextBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        selectedYear++;
-        renderMonths();
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.remove('active');
-            btn.setAttribute('aria-expanded', 'false');
-        }
-    });
-    
-    // Initialize label and render months
-    label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
-    renderMonths();
-}
 
 // Function to add transaction to localStorage
 async function addTransactionToSheet(date, amount, category, description, type = 'expense') {
@@ -3291,25 +2535,25 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
     modal.style.display = 'block';
     
     const closeButton = modal.querySelector('.close-details-modal');
-    closeButton.onclick = function() {
+    closeButton.addEventListener('click', function() {
         modal.style.display = 'none';
         document.body.style.overflow = ''; 
-    };
+    }, { once: true });
     
     const deleteButton = document.getElementById('delete-subscription-detail-btn');
-    deleteButton.onclick = function() {
+    deleteButton.addEventListener('click', function() {
         modal.style.display = 'none';
         showDeleteSubscriptionConfirmation(rowIndex, service, account, price, billingCycle, category, nextPayment, paymentMethod);
-    };
+    }, { once: true });
     
     const editButton = document.getElementById('edit-subscription-btn');
-    editButton.onclick = function() {
+    editButton.addEventListener('click', function() {
         modal.style.display = 'none';
         openEditSubscriptionModal(service, account, price, billingCycle, category, nextPayment, paymentMethod, description, rowIndex);
-    };
+    }, { once: true });
     
     const resubscribeButton = document.getElementById('resubscribe-btn');
-    resubscribeButton.onclick = function() {
+    resubscribeButton.addEventListener('click', function() {
         let newPaymentDate = calculateNextPaymentDate(nextPayment, billingCycle);
         
         const confirmed = confirm(`Resubscribe to ${service} for another ${billingCycle} cycle?\nNew payment date: ${formatDateForDisplay(newPaymentDate)}`);
@@ -3342,7 +2586,7 @@ function showSubscriptionDetails(service, account, price, billingCycle, category
                 }, 2000);
             });
         }
-    };
+    }, { once: true });
     
     const outsideClickHandler = function(event) {
         if (event.target === modal) {
@@ -3383,17 +2627,17 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
     modal.style.display = 'block';
     
     const closeButton = modal.querySelector('.close-edit-subscription-modal');
-    closeButton.onclick = function() {
+    closeButton.addEventListener('click', function() {
         modal.style.display = 'none';
-    };
+    }, { once: true });
     
     const cancelButton = document.getElementById('cancel-edit-subscription');
-    cancelButton.onclick = function() {
+    cancelButton.addEventListener('click', function() {
         modal.style.display = 'none';
-    };
+    }, { once: true });
     
     const form = document.getElementById('edit-subscription-form');
-    form.onsubmit = async function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         try {
@@ -3434,7 +2678,7 @@ function openEditSubscriptionModal(service, account, price, billingCycle, catego
                 document.getElementById('status-message').textContent = '';
             }, 2000);
         }
-    };
+    }, { once: true });
     
     const outsideClickHandler = function(event) {
         if (event.target === modal) {
@@ -3616,11 +2860,22 @@ function renderQuickAddButtons() {
     const settings = getQuickAddSettings();
     
     container.innerHTML = settings.map(btn => `
-        <div class="quick-add-btn" data-id="${btn.id}" onclick="handleQuickAddClick('${btn.id}')">
+        <div class="quick-add-btn" data-id="${btn.id}" role="button" tabindex="0">
             <i class="${btn.icon || 'fas fa-plus'}"></i>
             <span>${btn.label}</span>
         </div>
     `).join('');
+
+    container.querySelectorAll('.quick-add-btn').forEach(button => {
+        const runQuickAdd = () => window.handleQuickAddClick(button.dataset.id);
+        button.addEventListener('click', runQuickAdd);
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                runQuickAdd();
+            }
+        });
+    });
 }
 
 // Setup Quick Add Configuration Modal
@@ -3755,17 +3010,6 @@ async function fetchSubscriptionsFromGoogle() {
         return subscriptions;
     } catch (error) {
         console.error('Error fetching subscriptions:', error);
-        return [];
-    }
-}
-
-// Get subscriptions from localStorage
-function getLocalSubscriptions() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading subscriptions from localStorage:', e);
         return [];
     }
 }
@@ -3941,7 +3185,7 @@ function renderSubscriptionListInline() {
         const warningClass = daysUntil <= 7 && daysUntil > 0 ? 'warning' : '';
         
         return `
-            <div class="subscription-list-item-inline ${warningClass}" onclick="showSubscriptionDetail(${sub.index})">
+            <div class="subscription-list-item-inline ${warningClass}" data-subscription-index="${sub.index}" role="button" tabindex="0">
                 <div class="subscription-item-info">
                     <div class="subscription-item-icon">
                         <i class="fas fa-calendar-check"></i>
@@ -3952,7 +3196,7 @@ function renderSubscriptionListInline() {
                     </div>
                 </div>
                 <div class="subscription-item-amount">$${amount.toFixed(2)}</div>
-                <button class="subscription-item-delete ${deleteClass}" onclick="handleDeleteSubscriptionInline(event, ${sub.index})">
+                <button class="subscription-item-delete ${deleteClass}" data-delete-subscription-index="${sub.index}">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -3961,6 +3205,24 @@ function renderSubscriptionListInline() {
     
     html += '</div>';
     container.innerHTML = html;
+
+    container.querySelectorAll('[data-subscription-index]').forEach(item => {
+        const openDetail = () => showSubscriptionDetail(Number(item.dataset.subscriptionIndex));
+        item.addEventListener('click', openDetail);
+        item.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openDetail();
+            }
+        });
+    });
+
+    container.querySelectorAll('[data-delete-subscription-index]').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            handleDeleteSubscriptionInline(event, Number(button.dataset.deleteSubscriptionIndex));
+        });
+    });
 }
 
 // Handle delete subscription inline
@@ -3990,11 +3252,11 @@ function showSubscriptionDetail(subscriptionIndex) {
     
     // Create modal HTML with improved layout
     const modalHTML = `
-        <div id="subscription-detail-modal" class="modal" style="display: flex;">
+        <div id="subscription-detail-modal" class="modal subscription-detail-modal-visible">
             <div class="modal-content subscription-detail-content">
                 <div class="modal-header">
                     <h2>Subscription Details</h2>
-                    <span class="close-subscription-detail" onclick="closeSubscriptionDetail()">&times;</span>
+                    <span class="close-subscription-detail" role="button" tabindex="0">&times;</span>
                 </div>
                 
                 <div class="subscription-detail-body">
@@ -4020,7 +3282,7 @@ function showSubscriptionDetail(subscriptionIndex) {
                         </div>
                     </div>
                     
-                    <div class="detail-grid" style="grid-template-columns: 1fr;">
+                    <div class="detail-grid detail-grid-single">
                         <div class="detail-item">
                             <label>Payment Method</label>
                             <p class="detail-value">${subscription.payment}</p>
@@ -4040,8 +3302,8 @@ function showSubscriptionDetail(subscriptionIndex) {
                 </div>
                 
                 <div class="modal-footer">
-                    <button class="btn-cancel" onclick="closeSubscriptionDetail()">Close</button>
-                    <button class="btn-delete" onclick="deleteAndCloseSubscription(${subscriptionIndex})">Delete</button>
+                    <button class="btn-cancel" data-subscription-detail-close>Close</button>
+                    <button class="btn-delete" data-subscription-detail-delete="${subscriptionIndex}">Delete</button>
                 </div>
             </div>
         </div>
@@ -4052,9 +3314,27 @@ function showSubscriptionDetail(subscriptionIndex) {
     if (existingModal) existingModal.remove();
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const detailModal = document.getElementById('subscription-detail-modal');
+    const closeControls = detailModal.querySelectorAll('.close-subscription-detail, [data-subscription-detail-close]');
+    closeControls.forEach(control => {
+        control.addEventListener('click', closeSubscriptionDetail);
+        control.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                closeSubscriptionDetail();
+            }
+        });
+    });
+
+    const deleteButton = detailModal.querySelector('[data-subscription-detail-delete]');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', () => {
+            deleteAndCloseSubscription(Number(deleteButton.dataset.subscriptionDetailDelete));
+        });
+    }
     
     // Close modal on background click
-    document.getElementById('subscription-detail-modal').addEventListener('click', function(e) {
+    detailModal.addEventListener('click', function(e) {
         if (e.target === this) {
             closeSubscriptionDetail();
         }
