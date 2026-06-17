@@ -409,7 +409,11 @@
 }
 
 [data-theme="cute"] .circle-bg {
-    stroke: rgba(232, 93, 158, 0.18);
+    stroke: rgba(255, 158, 199, 0.28);
+}
+
+[data-theme="cute"] .circle-progress {
+    filter: drop-shadow(0 0 10px rgba(232, 93, 158, 0.18));
 }
 
 [data-theme="cute"] .stat-value.spent {

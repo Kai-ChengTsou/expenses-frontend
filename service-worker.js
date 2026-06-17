@@ -1,9 +1,10 @@
 // Tommy Expense Service Worker
-const CACHE_NAME = 'tommy-expense-cache-v1.0.27';
+const CACHE_NAME = 'tommy-expense-cache-v1.0.28';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/css/budget.css',
   '/js/config.js',
   '/js/state.js',
   '/js/viewport.js',

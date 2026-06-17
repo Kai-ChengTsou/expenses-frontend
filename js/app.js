@@ -1371,21 +1371,21 @@ function updateBudgetUI(categoryBudgets) {
         circle.style.stroke = 'url(#budget-circle-gradient)';
         if (remaining < 0) {
             updateBudgetCircleGradient(
-                getCssVar('--warning-color', '#ff7a1a'),
-                getCssVar('--danger-color', '#ff3d5a'),
-                getCssVar('--secondary-color', '#c026d3')
+                getCssVar('--budget-circle-danger-start', '#ff7a1a'),
+                getCssVar('--budget-circle-danger-middle', '#ff3d5a'),
+                getCssVar('--budget-circle-danger-end', '#c026d3')
             );
         } else if (spentPercentage > 80) {
             updateBudgetCircleGradient(
-                '#ffd166',
-                getCssVar('--warning-color', '#ff9500'),
-                getCssVar('--accent-color', '#ff7a1a')
+                getCssVar('--budget-circle-warning-start', '#ffd166'),
+                getCssVar('--budget-circle-warning-middle', '#ff9500'),
+                getCssVar('--budget-circle-warning-end', '#ff7a1a')
             );
         } else {
             updateBudgetCircleGradient(
-                getCssVar('--success-color', '#4ade80'),
-                getCssVar('--accent-color', '#28d6c8'),
-                getCssVar('--primary-color', '#45a3ff')
+                getCssVar('--budget-circle-start', '#4ade80'),
+                getCssVar('--budget-circle-middle', '#28d6c8'),
+                getCssVar('--budget-circle-end', '#45a3ff')
             );
         }
     }
