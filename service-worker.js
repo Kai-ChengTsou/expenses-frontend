@@ -1,5 +1,5 @@
 // Tommy Expense Service Worker
-const CACHE_NAME = 'tommy-expense-cache-v1.0.33';
+const CACHE_NAME = 'tommy-expense-cache-v1.0.34';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -17,6 +17,11 @@ const ASSETS_TO_CACHE = [
   '/js/navigation.js',
   '/js/app.js',
   '/manifest.json',
+  '/images/icons/apple-touch-icon.png',
+  '/images/icons/favicon-16x16.png',
+  '/images/icons/favicon-32x32.png',
+  '/images/icons/icon-192x192.png',
+  '/images/icons/icon-512x512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
