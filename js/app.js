@@ -401,14 +401,12 @@ async function updateExpenseCharts() {
             const category = item.category || 'Uncategorized';
             categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
             
-            // Month
-            // Use local date for monthly grouping
+            // Month: use a sortable YYYY-MM key so chart order is always oldest to newest.
             const dateStr = toLocalDateKey(item.date);
             if (dateStr) {
-                const [y, mo, d] = dateStr.split('-').map(Number);
-                const dateObj = new Date(y, mo - 1, d);
-                const monthYear = `${dateObj.toLocaleString('default', { month: 'short' })} ${dateObj.getFullYear()}`;
-                monthlyExpenses[monthYear] = (monthlyExpenses[monthYear] || 0) + absAmount;
+                const [y, mo] = dateStr.split('-').map(Number);
+                const monthKey = `${y}-${String(mo).padStart(2, '0')}`;
+                monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + absAmount;
             }
         }
     });
@@ -815,28 +813,23 @@ function createMonthlyExpenseChart(monthlyExpenses) {
     const ctx = document.getElementById('monthly-chart').getContext('2d');
     const themeMeta = THEME_META[currentTheme];
     
-    // Sort months chronologically
-    const sortedMonths = Object.keys(monthlyExpenses).sort((a, b) => {
-        const monthA = new Date(a);
-        const monthB = new Date(b);
-        return monthA - monthB;
+    // Sort YYYY-MM keys chronologically so the x-axis reads past -> now.
+    const sortedMonths = Object.keys(monthlyExpenses).sort();
+    const monthLabels = sortedMonths.map(monthKey => {
+        const [year, month] = monthKey.split('-').map(Number);
+        return new Date(year, month - 1, 1).toLocaleString('default', { month: 'short' });
+    });
+    const monthColors = sortedMonths.map((month, index) => {
+        return themeMeta.categoryChartColors[index % themeMeta.categoryChartColors.length];
     });
     
     const chartData = {
-        labels: sortedMonths,
+        labels: monthLabels,
         datasets: [{
             label: 'Monthly Expenses',
             data: sortedMonths.map(month => monthlyExpenses[month]),
-            backgroundColor: function(context) {
-                const chart = context.chart;
-                const {ctx, chartArea} = chart;
-                if (!chartArea) return null;
-                
-                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                gradient.addColorStop(0, themeMeta.monthlyGradient[0]);
-                gradient.addColorStop(1, themeMeta.monthlyGradient[1]);
-                return gradient;
-            },
+            backgroundColor: monthColors,
+            hoverBackgroundColor: monthColors,
             borderWidth: 0,
             borderRadius: 6,
             barThickness: 16
