@@ -375,49 +375,46 @@ function closeOtherSwipedTransactions(exceptItem = null) {
 
 // Function to update expense charts (Refactored to use local transactionData)
 async function updateExpenseCharts() {
-    // transactionData global already contains the expense items
     if (!transactionData || transactionData.length === 0) {
         createEmptyCharts();
         return;
     }
-    
-    let totalExpense = 0;
-    const categoryTotals = {};
+
+    // Monthly trend uses ALL data (filtering to one month would make it pointless)
     const monthlyExpenses = {};
-    
+
+    // Category pie + top categories filter to the currently selected month
+    const categoryTotals = {};
+
     transactionData.forEach(item => {
-        // item: { date, amount, category, type: 'expense', ... }
-        // Ensure it's an expense just in case
         if (item.type !== 'expense') return;
-        
-        // Clean amount string
+
         const amountVal = parseFloat(String(item.amount).replace(/[^0-9.-]+/g, ''));
-        
-        if (!isNaN(amountVal) && amountVal < 0) {
-            const absAmount = Math.abs(amountVal);
-            totalExpense += absAmount;
-            
-            // Category
-            const category = item.category || 'Uncategorized';
-            categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
-            
-            // Month: use a sortable YYYY-MM key so chart order is always oldest to newest.
-            const dateStr = toLocalDateKey(item.date);
-            if (dateStr) {
-                const [y, mo] = dateStr.split('-').map(Number);
-                const monthKey = `${y}-${String(mo).padStart(2, '0')}`;
-                monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + absAmount;
+        if (isNaN(amountVal) || amountVal >= 0) return;
+
+        const absAmount = Math.abs(amountVal);
+        const dateStr = toLocalDateKey(item.date);
+
+        // Monthly trend bar chart — accumulate all months
+        if (dateStr) {
+            const [y, mo] = dateStr.split('-').map(Number);
+            const monthKey = `${y}-${String(mo).padStart(2, '0')}`;
+            monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + absAmount;
+
+            // Category pie — only the selected month
+            if (mo === selectedMonth && y === selectedYear) {
+                const category = item.category || 'Uncategorized';
+                categoryTotals[category] = (categoryTotals[category] || 0) + absAmount;
             }
         }
     });
-    
-    // Charts only reflect Expenses
+
     if (Object.keys(monthlyExpenses).length > 0) {
         createMonthlyExpenseChart(monthlyExpenses);
     } else {
         createEmptyMonthlyChart();
     }
-    
+
     if (Object.keys(categoryTotals).length > 0) {
         createCategoryExpenseChart(categoryTotals);
     } else {
@@ -1127,6 +1124,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Setup Month Selector
         console.log('Setting up month selector...');
         setupMonthSelector();
+        setupStatsMonthSelector();
         
         // Create empty charts initially
         console.log('Creating empty charts...');

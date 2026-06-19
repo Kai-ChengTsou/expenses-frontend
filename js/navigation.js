@@ -90,6 +90,78 @@ function createRipple(event) {
     }, 600);
 }
 
+// Sync both month selector labels to current selectedMonth/selectedYear
+function syncMonthLabels() {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const label = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+    const el1 = document.getElementById('month-selector-label');
+    const el2 = document.getElementById('stats-month-selector-label');
+    if (el1) el1.textContent = label;
+    if (el2) el2.textContent = label;
+}
+
+// Stats section month selector (mirrors the transactions one, shares the same globals)
+function setupStatsMonthSelector() {
+    const btn      = document.getElementById('stats-month-selector-btn');
+    const dropdown = document.getElementById('stats-month-picker-dropdown');
+    const grid     = document.getElementById('stats-month-picker-grid');
+    const yearLabel = document.getElementById('stats-month-picker-year-label');
+    const yearPrev  = document.getElementById('stats-year-prev');
+    const yearNext  = document.getElementById('stats-year-next');
+
+    if (!btn || !dropdown || !grid) return;
+
+    function renderMonths() {
+        grid.innerHTML = '';
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        monthNames.forEach((name, index) => {
+            const monthNum = index + 1;
+            const monthBtn = document.createElement('button');
+            monthBtn.type = 'button';
+            monthBtn.className = 'month-btn';
+            monthBtn.textContent = name;
+            monthBtn.dataset.month = monthNum;
+            if (monthNum === selectedMonth && selectedYear === new Date().getFullYear()) {
+                monthBtn.classList.add('selected');
+            }
+            monthBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                selectedMonth = monthNum;
+                grid.querySelectorAll('.month-btn').forEach(m => m.classList.remove('selected'));
+                monthBtn.classList.add('selected');
+                syncMonthLabels();
+                updateTransactionsList();
+                updateBalance();
+                updateExpenseCharts();
+                dropdown.classList.remove('active');
+                btn.setAttribute('aria-expanded', 'false');
+            });
+            grid.appendChild(monthBtn);
+        });
+        if (yearLabel) yearLabel.textContent = `${selectedYear}年`;
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.toggle('active');
+        btn.setAttribute('aria-expanded', dropdown.classList.contains('active'));
+        if (dropdown.classList.contains('active')) renderMonths();
+    });
+
+    yearPrev.addEventListener('click', (e) => { e.preventDefault(); selectedYear--; renderMonths(); });
+    yearNext.addEventListener('click', (e) => { e.preventDefault(); selectedYear++; renderMonths(); });
+
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    syncMonthLabels();
+    renderMonths();
+}
+
 // Setup Month Selector
 function setupMonthSelector() {
     const btn = document.getElementById('month-selector-btn');
@@ -129,8 +201,8 @@ function setupMonthSelector() {
                 grid.querySelectorAll('.month-btn').forEach(m => m.classList.remove('selected'));
                 monthBtn.classList.add('selected');
                 
-                // Update label
-                label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+                // Update both labels (transactions + stats sections stay in sync)
+                syncMonthLabels();
                 
                 // Update data displays
                 updateTransactionsList();
@@ -179,7 +251,6 @@ function setupMonthSelector() {
         }
     });
     
-    // Initialize label and render months
-    label.textContent = `${selectedYear}年${String(selectedMonth).padStart(2, '0')}月`;
+    syncMonthLabels();
     renderMonths();
 }
