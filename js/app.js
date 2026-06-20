@@ -106,6 +106,8 @@ function toLocalDateKey(dateVal) {
     return `${y}-${m}-${day}`;
 }
 
+const collapsedTransactionDays = new Set();
+
 // Function to update the unified transaction list
 function updateTransactionsList() {
     const container = document.getElementById('transaction-list-container');
@@ -160,6 +162,7 @@ function updateTransactionsList() {
     
     sortedDates.forEach(dateKey => {
         const transactions = grouped[dateKey];
+        const isCollapsed = collapsedTransactionDays.has(dateKey);
         
         // Calculate Daily Total (Income - Expense)
         let dailyTotal = 0;
@@ -185,12 +188,15 @@ function updateTransactionsList() {
         const totalClass = dailyTotal >= 0 ? 'positive' : 'negative';
         
         html += `
-            <div class="transaction-day-card">
-                <div class="day-header">
+            <div class="transaction-day-card${isCollapsed ? ' is-collapsed' : ''}" data-date-key="${dateKey}">
+                <div class="day-header" role="button" tabindex="0"
+                     aria-expanded="${!isCollapsed}"
+                     aria-controls="transactions-${dateKey}"
+                     aria-label="${isCollapsed ? 'Show' : 'Hide'} transactions for ${dateDisplay}">
                     <span class="day-date">${dateDisplay}</span>
                     <span class="day-total ${totalClass}">${totalFormatted}</span>
                 </div>
-                <div class="transaction-list">
+                <div class="transaction-list" id="transactions-${dateKey}">
         `;
         
         transactions.forEach(t => {
@@ -253,8 +259,34 @@ function updateTransactionsList() {
     }
     
     setupDeleteButtons();
+    setupTransactionDayToggles();
     setupTransactionEditHandlers();
     setupTransactionSwipeHandlers();
+}
+
+function setupTransactionDayToggles() {
+    document.querySelectorAll('.transaction-day-card .day-header').forEach(header => {
+        const toggleDay = () => {
+            const card = header.closest('.transaction-day-card');
+            const dateKey = card?.dataset.dateKey;
+            if (!card || !dateKey) return;
+
+            const isCollapsed = card.classList.toggle('is-collapsed');
+            if (isCollapsed) collapsedTransactionDays.add(dateKey);
+            else collapsedTransactionDays.delete(dateKey);
+
+            const dateLabel = header.querySelector('.day-date')?.textContent || dateKey;
+            header.setAttribute('aria-expanded', String(!isCollapsed));
+            header.setAttribute('aria-label', `${isCollapsed ? 'Show' : 'Hide'} transactions for ${dateLabel}`);
+        };
+
+        header.addEventListener('click', toggleDay);
+        header.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            toggleDay();
+        });
+    });
 }
 
 function setupTransactionEditHandlers() {
