@@ -381,7 +381,6 @@ function setupMonthlyCategoryFilter() {
     const menu = document.getElementById('monthly-category-menu');
     const triggerLabel = document.getElementById('monthly-category-filter-label');
     const triggerIcon = document.getElementById('monthly-category-filter-icon');
-    const description = document.getElementById('monthly-trend-description');
     if (!picker || !trigger || !menu || !triggerLabel || !triggerIcon) return;
 
     const choices = [
@@ -399,11 +398,6 @@ function setupMonthlyCategoryFilter() {
         monthlyTrendCategory = choice.id;
         triggerLabel.textContent = choice.label;
         triggerIcon.className = choice.icon;
-        if (description) {
-            description.textContent = monthlyTrendCategory === 'total'
-                ? 'Compare total expenses across months'
-                : `Compare ${choice.label} expenses across months`;
-        }
         menu.querySelectorAll('.trend-category-option').forEach(option => {
             const selected = option.dataset.category === choice.id;
             option.classList.toggle('selected', selected);

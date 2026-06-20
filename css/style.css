@@ -729,10 +729,9 @@ header {
     width: 100%;
     min-height: 126px;
     padding: 16px 18px;
-    display: grid;
-    grid-template-columns: 1fr 40px;
+    display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
     color: var(--text-color);
     background: transparent;
     border: 0;
@@ -749,7 +748,6 @@ header {
 
 .balance-summary-copy {
     min-width: 0;
-    padding-left: 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -763,26 +761,6 @@ header {
 
 .balance-summary-toggle .total-amount {
     display: block;
-}
-
-.balance-summary-disclosure {
-    width: 40px;
-    height: 40px;
-    display: grid;
-    place-items: center;
-    color: var(--primary-color);
-    background: var(--surface-subtle);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    transition: transform 220ms cubic-bezier(0.25, 1, 0.5, 1), background 180ms ease;
-}
-
-.balance-summary-toggle:hover .balance-summary-disclosure {
-    background: color-mix(in srgb, var(--primary-color) 12%, var(--surface-subtle));
-}
-
-.balance-summary-toggle[aria-expanded="true"] .balance-summary-disclosure {
-    transform: rotate(180deg);
 }
 
 .total-amount {
@@ -831,8 +809,7 @@ header {
 
 @media (prefers-reduced-motion: reduce) {
     .summary-row,
-    .summary-row.is-collapsed,
-    .balance-summary-disclosure {
+    .summary-row.is-collapsed {
         transition: none;
     }
 }
@@ -871,13 +848,6 @@ header {
 
 .chart-card-header h2 {
     margin-bottom: 3px;
-}
-
-.chart-card-subtitle {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    line-height: 1.4;
 }
 
 .trend-category-picker {

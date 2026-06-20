@@ -152,9 +152,6 @@
                                 <span class="balance-summary-title">Left This Month</span>
                                 <span class="total-amount" id="total-balance">$0.00</span>
                             </span>
-                            <span class="balance-summary-disclosure" aria-hidden="true">
-                                <i class="fas fa-chevron-down"></i>
-                            </span>
                         </button>
                     </div>
                     
@@ -173,12 +170,10 @@
                         <div class="chart-card-header">
                             <div>
                                 <h2>Monthly Trends</h2>
-                                <p class="chart-card-subtitle" id="monthly-trend-description">Compare total expenses across months</p>
                             </div>
                             <div class="trend-category-picker">
                                 <button type="button" id="monthly-category-filter-btn" class="trend-category-trigger"
-                                    aria-haspopup="listbox" aria-expanded="false" aria-controls="monthly-category-menu"
-                                    aria-describedby="monthly-trend-description">
+                                    aria-haspopup="listbox" aria-expanded="false" aria-controls="monthly-category-menu">
                                     <span class="trend-category-trigger-content">
                                         <i id="monthly-category-filter-icon" class="fas fa-layer-group" aria-hidden="true"></i>
                                         <span id="monthly-category-filter-label">Total expenses</span>
@@ -624,11 +619,11 @@
     <script src="js/data-transfer.js?v=1.0.27"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.39"></script>
+    <script src="js/app.js?v=1.0.41"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.39')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.41')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
