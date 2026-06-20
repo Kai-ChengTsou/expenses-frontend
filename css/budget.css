@@ -113,6 +113,45 @@
     margin-bottom: 12px;
     border: 1px solid rgba(99, 135, 197, 0.13);
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.budget-item.is-over-budget {
+    background:
+        linear-gradient(135deg, rgba(255, 61, 90, 0.14), rgba(192, 38, 211, 0.07)),
+        linear-gradient(180deg, rgba(35, 25, 39, 0.96), rgba(25, 21, 33, 0.96));
+    border-color: rgba(255, 82, 106, 0.6);
+    box-shadow: 0 14px 32px rgba(255, 61, 90, 0.14), inset 3px 0 0 #ff3d5a;
+}
+
+.budget-item.is-over-budget .budget-cat-amount strong {
+    color: #ff7185;
+}
+
+.budget-over-warning {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: fit-content;
+    margin: -1px 0 10px 42px;
+    padding: 5px 9px;
+    border: 1px solid rgba(255, 82, 106, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 61, 90, 0.12);
+    color: #ff9aaa;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.budget-over-warning i {
+    color: #ff7185;
+    font-size: 0.75rem;
+}
+
+.budget-over-warning strong {
+    color: #ffd5dc;
+    font-variant-numeric: tabular-nums;
 }
 
 .budget-item-header {
@@ -178,6 +217,7 @@
 
 .budget-progress-fill.danger {
     background: linear-gradient(90deg, #ff7a1a, #ff3d5a, #c026d3);
+    box-shadow: 0 0 10px rgba(255, 61, 90, 0.45);
 }
 
 /* Budget Modal - Compact Icon Grid (no scroll) */
@@ -406,6 +446,27 @@
     background: var(--card-gradient);
     border-color: var(--border-color);
     box-shadow: 0 12px 28px rgba(204, 121, 162, 0.16);
+}
+
+[data-theme="cute"] .budget-item.is-over-budget {
+    background: linear-gradient(135deg, #fff0f4, #fff7fb);
+    border-color: rgba(217, 68, 106, 0.48);
+    box-shadow: 0 12px 28px rgba(217, 68, 106, 0.16), inset 3px 0 0 #d9446a;
+}
+
+[data-theme="cute"] .budget-over-warning {
+    background: rgba(217, 68, 106, 0.09);
+    border-color: rgba(217, 68, 106, 0.22);
+    color: #a62f50;
+}
+
+[data-theme="cute"] .budget-over-warning i,
+[data-theme="cute"] .budget-item.is-over-budget .budget-cat-amount strong {
+    color: #c73560;
+}
+
+[data-theme="cute"] .budget-over-warning strong {
+    color: #7f2440;
 }
 
 [data-theme="cute"] .circle-bg {

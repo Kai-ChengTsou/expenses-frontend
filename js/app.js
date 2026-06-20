@@ -1531,6 +1531,7 @@ function updateBudgetUI(categoryBudgets) {
                 const spent = categorySpent[cat.id] || 0;
                 const percent = Math.min((spent / budget) * 100, 100);
                 const isOver = spent > budget;
+                const overAmount = spent - budget;
                 
                 // Color logic
                 let progressClass = '';
@@ -1538,7 +1539,9 @@ function updateBudgetUI(categoryBudgets) {
                 else if (percent > 80) progressClass = 'warning';
                 
                 html += `
-                    <div class="budget-item" style="${getCategoryVisualStyle(themedCat)}">
+                    <div class="budget-item${isOver ? ' is-over-budget' : ''}"
+                         style="${getCategoryVisualStyle(themedCat)}"
+                         ${isOver ? `role="group" aria-label="${cat.label} is over budget by $${overAmount.toLocaleString()}"` : ''}>
                         <div class="budget-item-header">
                             <div class="budget-cat-info">
                                 <div class="budget-cat-icon" style="${getCategoryVisualStyle(themedCat)}">
@@ -1550,8 +1553,14 @@ function updateBudgetUI(categoryBudgets) {
                                 <strong>$${spent.toLocaleString()}</strong> / $${budget.toLocaleString()}
                             </div>
                         </div>
+                        ${isOver ? `
+                            <div class="budget-over-warning" role="status">
+                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                <span>Over budget by <strong>$${overAmount.toLocaleString()}</strong></span>
+                            </div>
+                        ` : ''}
                         <div class="budget-progress-bar">
-                            <div class="budget-progress-fill ${progressClass}" style="width: ${percent}%; background: ${themedCat.gradient};"></div>
+                            <div class="budget-progress-fill ${progressClass}" style="width: ${percent}%;"></div>
                         </div>
                     </div>
                 `;
