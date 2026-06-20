@@ -376,27 +376,95 @@ function closeOtherSwipedTransactions(exceptItem = null) {
 let monthlyTrendCategory = 'total';
 
 function setupMonthlyCategoryFilter() {
-    const filter = document.getElementById('monthly-category-filter');
+    const picker = document.querySelector('.trend-category-picker');
+    const trigger = document.getElementById('monthly-category-filter-btn');
+    const menu = document.getElementById('monthly-category-menu');
+    const triggerLabel = document.getElementById('monthly-category-filter-label');
+    const triggerIcon = document.getElementById('monthly-category-filter-icon');
     const description = document.getElementById('monthly-trend-description');
-    if (!filter) return;
+    if (!picker || !trigger || !menu || !triggerLabel || !triggerIcon) return;
 
-    EXPENSE_CATEGORIES.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.id;
-        option.textContent = category.label;
-        filter.appendChild(option);
-    });
+    const choices = [
+        { id: 'total', label: 'Total expenses', icon: 'fas fa-layer-group' },
+        ...EXPENSE_CATEGORIES
+    ];
 
-    filter.value = monthlyTrendCategory;
-    filter.addEventListener('change', () => {
-        monthlyTrendCategory = filter.value;
-        const selectedCategory = EXPENSE_CATEGORIES.find(category => category.id === monthlyTrendCategory);
+    function closeMenu({ returnFocus = false } = {}) {
+        menu.classList.remove('active');
+        trigger.setAttribute('aria-expanded', 'false');
+        if (returnFocus) trigger.focus();
+    }
+
+    function selectChoice(choice) {
+        monthlyTrendCategory = choice.id;
+        triggerLabel.textContent = choice.label;
+        triggerIcon.className = choice.icon;
         if (description) {
             description.textContent = monthlyTrendCategory === 'total'
                 ? 'Compare total expenses across months'
-                : `Compare ${selectedCategory?.label || 'category'} expenses across months`;
+                : `Compare ${choice.label} expenses across months`;
         }
+        menu.querySelectorAll('.trend-category-option').forEach(option => {
+            const selected = option.dataset.category === choice.id;
+            option.classList.toggle('selected', selected);
+            option.setAttribute('aria-selected', String(selected));
+        });
+        closeMenu({ returnFocus: true });
         updateExpenseCharts();
+    }
+
+    choices.forEach(choice => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'trend-category-option';
+        option.dataset.category = choice.id;
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(choice.id === monthlyTrendCategory));
+        option.classList.toggle('selected', choice.id === monthlyTrendCategory);
+        option.innerHTML = `
+            <span class="trend-category-option-icon" style="${choice.id === 'total' ? '' : getCategoryVisualStyle(choice)}">
+                <i class="${choice.icon}" aria-hidden="true"></i>
+            </span>
+            <span>${choice.label}</span>
+            <i class="fas fa-check trend-category-option-check" aria-hidden="true"></i>
+        `;
+        option.addEventListener('click', () => selectChoice(choice));
+        menu.appendChild(option);
+    });
+
+    trigger.addEventListener('click', () => {
+        const opening = !menu.classList.contains('active');
+        menu.classList.toggle('active', opening);
+        trigger.setAttribute('aria-expanded', String(opening));
+        if (opening) {
+            menu.querySelector('.trend-category-option.selected')?.focus();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!picker.contains(event.target)) closeMenu();
+    });
+
+    picker.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && menu.classList.contains('active')) {
+            event.preventDefault();
+            closeMenu({ returnFocus: true });
+            return;
+        }
+
+        if (menu.classList.contains('active') && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            const options = [...menu.querySelectorAll('.trend-category-option')];
+            const currentIndex = options.indexOf(document.activeElement);
+            let nextIndex = currentIndex;
+
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = options.length - 1;
+            if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1 + options.length) % options.length;
+            if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + options.length) % options.length;
+
+            options[nextIndex]?.focus();
+        }
     });
 }
 
