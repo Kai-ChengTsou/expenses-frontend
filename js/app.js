@@ -373,6 +373,33 @@ function closeOtherSwipedTransactions(exceptItem = null) {
     });
 }
 
+let monthlyTrendCategory = 'total';
+
+function setupMonthlyCategoryFilter() {
+    const filter = document.getElementById('monthly-category-filter');
+    const description = document.getElementById('monthly-trend-description');
+    if (!filter) return;
+
+    EXPENSE_CATEGORIES.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.label;
+        filter.appendChild(option);
+    });
+
+    filter.value = monthlyTrendCategory;
+    filter.addEventListener('change', () => {
+        monthlyTrendCategory = filter.value;
+        const selectedCategory = EXPENSE_CATEGORIES.find(category => category.id === monthlyTrendCategory);
+        if (description) {
+            description.textContent = monthlyTrendCategory === 'total'
+                ? 'Compare total expenses across months'
+                : `Compare ${selectedCategory?.label || 'category'} expenses across months`;
+        }
+        updateExpenseCharts();
+    });
+}
+
 // Function to update expense charts (Refactored to use local transactionData)
 async function updateExpenseCharts() {
     if (!transactionData || transactionData.length === 0) {
@@ -381,7 +408,9 @@ async function updateExpenseCharts() {
     }
 
     // Monthly trend uses ALL data (filtering to one month would make it pointless)
-    const monthlyExpenses = {};
+    const monthlyTotals = {};
+    const monthlyCategoryExpenses = {};
+    const selectedCategory = EXPENSE_CATEGORIES.find(category => category.id === monthlyTrendCategory);
 
     // Category pie + top categories filter to the currently selected month
     const categoryTotals = {};
@@ -399,7 +428,12 @@ async function updateExpenseCharts() {
         if (dateStr) {
             const [y, mo] = dateStr.split('-').map(Number);
             const monthKey = `${y}-${String(mo).padStart(2, '0')}`;
-            monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + absAmount;
+            monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + absAmount;
+            monthlyCategoryExpenses[monthKey] = monthlyCategoryExpenses[monthKey] || 0;
+
+            if (selectedCategory && (item.category === selectedCategory.id || item.category === selectedCategory.label)) {
+                monthlyCategoryExpenses[monthKey] += absAmount;
+            }
 
             // Category pie — only the selected month
             if (mo === selectedMonth && y === selectedYear) {
@@ -409,8 +443,12 @@ async function updateExpenseCharts() {
         }
     });
 
-    if (Object.keys(monthlyExpenses).length > 0) {
-        createMonthlyExpenseChart(monthlyExpenses);
+    if (Object.keys(monthlyTotals).length > 0) {
+        const isTotal = monthlyTrendCategory === 'total';
+        createMonthlyExpenseChart(
+            isTotal ? monthlyTotals : monthlyCategoryExpenses,
+            isTotal ? 'Total expenses' : selectedCategory?.label || 'Selected category'
+        );
     } else {
         createEmptyMonthlyChart();
     }
@@ -806,7 +844,7 @@ async function deleteTransactionFromSheet(rowIndex, type = 'expense') {
 }
 
 // Function to create the monthly expense chart
-function createMonthlyExpenseChart(monthlyExpenses) {
+function createMonthlyExpenseChart(monthlyExpenses, datasetLabel = 'Total expenses') {
     const ctx = document.getElementById('monthly-chart').getContext('2d');
     const themeMeta = THEME_META[currentTheme];
     
@@ -823,7 +861,7 @@ function createMonthlyExpenseChart(monthlyExpenses) {
     const chartData = {
         labels: monthLabels,
         datasets: [{
-            label: 'Monthly Expenses',
+            label: datasetLabel,
             data: sortedMonths.map(month => monthlyExpenses[month]),
             backgroundColor: monthColors,
             hoverBackgroundColor: monthColors,
@@ -1125,6 +1163,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.log('Setting up month selector...');
         setupMonthSelector();
         setupStatsMonthSelector();
+        setupMonthlyCategoryFilter();
         
         // Create empty charts initially
         console.log('Creating empty charts...');
