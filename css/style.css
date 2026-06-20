@@ -37,6 +37,7 @@
     --category-color: #59a8ff;
     --category-bg: #1c2b43;
     --success-color: #4cd964;
+    --budget-remaining-color: #4cd964;
     --danger-color: #ff3b30;
     --warning-color: #ffb547;
     --budget-circle-start: #4ade80;
@@ -99,6 +100,7 @@
     --category-color: #e85d9e;
     --category-bg: #ffe8f3;
     --success-color: #2a9d72;
+    --budget-remaining-color: #8b55c5;
     --danger-color: #d9446a;
     --warning-color: #d9891f;
     --budget-circle-start: #e85d9e;
@@ -1412,7 +1414,7 @@ header {
   justify-content: center;
   background: linear-gradient(145deg, var(--secondary-color) 0%, var(--primary-color) 58%, #8b5cf6 100%);
   box-shadow:
-    0 0 0 7px rgba(14, 165, 233, 0.12),
+    0 0 0 4px rgba(14, 165, 233, 0.12),
     0 16px 34px rgba(14, 165, 233, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   cursor: pointer;

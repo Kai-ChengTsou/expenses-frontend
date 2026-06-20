@@ -1476,7 +1476,9 @@ function updateBudgetUI(categoryBudgets) {
     if (spentDisplay) spentDisplay.textContent = `$${totalSpent.toLocaleString()}`;
     if (remainingDisplay) {
         remainingDisplay.textContent = `$${remaining.toLocaleString()}`;
-        remainingDisplay.style.color = remaining >= 0 ? getCssVar('--success-color', '#4cd964') : getCssVar('--danger-color', '#ff3b30');
+        remainingDisplay.style.color = remaining >= 0
+            ? getCssVar('--budget-remaining-color', '#4cd964')
+            : getCssVar('--danger-color', '#ff3b30');
     }
     
     // Update Circle Progress
