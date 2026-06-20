@@ -293,10 +293,6 @@ function setupTransactionDayToggles() {
         };
 
         header.addEventListener('click', toggleDay);
-        header.addEventListener('dblclick', event => {
-            event.preventDefault();
-            toggleAllDays();
-        });
 
         header.addEventListener('keydown', event => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -305,6 +301,43 @@ function setupTransactionDayToggles() {
             else toggleDay();
         });
     });
+
+    document.querySelectorAll('.transaction-day-card').forEach(card => {
+        card.addEventListener('dblclick', event => {
+            if (event.target.closest('.transaction-item, button')) return;
+            event.preventDefault();
+            toggleAllDays();
+        });
+    });
+
+    const transactionsHeader = document.querySelector('#transactions-view > .card-header');
+    if (transactionsHeader && transactionsHeader.dataset.bulkToggleReady !== 'true') {
+        let lastTouchTapAt = 0;
+        let lastTouchBulkToggleAt = 0;
+
+        transactionsHeader.dataset.bulkToggleReady = 'true';
+        transactionsHeader.title = 'Double-click or double-tap the blank area to show or hide all transaction days';
+
+        transactionsHeader.addEventListener('dblclick', event => {
+            if (event.target.closest('button') || Date.now() - lastTouchBulkToggleAt < 700) return;
+            event.preventDefault();
+            toggleAllDays();
+        });
+
+        transactionsHeader.addEventListener('pointerup', event => {
+            if (event.pointerType !== 'touch' || event.target.closest('button')) return;
+
+            const now = Date.now();
+            if (now - lastTouchTapAt < 450) {
+                lastTouchTapAt = 0;
+                lastTouchBulkToggleAt = now;
+                toggleAllDays();
+                return;
+            }
+
+            lastTouchTapAt = now;
+        });
+    }
 }
 
 function setupTransactionEditHandlers() {
