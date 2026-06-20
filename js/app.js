@@ -286,26 +286,16 @@ function setupTransactionDayToggles() {
     };
 
     document.querySelectorAll('.transaction-day-card .day-header').forEach(header => {
-        let singleClickTimer = null;
-
         const toggleDay = () => {
             const card = header.closest('.transaction-day-card');
             if (!card) return;
             setDayCollapsed(card, !card.classList.contains('is-collapsed'));
         };
 
-        header.addEventListener('click', () => {
-            if (singleClickTimer) {
-                clearTimeout(singleClickTimer);
-                singleClickTimer = null;
-                toggleAllDays();
-                return;
-            }
-
-            singleClickTimer = setTimeout(() => {
-                singleClickTimer = null;
-                toggleDay();
-            }, 240);
+        header.addEventListener('click', toggleDay);
+        header.addEventListener('dblclick', event => {
+            event.preventDefault();
+            toggleAllDays();
         });
 
         header.addEventListener('keydown', event => {
