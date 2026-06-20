@@ -580,6 +580,23 @@ function updateBalance() {
     }
 }
 
+function setupBalanceSummaryDisclosure() {
+    const toggle = document.getElementById('balance-summary-toggle');
+    const details = document.getElementById('monthly-summary-details');
+    if (!toggle || !details) return;
+
+    details.inert = true;
+
+    toggle.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+        toggle.setAttribute('aria-expanded', String(expanded));
+        toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} monthly income and expense details`);
+        details.classList.toggle('is-collapsed', !expanded);
+        details.setAttribute('aria-hidden', String(!expanded));
+        details.inert = !expanded;
+    });
+}
+
 // Function to create empty charts when no data is available
 function createEmptyCharts() {
     createEmptyMonthlyChart();
@@ -1174,6 +1191,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Setup theme switch
         console.log('Setting up theme switch...');
         setupThemeSwitch();
+        setupBalanceSummaryDisclosure();
         
         // Add ripple effect to buttons
         console.log('Adding ripple effects...');

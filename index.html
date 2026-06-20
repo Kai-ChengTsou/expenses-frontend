@@ -144,12 +144,21 @@
         <div class="container">
             <section id="dashboard" class="section active fade-in">
                 <div class="dashboard">
-                    <div class="card summary-card">
-                        <h2>Left This Month</h2>
-                        <div class="total-amount" id="total-balance">$0.00</div>
+                    <div class="card summary-card balance-summary-card">
+                        <button type="button" id="balance-summary-toggle" class="balance-summary-toggle"
+                            aria-expanded="false" aria-controls="monthly-summary-details"
+                            aria-label="Show monthly income and expense details">
+                            <span class="balance-summary-copy">
+                                <span class="balance-summary-title">Left This Month</span>
+                                <span class="total-amount" id="total-balance">$0.00</span>
+                            </span>
+                            <span class="balance-summary-disclosure" aria-hidden="true">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </button>
                     </div>
                     
-                    <div class="summary-row">
+                    <div class="summary-row is-collapsed" id="monthly-summary-details" aria-hidden="true">
                         <div class="card summary-card income-card">
                             <h2 class="summary-card-title-sm">Income (Mo)</h2>
                             <div class="total-amount amount-positive" id="total-income">$0.00</div>
@@ -615,11 +624,11 @@
     <script src="js/data-transfer.js?v=1.0.27"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.38"></script>
+    <script src="js/app.js?v=1.0.39"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.38')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.39')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
