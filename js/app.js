@@ -265,26 +265,54 @@ function updateTransactionsList() {
 }
 
 function setupTransactionDayToggles() {
+    const setDayCollapsed = (card, isCollapsed) => {
+        const dateKey = card?.dataset.dateKey;
+        const header = card?.querySelector('.day-header');
+        if (!card || !dateKey || !header) return;
+
+        card.classList.toggle('is-collapsed', isCollapsed);
+        if (isCollapsed) collapsedTransactionDays.add(dateKey);
+        else collapsedTransactionDays.delete(dateKey);
+
+        const dateLabel = header.querySelector('.day-date')?.textContent || dateKey;
+        header.setAttribute('aria-expanded', String(!isCollapsed));
+        header.setAttribute('aria-label', `${isCollapsed ? 'Show' : 'Hide'} transactions for ${dateLabel}`);
+    };
+
+    const toggleAllDays = () => {
+        const cards = [...document.querySelectorAll('.transaction-day-card')];
+        const shouldExpandAll = cards.some(card => card.classList.contains('is-collapsed'));
+        cards.forEach(card => setDayCollapsed(card, !shouldExpandAll));
+    };
+
     document.querySelectorAll('.transaction-day-card .day-header').forEach(header => {
+        let singleClickTimer = null;
+
         const toggleDay = () => {
             const card = header.closest('.transaction-day-card');
-            const dateKey = card?.dataset.dateKey;
-            if (!card || !dateKey) return;
-
-            const isCollapsed = card.classList.toggle('is-collapsed');
-            if (isCollapsed) collapsedTransactionDays.add(dateKey);
-            else collapsedTransactionDays.delete(dateKey);
-
-            const dateLabel = header.querySelector('.day-date')?.textContent || dateKey;
-            header.setAttribute('aria-expanded', String(!isCollapsed));
-            header.setAttribute('aria-label', `${isCollapsed ? 'Show' : 'Hide'} transactions for ${dateLabel}`);
+            if (!card) return;
+            setDayCollapsed(card, !card.classList.contains('is-collapsed'));
         };
 
-        header.addEventListener('click', toggleDay);
+        header.addEventListener('click', () => {
+            if (singleClickTimer) {
+                clearTimeout(singleClickTimer);
+                singleClickTimer = null;
+                toggleAllDays();
+                return;
+            }
+
+            singleClickTimer = setTimeout(() => {
+                singleClickTimer = null;
+                toggleDay();
+            }, 240);
+        });
+
         header.addEventListener('keydown', event => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
-            toggleDay();
+            if (event.shiftKey) toggleAllDays();
+            else toggleDay();
         });
     });
 }
