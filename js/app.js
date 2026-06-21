@@ -2978,10 +2978,10 @@ function formatDateForDisplay(dateString) {
 
 // Default Quick Add Configuration
 const DEFAULT_QUICK_ADDS = [
-    { id: 1, label: 'Food', category: '食物', icon: 'fas fa-utensils', payment: 'Line Pay', description: 'Lunch' },
-    { id: 2, label: 'Cat', category: '貓咪', icon: 'fas fa-paw', payment: 'Line Pay', description: 'Cat Food' },
-    { id: 3, label: 'Transport', category: '交通', icon: 'fas fa-bus', payment: 'Line Pay', description: 'MRT/Bus' },
-    { id: 4, label: 'Shopping', category: '購物', icon: 'fas fa-shopping-bag', payment: 'Credit Card', description: 'Online' }
+    { id: 1, label: 'Food', category: '食物', icon: 'fas fa-utensils', description: 'Lunch' },
+    { id: 2, label: 'Cat', category: '貓咪', icon: 'fas fa-paw', description: 'Cat Food' },
+    { id: 3, label: 'Transport', category: '交通', icon: 'fas fa-bus', description: 'MRT/Bus' },
+    { id: 4, label: 'Shopping', category: '購物', icon: 'fas fa-shopping-bag', description: 'Online' }
 ];
 
 // Load Quick Add settings from localStorage
@@ -3149,7 +3149,6 @@ function setupQuickAddConfig() {
         const label = document.getElementById('qa-label').value;
         const category = document.getElementById('qa-category').value;
         const description = document.getElementById('qa-description').value;
-        const payment = document.getElementById('qa-payment').value;
         
         const categoryConfig = findCategoryConfig(category);
         const icon = categoryConfig?.icon || 'fas fa-star';
@@ -3159,7 +3158,7 @@ function setupQuickAddConfig() {
         const index = settings.findIndex(b => b.id === id);
         
         if (index !== -1) {
-            settings[index] = { id, label, category, description, payment, icon };
+            settings[index] = { id, label, category, description, icon };
             saveQuickAddSettings(settings);
             renderQuickAddButtons();
             
@@ -3184,7 +3183,6 @@ function loadQuickAddConfig(id) {
         document.getElementById('qa-label').value = config.label || '';
         document.getElementById('qa-category').value = config.category || '';
         document.getElementById('qa-description').value = config.description || '';
-        document.getElementById('qa-payment').value = config.payment || '';
     }
 }
 

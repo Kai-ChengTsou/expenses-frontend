@@ -380,17 +380,6 @@
                                     <label for="qa-description">Default Description (Optional)</label>
                                     <input type="text" id="qa-description" placeholder="e.g. Lunch">
                                 </div>
-                                <div class="form-group">
-                                    <label for="qa-payment">Default Payment (Optional)</label>
-                                    <select id="qa-payment">
-                                        <option value="">Select Payment Method</option>
-                                        <option value="紙錢">紙錢</option>
-                                        <option value="熊大">熊大</option>
-                                        <option value="Line Bank">Line Bank</option>
-                                        <option value="星展">星展</option>
-                                        <option value="Bank of America">Bank of America</option>
-                                    </select>
-                                </div>
                                 <div class="form-actions">
                                     <button type="button" id="cancel-quick-add-config" class="btn-secondary">Cancel</button>
                                     <button type="submit" class="btn-primary">Save Button</button>
@@ -619,11 +608,11 @@
     <script src="js/data-transfer.js?v=1.0.27"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.48"></script>
+    <script src="js/app.js?v=1.0.49"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.53')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.54')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
