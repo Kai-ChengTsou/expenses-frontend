@@ -2982,8 +2982,9 @@ section h2 {
 
 .view-toggle-buttons {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    width: 100%;
 }
 
 .view-toggle-btn {
@@ -2991,7 +2992,9 @@ section h2 {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px 20px;
+    width: 100%;
+    min-width: 0;
+    padding: 14px 10px;
     background: linear-gradient(145deg, rgba(26, 29, 35, 0.6), rgba(26, 29, 35, 0.8));
     border: 2px solid var(--border-color);
     border-radius: 12px;
