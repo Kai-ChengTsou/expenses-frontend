@@ -3582,18 +3582,18 @@ section h2 {
     box-shadow: 0 8px 20px rgba(204, 121, 162, 0.12);
 }
 
-[data-theme="cute"] .icon-bg-1 { --category-color: #e85d9e; --category-bg: #ffe8f3; }
-[data-theme="cute"] .icon-bg-2 { --category-color: #ff8f6b; --category-bg: #fff0e8; }
-[data-theme="cute"] .icon-bg-3 { --category-color: #a979ff; --category-bg: #f0e7ff; }
-[data-theme="cute"] .icon-bg-4 { --category-color: #2a9d72; --category-bg: #e1f7ee; }
-[data-theme="cute"] .icon-bg-5 { --category-color: #d9891f; --category-bg: #fff3d6; }
-[data-theme="cute"] .icon-bg-6 { --category-color: #896778; --category-bg: #f7edf3; }
-[data-theme="cute"] .icon-bg-7 { --category-color: #a979ff; --category-bg: #f0e7ff; }
-[data-theme="cute"] .icon-bg-8 { --category-color: #e85d9e; --category-bg: #ffe4f1; }
-[data-theme="cute"] .icon-bg-9 { --category-color: #5cc6b7; --category-bg: #e5f8f5; }
-[data-theme="cute"] .icon-bg-10 { --category-color: #d9891f; --category-bg: #fff1d8; }
-[data-theme="cute"] .icon-bg-11 { --category-color: #4c9fe8; --category-bg: #e5f4ff; }
-[data-theme="cute"] .icon-bg-12 { --category-color: #5c9ded; --category-bg: #e8f3ff; }
+[data-theme="cute"] .icon-bg-1 { --category-color: #ad96ff; --category-bg: #f1edff; }
+[data-theme="cute"] .icon-bg-2 { --category-color: #ff9850; --category-bg: #fff0e5; }
+[data-theme="cute"] .icon-bg-3 { --category-color: #ff7394; --category-bg: #ffe8ee; }
+[data-theme="cute"] .icon-bg-4 { --category-color: #72e69a; --category-bg: #e8f9ee; }
+[data-theme="cute"] .icon-bg-5 { --category-color: #fbd94f; --category-bg: #fff8da; }
+[data-theme="cute"] .icon-bg-6 { --category-color: #c4cada; --category-bg: #f0f2f6; }
+[data-theme="cute"] .icon-bg-7 { --category-color: #df82ff; --category-bg: #f7eaff; }
+[data-theme="cute"] .icon-bg-8 { --category-color: #ff82c5; --category-bg: #ffe9f5; }
+[data-theme="cute"] .icon-bg-9 { --category-color: #56e0d5; --category-bg: #e5faf8; }
+[data-theme="cute"] .icon-bg-10 { --category-color: #ffc66f; --category-bg: #fff3df; }
+[data-theme="cute"] .icon-bg-11 { --category-color: #70b8ff; --category-bg: #e8f4ff; }
+[data-theme="cute"] .icon-bg-12 { --category-color: #62dfff; --category-bg: #e6faff; }
 
 [data-theme="cute"] .status-message,
 [data-theme="cute"] .detail-value.warning-text {

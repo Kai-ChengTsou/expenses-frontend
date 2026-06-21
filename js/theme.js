@@ -49,23 +49,23 @@ const THEME_META = {
 };
 
 const CUTE_CATEGORY_OVERRIDES = {
-    food: { color: '#e85d9e', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #e85d9e, #ff9ec7, #ffd1e3)' },
-    rent: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #d7c2ff)' },
-    mortgage: { color: '#d9891f', bg: '#fff1d8', gradient: 'linear-gradient(90deg, #d9891f, #ffb35c, #ffd166)' },
-    transport: { color: '#4c9fe8', bg: '#e5f4ff', gradient: 'linear-gradient(90deg, #4c9fe8, #7cc7ff, #c8ecff)' },
-    subscription: { color: '#2a9d72', bg: '#e1f7ee', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #b9f3dd)' },
-    daily: { color: '#ff8f6b', bg: '#fff0e8', gradient: 'linear-gradient(90deg, #ff8f6b, #ffb35c, #ffd1a8)' },
-    cat: { color: '#d9446a', bg: '#ffe8ef', gradient: 'linear-gradient(90deg, #d9446a, #ff8fab, #ffd1dc)' },
-    entertainment: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #ff9ec7)' },
-    gf: { color: '#e85d9e', bg: '#ffe4f1', gradient: 'linear-gradient(90deg, #d9446a, #e85d9e, #ffb3cf)' },
-    shopping: { color: '#ff7fae', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #ff7fae, #ff9ec7, #ffd1e3)' },
-    investment: { color: '#5cc6b7', bg: '#e5f8f5', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #c4f1ec)' },
-    salary: { color: '#2a9d72', bg: '#e1f7ee', gradient: 'linear-gradient(90deg, #2a9d72, #5cc6b7, #b9f3dd)' },
-    bonus: { color: '#d9891f', bg: '#fff3d6', gradient: 'linear-gradient(90deg, #d9891f, #ffb35c, #ffd166)' },
-    invest: { color: '#5c9ded', bg: '#e8f3ff', gradient: 'linear-gradient(90deg, #5c9ded, #7cc7ff, #c8ecff)' },
-    gift: { color: '#e85d9e', bg: '#ffe8f3', gradient: 'linear-gradient(90deg, #e85d9e, #ff9ec7, #ffd1e3)' },
-    parttime: { color: '#a979ff', bg: '#f0e7ff', gradient: 'linear-gradient(90deg, #8b5cf6, #a979ff, #d7c2ff)' },
-    other: { color: '#896778', bg: '#f7edf3', gradient: 'linear-gradient(90deg, #896778, #c79caf, #f0c8d9)' }
+    food: { color: '#ad96ff', bg: '#f1edff', gradient: 'linear-gradient(90deg, #9b7cff, #ad96ff, #d8ceff)' },
+    rent: { color: '#ff7394', bg: '#ffe8ee', gradient: 'linear-gradient(90deg, #ff4f7b, #ff7394, #ffb3c4)' },
+    mortgage: { color: '#ffc66f', bg: '#fff3df', gradient: 'linear-gradient(90deg, #ffb547, #ffc66f, #ffe2ad)' },
+    transport: { color: '#70b8ff', bg: '#e8f4ff', gradient: 'linear-gradient(90deg, #45a3ff, #70b8ff, #b8ddff)' },
+    subscription: { color: '#56e0d5', bg: '#e5faf8', gradient: 'linear-gradient(90deg, #28d6c8, #56e0d5, #a9f1eb)' },
+    daily: { color: '#ff9850', bg: '#fff0e5', gradient: 'linear-gradient(90deg, #ff7a1a, #ff9850, #ffc79d)' },
+    cat: { color: '#72e69a', bg: '#e8f9ee', gradient: 'linear-gradient(90deg, #4ade80, #72e69a, #b9f2cc)' },
+    entertainment: { color: '#df82ff', bg: '#f7eaff', gradient: 'linear-gradient(90deg, #d65cff, #df82ff, #efbdff)' },
+    gf: { color: '#ff82c5', bg: '#ffe9f5', gradient: 'linear-gradient(90deg, #ff5ab3, #ff82c5, #ffbadc)' },
+    shopping: { color: '#ff6b80', bg: '#ffe8ec', gradient: 'linear-gradient(90deg, #ff3d5a, #ff6b80, #ffadb9)' },
+    investment: { color: '#62dfff', bg: '#e6faff', gradient: 'linear-gradient(90deg, #2dd4ff, #62dfff, #b2efff)' },
+    salary: { color: '#57d582', bg: '#e7f8ed', gradient: 'linear-gradient(90deg, #22c55e, #57d582, #afeac4)' },
+    bonus: { color: '#fbd94f', bg: '#fff8da', gradient: 'linear-gradient(90deg, #facc15, #fbd94f, #fdec9d)' },
+    invest: { color: '#68cdfa', bg: '#e8f7fe', gradient: 'linear-gradient(90deg, #38bdf8, #68cdfa, #b3e6fc)' },
+    gift: { color: '#baa5fb', bg: '#f2eeff', gradient: 'linear-gradient(90deg, #a78bfa, #baa5fb, #ddd3fd)' },
+    parttime: { color: '#4ccbbe', bg: '#e5f7f5', gradient: 'linear-gradient(90deg, #14b8a6, #4ccbbe, #a6e5de)' },
+    other: { color: '#c4cada', bg: '#f0f2f6', gradient: 'linear-gradient(90deg, #b4bdcf, #c4cada, #e2e5ec)' }
 };
 
 let currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) || THEMES.NEON;
