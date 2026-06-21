@@ -507,3 +507,110 @@
         background-color: rgba(79, 45, 70, 0.28);
     }
 }
+
+/* Add Subscription: single authoritative full-screen layout */
+#add-subscription-modal.subscription-calculator-modal {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+#add-subscription-modal .subscription-calculator-content {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden !important;
+}
+
+#add-subscription-modal .subscription-calculator-header {
+    min-height: calc(48px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 4px;
+    box-sizing: border-box;
+}
+
+#add-subscription-modal .subscription-calculator-form {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    overflow: hidden;
+}
+
+#add-subscription-modal .subscription-form-panel {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    justify-content: center;
+    padding: clamp(10px, 2svh, 20px) 16px;
+    scroll-padding-block: 12px;
+}
+
+#add-subscription-modal .subscription-display-area,
+#add-subscription-modal .subscription-billing-bar,
+#add-subscription-modal .subscription-keypad-area {
+    position: relative;
+    z-index: 2;
+    min-width: 0;
+    margin: 0;
+}
+
+#add-subscription-modal .subscription-display-area {
+    min-height: 64px;
+    padding: 8px 16px;
+}
+
+#add-subscription-modal .subscription-billing-bar {
+    min-height: 52px;
+    padding: 6px 16px;
+}
+
+#add-subscription-modal .subscription-keypad-area,
+[data-theme="cute"] #add-subscription-modal .subscription-keypad-area {
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom)) !important;
+    box-shadow: none !important;
+}
+
+#add-subscription-modal .subscription-keypad-area .keypad-grid {
+    gap: clamp(6px, 1svh, 10px);
+}
+
+#add-subscription-modal .sub-keypad-btn {
+    height: clamp(44px, 6.2svh, 56px);
+}
+
+@media (max-height: 650px) {
+    #add-subscription-modal .subscription-icon-preview {
+        display: none;
+    }
+
+    #add-subscription-modal .subscription-form-panel {
+        padding-block: 8px;
+    }
+
+    #add-subscription-modal .subscription-form-fields {
+        gap: 8px;
+    }
+
+    #add-subscription-modal .subscription-form-fields input {
+        padding-block: 10px;
+    }
+
+    #add-subscription-modal .subscription-display-area {
+        min-height: 56px;
+        padding-block: 6px;
+    }
+
+    #add-subscription-modal .subscription-billing-bar {
+        min-height: 48px;
+        padding-block: 4px;
+    }
+
+    #add-subscription-modal .sub-keypad-btn {
+        height: 42px;
+    }
+}
