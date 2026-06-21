@@ -512,8 +512,8 @@
 #add-subscription-modal.subscription-calculator-modal {
     inset: 0 !important;
     width: 100% !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
+    height: auto !important;
+    min-height: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
 }
