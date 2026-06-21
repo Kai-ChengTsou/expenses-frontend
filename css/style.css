@@ -471,7 +471,7 @@ header {
 .quick-add-btn i {
     font-size: 24px;
     margin-bottom: 8px;
-    color: var(--primary-color);
+    color: var(--category-color, var(--primary-color));
 }
 
 .quick-add-btn span {

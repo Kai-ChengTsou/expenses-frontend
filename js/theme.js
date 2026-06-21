@@ -106,6 +106,7 @@ function setupThemeSwitch() {
         updateTransactionsList();
         updateExpenseCharts();
         updateBalance();
+        if (typeof renderQuickAddButtons === 'function') renderQuickAddButtons();
         const budgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
         if (typeof updateBudgetUI === 'function') updateBudgetUI(budgets);
     });

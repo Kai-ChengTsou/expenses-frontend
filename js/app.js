@@ -3068,12 +3068,18 @@ function renderQuickAddButtons() {
     const container = document.getElementById('quick-add-buttons-container');
     const settings = getQuickAddSettings();
     
-    container.innerHTML = settings.map(btn => `
-        <div class="quick-add-btn" data-id="${btn.id}" role="button" tabindex="0">
-            <i class="${btn.icon || 'fas fa-plus'}"></i>
+    container.innerHTML = settings.map(btn => {
+        const category = findCategoryConfig(btn.category);
+        const categoryStyle = category ? getCategoryVisualStyle(category) : '';
+        const icon = category?.icon || btn.icon || 'fas fa-plus';
+
+        return `
+        <div class="quick-add-btn" data-id="${btn.id}" role="button" tabindex="0" style="${categoryStyle}">
+            <i class="${icon}"></i>
             <span>${btn.label}</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     container.querySelectorAll('.quick-add-btn').forEach(button => {
         const runQuickAdd = () => window.handleQuickAddClick(button.dataset.id);
@@ -3145,19 +3151,8 @@ function setupQuickAddConfig() {
         const description = document.getElementById('qa-description').value;
         const payment = document.getElementById('qa-payment').value;
         
-        // Get icon based on category (simple logic for now)
-        let icon = 'fas fa-star';
-        if (category === '食物') icon = 'fas fa-utensils';
-        else if (category === '租房') icon = 'fas fa-home';
-        else if (category === '房貸') icon = 'fas fa-building';
-        else if (category === '交通') icon = 'fas fa-bus';
-        else if (category === '訂閱') icon = 'fas fa-calendar-check';
-        else if (category === '日常用品') icon = 'fas fa-shopping-basket';
-        else if (category === '貓咪') icon = 'fas fa-paw';
-        else if (category === '娛樂') icon = 'fas fa-gamepad';
-        else if (category === '女友') icon = 'fas fa-heart';
-        else if (category === '購物') icon = 'fas fa-shopping-bag';
-        else if (category === '其他') icon = 'fas fa-box';
+        const categoryConfig = findCategoryConfig(category);
+        const icon = categoryConfig?.icon || 'fas fa-star';
         
         // Update settings
         const settings = getQuickAddSettings();
