@@ -1,5 +1,5 @@
 // Tommy Expense Service Worker
-const CACHE_NAME = 'tommy-expense-cache-v1.0.54';
+const CACHE_NAME = 'tommy-expense-cache-v1.0.57';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

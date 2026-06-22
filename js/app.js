@@ -107,6 +107,31 @@ function toLocalDateKey(dateVal) {
 }
 
 const collapsedTransactionDays = new Set();
+let transactionCategoryFilter = null;
+
+function updateTransactionCategoryFilterUI() {
+    const filterBar = document.getElementById('transaction-category-filter');
+    const filterLabel = filterBar?.querySelector('.transaction-category-filter-label');
+    if (!filterBar || !filterLabel) return;
+
+    filterBar.hidden = !transactionCategoryFilter;
+    filterLabel.textContent = transactionCategoryFilter ? `Showing ${transactionCategoryFilter}` : '';
+}
+
+function showTransactionsForCategory(category) {
+    transactionCategoryFilter = category;
+    collapsedTransactionDays.clear();
+    document.querySelector('.nav-item[data-section="transactions"]')?.click();
+    toggleView('transactions');
+    updateTransactionsList();
+}
+
+function setupTransactionCategoryFilter() {
+    document.getElementById('clear-transaction-category-filter')?.addEventListener('click', () => {
+        transactionCategoryFilter = null;
+        updateTransactionsList();
+    });
+}
 
 // Function to update the unified transaction list
 function updateTransactionsList() {
@@ -124,14 +149,18 @@ function updateTransactionsList() {
         const key = toLocalDateKey(t.date);
         if (!key) return false;
         const [y, mo] = key.split('-').map(Number);
-        return mo === selectedMonth && y === selectedYear;
+        const isSelectedMonth = mo === selectedMonth && y === selectedYear;
+        const isSelectedCategory = !transactionCategoryFilter || String(t.category) === transactionCategoryFilter;
+        return isSelectedMonth && isSelectedCategory;
     });
+
+    updateTransactionCategoryFilterUI();
     
     if (filteredTransactions.length === 0) {
         container.innerHTML = `
             <div class="empty-subscriptions" style="text-align:center; padding: 40px; color: var(--text-secondary);">
                 <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>No transactions found for this month.</p>
+                <p>${transactionCategoryFilter ? 'No transactions found for this category.' : 'No transactions found for this month.'}</p>
             </div>
         `;
         return;
@@ -457,6 +486,92 @@ function closeOtherSwipedTransactions(exceptItem = null) {
 }
 
 let monthlyTrendCategory = 'total';
+let categoryChartSelection = null;
+let latestCategoryTotals = {};
+
+function setupCategoryChartFilter() {
+    const card = document.getElementById('category-chart-card');
+    const menu = document.getElementById('category-chart-filter');
+    if (!card || !menu) return;
+
+    const setOpen = open => {
+        menu.classList.toggle('active', open);
+        card.setAttribute('aria-expanded', String(open));
+        menu.setAttribute('aria-hidden', String(!open));
+        if (open) menu.querySelector('.category-chart-choice.selected')?.focus();
+    };
+
+    const toggleFromCard = event => {
+        if (event.target.closest('#category-chart-filter')) return;
+        if (card.getAttribute('aria-disabled') === 'true') return;
+        setOpen(!menu.classList.contains('active'));
+    };
+
+    card.addEventListener('click', toggleFromCard);
+    card.addEventListener('keydown', event => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === card && card.getAttribute('aria-disabled') !== 'true') {
+            event.preventDefault();
+            setOpen(!menu.classList.contains('active'));
+        }
+        if (event.key === 'Escape' && menu.classList.contains('active')) {
+            event.preventDefault();
+            setOpen(false);
+            card.focus();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!card.contains(event.target)) setOpen(false);
+    });
+}
+
+function renderCategoryChartFilter(categories, categoryColorMap) {
+    const menu = document.getElementById('category-chart-filter');
+    const card = document.getElementById('category-chart-card');
+    if (!menu || !card) return;
+
+    if (categoryChartSelection) {
+        categoryChartSelection = new Set(categories.filter(category => categoryChartSelection.has(category)));
+        if (categoryChartSelection.size === 0) categoryChartSelection = null;
+    }
+
+    const selectedCategories = categoryChartSelection || new Set(categories);
+    const allSelected = selectedCategories.size === categories.length;
+    card.setAttribute('aria-label', `Customize categories shown in the circle chart. ${selectedCategories.size} of ${categories.length} shown.`);
+    menu.innerHTML = '';
+
+    const createChoice = (label, category, color, selected, all = false) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `category-chart-choice${selected ? ' selected' : ''}${all ? ' category-chart-choice-all' : ''}`;
+        button.style.setProperty('--choice-color', color);
+        button.setAttribute('aria-pressed', String(selected));
+        button.innerHTML = `<span class="category-chart-choice-dot"></span><span></span><i class="fas fa-check" aria-hidden="true"></i>`;
+        button.querySelector('span:nth-child(2)').textContent = label;
+        button.addEventListener('click', event => {
+            event.stopPropagation();
+            if (all) {
+                categoryChartSelection = null;
+            } else {
+                const next = new Set(categoryChartSelection || categories);
+                if (next.has(category)) {
+                    if (next.size === 1) return;
+                    next.delete(category);
+                } else {
+                    next.add(category);
+                }
+                categoryChartSelection = next.size === categories.length ? null : next;
+            }
+            createCategoryExpenseChart(latestCategoryTotals);
+        });
+        menu.appendChild(button);
+    };
+
+    createChoice('All categories', null, getCssVar('--primary-color', '#0ea5e9'), allSelected, true);
+    categories.forEach(category => {
+        createChoice(category, category, categoryColorMap[category], selectedCategories.has(category));
+    });
+}
 
 function setupMonthlyCategoryFilter() {
     const picker = document.querySelector('.trend-category-picker');
@@ -737,6 +852,14 @@ function createEmptyMonthlyChart() {
 // Function to create an empty category chart
 function createEmptyCategoryChart() {
     const ctx = document.getElementById('category-chart').getContext('2d');
+    const menu = document.getElementById('category-chart-filter');
+    const card = document.getElementById('category-chart-card');
+    latestCategoryTotals = {};
+    if (menu) menu.innerHTML = '';
+    if (card) {
+        card.setAttribute('aria-disabled', 'true');
+        card.setAttribute('aria-label', 'No category data available for the circle chart');
+    }
     
     if (window.categoryChart) {
         window.categoryChart.destroy();
@@ -1099,6 +1222,8 @@ function createMonthlyExpenseChart(monthlyExpenses, datasetLabel = 'Total expens
 // Function to create the category expense chart
 function createCategoryExpenseChart(categoryTotals) {
     const ctx = document.getElementById('category-chart').getContext('2d');
+    const card = document.getElementById('category-chart-card');
+    if (card) card.setAttribute('aria-disabled', 'false');
     
     // Sort categories by amount (descending)
     const sortedCategories = Object.keys(categoryTotals).sort((a, b) => 
@@ -1112,12 +1237,21 @@ function createCategoryExpenseChart(categoryTotals) {
     sortedCategories.forEach((category, index) => {
         categoryColorMap[category] = colors[index % colors.length];
     });
+
+    latestCategoryTotals = { ...categoryTotals };
+    if (categoryChartSelection) {
+        categoryChartSelection = new Set(sortedCategories.filter(category => categoryChartSelection.has(category)));
+        if (categoryChartSelection.size === 0) categoryChartSelection = null;
+    }
+    const selectedCategories = categoryChartSelection
+        ? sortedCategories.filter(category => categoryChartSelection.has(category))
+        : sortedCategories;
     
     const chartData = {
-        labels: sortedCategories,
+        labels: selectedCategories,
         datasets: [{
-            data: sortedCategories.map(category => categoryTotals[category]),
-            backgroundColor: sortedCategories.map(category => categoryColorMap[category]),
+            data: selectedCategories.map(category => categoryTotals[category]),
+            backgroundColor: selectedCategories.map(category => categoryColorMap[category]),
             borderWidth: 2,
             borderColor: getCssVar('--chart-border-color', '#0f1115'),
             hoverOffset: 8,
@@ -1170,6 +1304,8 @@ function createCategoryExpenseChart(categoryTotals) {
             cutout: '70%'
         }
     });
+
+    renderCategoryChartFilter(sortedCategories, categoryColorMap);
     
     // Update Top Categories section
     updateTopCategories(sortedCategories, categoryTotals, categoryColorMap);
@@ -1199,7 +1335,8 @@ function updateTopCategories(sortedCategories, categoryTotals, categoryColorMap)
         const color = categoryColorMap[category];
         
         topCategoriesHTML += `
-            <div class="category-item">
+            <button type="button" class="category-item" data-category="${encodeURIComponent(category)}"
+                aria-label="Show all ${category} transactions">
                 <div class="category-info">
                     <div class="category-color" style="background-color: ${color}"></div>
                     <div class="category-name">${category}</div>
@@ -1208,11 +1345,16 @@ function updateTopCategories(sortedCategories, categoryTotals, categoryColorMap)
                     $${amount.toFixed(2)}
                     <span class="category-percentage">${percentage}%</span>
                 </div>
-            </div>
+            </button>
         `;
     });
     
     topCategoriesElement.innerHTML = topCategoriesHTML;
+    topCategoriesElement.querySelectorAll('.category-item[data-category]').forEach(item => {
+        item.addEventListener('click', () => {
+            showTransactionsForCategory(decodeURIComponent(item.dataset.category));
+        });
+    });
 }
 
 // Function to update the Category Insights
@@ -1327,6 +1469,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         setupMonthSelector();
         setupStatsMonthSelector();
         setupMonthlyCategoryFilter();
+        setupCategoryChartFilter();
+        setupTransactionCategoryFilter();
         
         // Create empty charts initially
         console.log('Creating empty charts...');

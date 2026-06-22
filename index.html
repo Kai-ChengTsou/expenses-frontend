@@ -18,7 +18,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.40">
+    <link rel="stylesheet" href="css/style.css?v=1.0.43">
     <link rel="stylesheet" href="css/calculator.css?v=1.0.21">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
     <link rel="stylesheet" href="css/budget.css?v=1.0.5">
@@ -219,8 +219,11 @@
                     </div>
                 </div>
 
-                <div class="card chart-card">
+                <div id="category-chart-card" class="card chart-card category-chart-card" tabindex="0"
+                    aria-label="Customize categories shown in the circle chart" aria-expanded="false">
                     <h2>Categories</h2>
+                    <div id="category-chart-filter" class="category-chart-filter" role="group"
+                        aria-label="Choose categories for the circle chart" aria-hidden="true"></div>
                     <div class="chart-container">
                         <canvas id="category-chart"></canvas>
                     </div>
@@ -317,6 +320,12 @@
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
+                    </div>
+                    <div id="transaction-category-filter" class="transaction-category-filter" hidden>
+                        <span class="transaction-category-filter-label"></span>
+                        <button type="button" id="clear-transaction-category-filter" aria-label="Show all transactions">
+                            <i class="fas fa-xmark" aria-hidden="true"></i>
+                        </button>
                     </div>
                     <div id="transaction-list-container" class="transaction-list-container">
                         <div class="loading-message">Loading transactions...</div>
@@ -608,11 +617,11 @@
     <script src="js/data-transfer.js?v=1.0.27"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.49"></script>
+    <script src="js/app.js?v=1.0.52"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.54')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.57')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

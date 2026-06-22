@@ -835,6 +835,106 @@ header {
     min-height: 280px;
 }
 
+.category-chart-card {
+    position: relative;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.category-chart-card:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+}
+
+.category-chart-filter {
+    position: absolute;
+    top: 54px;
+    left: 16px;
+    right: 16px;
+    z-index: 20;
+    max-height: 300px;
+    padding: 9px;
+    overflow-y: auto;
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 8px 12px 28px var(--shadow-color), 0 0 16px var(--glow-shadow);
+    cursor: default;
+    animation: slideDown 220ms cubic-bezier(0.25, 1, 0.5, 1);
+    overscroll-behavior: contain;
+}
+
+.category-chart-filter.active {
+    display: grid;
+}
+
+.category-chart-choice {
+    min-height: 46px;
+    padding: 7px 10px;
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 9px;
+    color: var(--muted-text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.category-chart-choice:hover,
+.category-chart-choice:focus-visible {
+    background: var(--surface-subtle);
+    border-color: var(--border-color);
+    outline: none;
+}
+
+.category-chart-choice.selected {
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--choice-color, var(--primary-color)) 12%, var(--surface-subtle));
+    border-color: color-mix(in srgb, var(--choice-color, var(--primary-color)) 45%, transparent);
+}
+
+.category-chart-choice-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--choice-color, var(--primary-color));
+    border-radius: 50%;
+    opacity: 0.35;
+}
+
+.category-chart-choice.selected .category-chart-choice-dot {
+    opacity: 1;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--choice-color, var(--primary-color)) 55%, transparent);
+}
+
+.category-chart-choice i {
+    color: var(--choice-color, var(--primary-color));
+    opacity: 0;
+}
+
+.category-chart-choice.selected i {
+    opacity: 1;
+}
+
+.category-chart-choice-all {
+    grid-column: 1 / -1;
+    --choice-color: var(--primary-color);
+}
+
+@media (max-width: 420px) {
+    .category-chart-filter {
+        grid-template-columns: 1fr;
+    }
+}
+
 .monthly-trends-card {
     z-index: 10;
     overflow: visible;
@@ -1031,6 +1131,45 @@ header {
 .transaction-list-container {
     padding: 0 4px;
     padding-bottom: 80px; /* Space for bottom nav */
+}
+
+.transaction-category-filter {
+    min-height: 44px;
+    margin: -6px 4px 16px;
+    padding: 7px 8px 7px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 11%, var(--surface-subtle));
+    border: 1px solid color-mix(in srgb, var(--primary-color) 38%, transparent);
+    border-radius: 13px;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.transaction-category-filter[hidden] {
+    display: none;
+}
+
+.transaction-category-filter button {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+    color: var(--primary-color);
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.transaction-category-filter button:hover,
+.transaction-category-filter button:focus-visible {
+    background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--primary-color) 55%, transparent);
 }
 
 .transaction-day-card {
@@ -1569,15 +1708,21 @@ section h2 {
 }
 
 .category-item {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
   background: linear-gradient(145deg, rgba(26, 29, 35, 0.6), rgba(26, 29, 35, 0.8));
+  color: inherit;
+  border: 1px solid transparent;
   border-radius: 10px;
     box-shadow: 3px 3px 6px var(--shadow-color),
                 0px 0px 6px #ffffff;
   transition: all 0.3s ease;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .category-item:hover {
@@ -2985,6 +3130,15 @@ section h2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     width: 100%;
+}
+
+.category-item:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.category-item:active {
+  transform: scale(0.985);
 }
 
 .view-toggle-btn {
