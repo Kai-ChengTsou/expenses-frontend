@@ -837,8 +837,7 @@ header {
 
 .category-chart-card {
     position: relative;
-    z-index: 12;
-    overflow: visible;
+    overflow: hidden;
     cursor: pointer;
     touch-action: manipulation;
 }
@@ -851,10 +850,11 @@ header {
 .category-chart-filter {
     position: absolute;
     top: 54px;
+    bottom: 16px;
     left: 16px;
     right: 16px;
     z-index: 20;
-    max-height: 300px;
+    max-height: none;
     box-sizing: border-box;
     padding: 9px 9px 18px;
     overflow-y: auto;
@@ -938,7 +938,6 @@ header {
 @media (max-width: 420px) {
     .category-chart-filter {
         grid-template-columns: 1fr;
-        max-height: min(340px, 52dvh);
     }
 }
 
