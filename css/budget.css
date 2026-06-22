@@ -221,9 +221,27 @@
 }
 
 /* Budget Modal - Compact Icon Grid (no scroll) */
+#budget-modal {
+    align-items: flex-start;
+    justify-content: center;
+}
+
 .budget-modal-content {
+    width: min(340px, calc(100% - 32px));
+    height: fit-content;
+    min-height: 0;
     max-width: 340px;
+    max-height: calc(100dvh - 110px - env(safe-area-inset-bottom));
     padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.budget-modal-content .modal-body {
+    height: auto;
+    min-height: 0;
 }
 
 .budget-grid-view {
@@ -231,7 +249,11 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     padding: 10px 0;
-    overflow: hidden;
+    height: auto;
+    min-height: 0;
+    align-content: start;
+    grid-auto-rows: max-content;
+    overflow: visible;
 }
 
 .budget-grid-item {
