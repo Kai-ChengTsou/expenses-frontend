@@ -14,6 +14,85 @@ const EXPENSE_CATEGORIES = [
     { id: 'other', label: '其他', icon: 'fas fa-box', color: '#b4bdcf', bg: '#252b3a', gradient: 'linear-gradient(90deg, #64748b, #b4bdcf, #e2e8f0)' }
 ];
 
+const CUSTOM_EXPENSE_CATEGORIES_KEY = 'customExpenseCategories';
+
+function normalizeCustomCategory(rawCategory) {
+    if (!rawCategory || typeof rawCategory !== 'object') return null;
+    const label = String(rawCategory.label || '').replace(/[<>&"'`]/g, '').trim().slice(0, 20);
+    const color = /^#[0-9a-f]{6}$/i.test(rawCategory.color) ? rawCategory.color.toLowerCase() : '#45a3ff';
+    const icon = /^fas fa-[a-z0-9-]+$/i.test(rawCategory.icon || '') ? rawCategory.icon : 'fas fa-tag';
+    const id = String(rawCategory.id || '').replace(/[^a-z0-9-]/gi, '').slice(0, 48);
+    if (!id || !label) return null;
+
+    return {
+        id,
+        label,
+        icon,
+        color,
+        bg: `${color}26`,
+        gradient: `linear-gradient(90deg, ${color}bb, ${color}, ${color}99)`,
+        custom: true
+    };
+}
+
+function saveCustomExpenseCategories() {
+    const saved = EXPENSE_CATEGORIES.filter(item => item.custom).map(item => ({
+        id: item.id,
+        label: item.label,
+        color: item.color,
+        icon: item.icon
+    }));
+    localStorage.setItem(CUSTOM_EXPENSE_CATEGORIES_KEY, JSON.stringify(saved));
+}
+
+function loadCustomExpenseCategories() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(CUSTOM_EXPENSE_CATEGORIES_KEY) || '[]');
+        if (!Array.isArray(saved)) return;
+        saved.map(normalizeCustomCategory).filter(Boolean).forEach(category => {
+            if (!EXPENSE_CATEGORIES.some(existing => existing.id === category.id || existing.label.toLowerCase() === category.label.toLowerCase())) {
+                EXPENSE_CATEGORIES.push(category);
+            }
+        });
+    } catch (error) {
+        console.warn('Could not load custom expense categories:', error);
+    }
+}
+
+function addCustomExpenseCategory(label, color, icon = 'fas fa-tag') {
+    const cleanLabel = String(label || '').replace(/[<>&"'`]/g, '').trim().slice(0, 20);
+    if (!cleanLabel) throw new Error('Enter a category name.');
+    if (EXPENSE_CATEGORIES.some(category => category.label.toLowerCase() === cleanLabel.toLowerCase())) {
+        throw new Error('That category already exists.');
+    }
+
+    const category = normalizeCustomCategory({
+        id: `custom-${Date.now().toString(36)}`,
+        label: cleanLabel,
+        color,
+        icon
+    });
+    if (!category) throw new Error('Could not create this category.');
+
+    EXPENSE_CATEGORIES.push(category);
+    saveCustomExpenseCategories();
+    return category;
+}
+
+function importCustomExpenseCategories(rows) {
+    if (!Array.isArray(rows)) return 0;
+    let imported = 0;
+    rows.map(normalizeCustomCategory).filter(Boolean).forEach(category => {
+        if (EXPENSE_CATEGORIES.some(existing => existing.id === category.id || existing.label.toLowerCase() === category.label.toLowerCase())) return;
+        EXPENSE_CATEGORIES.push(category);
+        imported++;
+    });
+    if (imported) saveCustomExpenseCategories();
+    return imported;
+}
+
+loadCustomExpenseCategories();
+
 const INCOME_CATEGORIES = [
     { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#22c55e', bg: '#153821' },
     { id: 'bonus', label: '獎金', icon: 'fas fa-star', color: '#facc15', bg: '#3a3210' },

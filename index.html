@@ -19,7 +19,7 @@
     <link rel="manifest" href="./manifest.json">
 
     <link rel="stylesheet" href="css/style.css?v=1.0.45">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.21">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.24">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
     <link rel="stylesheet" href="css/budget.css?v=1.0.5">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,6 +29,41 @@
 </head>
 <body>
     <div class="app-container">
+        <div id="custom-category-modal" class="modal custom-category-modal" aria-hidden="true">
+            <div class="custom-category-sheet" role="dialog" aria-modal="true" aria-labelledby="custom-category-title">
+                <div class="custom-category-sheet-header">
+                    <div>
+                        <span class="custom-category-eyebrow">New category</span>
+                        <h2 id="custom-category-title">Make it yours</h2>
+                    </div>
+                    <button type="button" id="close-custom-category" class="custom-category-close" aria-label="Close category creator">
+                        <i class="fas fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <form id="custom-category-form">
+                    <label class="custom-category-field" for="custom-category-name">
+                        <span>Category name</span>
+                        <input id="custom-category-name" type="text" maxlength="20" autocomplete="off" placeholder="e.g. Coffee" required>
+                    </label>
+                    <fieldset class="custom-category-colors">
+                        <legend>Choose a color</legend>
+                        <div id="custom-category-color-grid" class="custom-category-color-grid"></div>
+                        <label class="custom-color-picker" for="custom-category-color">
+                            <span>Custom color</span>
+                            <input id="custom-category-color" type="color" value="#45a3ff">
+                        </label>
+                    </fieldset>
+                    <fieldset class="custom-category-icons">
+                        <legend>Choose an icon</legend>
+                        <div id="custom-category-icon-grid" class="custom-category-icon-grid"></div>
+                        <input id="custom-category-icon" type="hidden" value="fas fa-tag">
+                    </fieldset>
+                    <div id="custom-category-error" class="custom-category-error" role="alert"></div>
+                    <button type="submit" class="custom-category-create-btn">Create category</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Unified Add Transaction/Income Modal (Calculator Style) -->
         <div id="add-modal" class="modal calculator-modal">
             <div class="modal-content calculator-content">
@@ -612,16 +647,16 @@
     <script src="js/viewport.js?v=1.0.27"></script>
     <script src="js/storage.js?v=1.0.27"></script>
     <script src="js/theme.js?v=1.0.29"></script>
-    <script src="js/categories.js?v=1.0.27"></script>
+    <script src="js/categories.js?v=1.0.29"></script>
     <script src="js/pwa.js?v=1.0.27"></script>
-    <script src="js/data-transfer.js?v=1.0.27"></script>
+    <script src="js/data-transfer.js?v=1.0.29"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.52"></script>
+    <script src="js/app.js?v=1.0.57"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.59')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.64')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

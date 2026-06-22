@@ -69,6 +69,19 @@ function exportToExcel() {
         budgetSheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }];
         XLSX.utils.book_append_sheet(wb, budgetSheet, 'Budgets');
 
+        // Custom categories are exported so their names and colors survive a restore.
+        const customCategoryRows = EXPENSE_CATEGORIES
+            .filter(category => category.custom)
+            .map(category => ({
+                ID: category.id,
+                Name: category.label,
+                Color: category.color,
+                Icon: category.icon
+            }));
+        const customCategorySheet = XLSX.utils.json_to_sheet(customCategoryRows, { header: ['ID', 'Name', 'Color', 'Icon'] });
+        customCategorySheet['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 24 }];
+        XLSX.utils.book_append_sheet(wb, customCategorySheet, 'Custom Categories');
+
         // Filename with current date
         const now = new Date();
         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -138,6 +151,18 @@ function importFromExcel(file) {
 
             saveLocalStorageTransactions(existingTx);
             saveLocalStorageIncome(existingInc);
+
+            // --- Custom categories (optional sheet) ---
+            const customCategorySheetName = wb.SheetNames.find(n => /custom categor/i.test(n));
+            if (customCategorySheetName) {
+                const customCategoryRows = XLSX.utils.sheet_to_json(wb.Sheets[customCategorySheetName], { defval: '' });
+                importCustomExpenseCategories(customCategoryRows.map(row => ({
+                    id: row.ID ?? row.Id ?? row.id,
+                    label: row.Name ?? row.name ?? row.Category ?? row.category,
+                    color: row.Color ?? row.color,
+                    icon: row.Icon ?? row.icon
+                })));
+            }
 
             // --- Subscriptions (optional sheet) ---
             const subSheetName = wb.SheetNames.find(n => /subscription/i.test(n));

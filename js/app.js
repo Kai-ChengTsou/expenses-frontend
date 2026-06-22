@@ -585,6 +585,7 @@ function setupMonthlyCategoryFilter() {
         { id: 'total', label: 'Total expenses', icon: 'fas fa-layer-group' },
         ...EXPENSE_CATEGORIES
     ];
+    menu.innerHTML = '';
 
     function closeMenu({ returnFocus = false } = {}) {
         menu.classList.remove('active');
@@ -623,6 +624,9 @@ function setupMonthlyCategoryFilter() {
         option.addEventListener('click', () => selectChoice(choice));
         menu.appendChild(option);
     });
+
+    if (picker.dataset.categoryFilterReady === 'true') return;
+    picker.dataset.categoryFilterReady = 'true';
 
     trigger.addEventListener('click', () => {
         const opening = !menu.classList.contains('active');
@@ -1139,9 +1143,11 @@ function createMonthlyExpenseChart(monthlyExpenses, datasetLabel = 'Total expens
         const [year, month] = monthKey.split('-').map(Number);
         return new Date(year, month - 1, 1).toLocaleString('default', { month: 'short' });
     });
-    const monthColors = sortedMonths.map((month, index) => {
-        return themeMeta.categoryChartColors[index % themeMeta.categoryChartColors.length];
-    });
+    const selectedCategoryConfig = findCategoryConfig(datasetLabel);
+    const selectedCategoryColor = selectedCategoryConfig ? getThemedCategory(selectedCategoryConfig).color : null;
+    const monthColors = sortedMonths.map((month, index) =>
+        selectedCategoryColor || themeMeta.categoryChartColors[index % themeMeta.categoryChartColors.length]
+    );
     
     const chartData = {
         labels: monthLabels,
@@ -1235,7 +1241,10 @@ function createCategoryExpenseChart(categoryTotals) {
     // Create a color mapping for categories to ensure consistency
     const categoryColorMap = {};
     sortedCategories.forEach((category, index) => {
-        categoryColorMap[category] = colors[index % colors.length];
+        const categoryConfig = findCategoryConfig(category);
+        categoryColorMap[category] = categoryConfig
+            ? getThemedCategory(categoryConfig).color
+            : colors[index % colors.length];
     });
 
     latestCategoryTotals = { ...categoryTotals };
@@ -1421,6 +1430,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Setup transaction modal (New Calculator)
         console.log('Setting up calculator modal...');
         setupCalculatorModal();
+        setupCustomCategoryCreator();
         
         // Replace old button listeners
         const addTransBtn = document.getElementById('add-transaction-btn');
@@ -2046,7 +2056,7 @@ function switchCalcType(type) {
 
 function renderCategories(categories) {
     const grid = document.getElementById('category-grid');
-    grid.innerHTML = categories.map(cat => `
+    const renderCategoryMarkup = categoryList => categoryList.map(cat => `
         <div class="category-option" data-id="${cat.id}" role="button" tabindex="0">
             <div class="cat-icon-circle" style="${getCategoryVisualStyle(cat)}">
                 <i class="${cat.icon}"></i>
@@ -2054,8 +2064,18 @@ function renderCategories(categories) {
             <div class="cat-label">${cat.label}</div>
         </div>
     `).join('');
+    const standardCategories = categories.filter(category => !category.custom);
+    const customCategories = categories.filter(category => category.custom);
+    const addCategoryMarkup = currentCalcType === 'expense' ? `
+        <button type="button" class="category-option category-add-option" data-action="add-category"
+            aria-label="Create a custom expense category" onclick="window.openCustomCategoryCreator(this)">
+            <div class="cat-icon-circle"><i class="fas fa-plus" aria-hidden="true"></i></div>
+            <div class="cat-label">Add</div>
+        </button>
+    ` : '';
+    grid.innerHTML = renderCategoryMarkup(standardCategories) + renderCategoryMarkup(customCategories) + addCategoryMarkup;
 
-    grid.querySelectorAll('.category-option').forEach(option => {
+    grid.querySelectorAll('.category-option[data-id]').forEach(option => {
         const select = () => handleCategorySelect(option.dataset.id);
         option.addEventListener('click', select);
         option.addEventListener('keydown', (event) => {
@@ -2064,6 +2084,203 @@ function renderCategories(categories) {
                 select();
             }
         });
+    });
+
+}
+
+const CUSTOM_CATEGORY_COLORS = [
+    '#45a3ff', '#28d6c8', '#4ade80', '#facc15',
+    '#ff7a1a', '#ff4f7b', '#d65cff', '#ff5ab3'
+];
+const CUSTOM_CATEGORY_ICONS = [
+    { icon: 'fas fa-tag', label: 'Tag' },
+    { icon: 'fas fa-mug-hot', label: 'Coffee' },
+    { icon: 'fas fa-burger', label: 'Food' },
+    { icon: 'fas fa-cart-shopping', label: 'Shopping' },
+    { icon: 'fas fa-plane', label: 'Travel' },
+    { icon: 'fas fa-dumbbell', label: 'Fitness' },
+    { icon: 'fas fa-graduation-cap', label: 'Education' },
+    { icon: 'fas fa-gift', label: 'Gift' },
+    { icon: 'fas fa-gamepad', label: 'Gaming' },
+    { icon: 'fas fa-dog', label: 'Pet' },
+    { icon: 'fas fa-house', label: 'Home' },
+    { icon: 'fas fa-briefcase', label: 'Work' },
+    { icon: 'fas fa-utensils', label: 'Restaurant' },
+    { icon: 'fas fa-wine-glass', label: 'Drinks' },
+    { icon: 'fas fa-car', label: 'Car' },
+    { icon: 'fas fa-bus', label: 'Bus' },
+    { icon: 'fas fa-train', label: 'Train' },
+    { icon: 'fas fa-bicycle', label: 'Bicycle' },
+    { icon: 'fas fa-gas-pump', label: 'Fuel' },
+    { icon: 'fas fa-hotel', label: 'Hotel' },
+    { icon: 'fas fa-camera', label: 'Photography' },
+    { icon: 'fas fa-music', label: 'Music' },
+    { icon: 'fas fa-film', label: 'Movies' },
+    { icon: 'fas fa-book', label: 'Books' },
+    { icon: 'fas fa-laptop', label: 'Computer' },
+    { icon: 'fas fa-mobile-screen-button', label: 'Phone' },
+    { icon: 'fas fa-bolt', label: 'Utilities' },
+    { icon: 'fas fa-stethoscope', label: 'Healthcare' },
+    { icon: 'fas fa-wallet', label: 'Wallet' },
+    { icon: 'fas fa-piggy-bank', label: 'Savings' }
+];
+let customCategoryReturnFocus = null;
+
+function refreshExpenseCategorySelects() {
+    ['qa-category', 'subscription-category', 'edit-subscription-category'].forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        const currentValue = select.value;
+        select.innerHTML = '';
+
+        if (id === 'qa-category') {
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select Category';
+            select.appendChild(placeholder);
+        }
+
+        EXPENSE_CATEGORIES.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.label;
+            option.textContent = category.label;
+            select.appendChild(option);
+        });
+        select.value = currentValue;
+    });
+}
+
+function openCustomCategoryCreator(returnFocus = null) {
+    const modal = document.getElementById('custom-category-modal');
+    const form = document.getElementById('custom-category-form');
+    const nameInput = document.getElementById('custom-category-name');
+    const colorInput = document.getElementById('custom-category-color');
+    const iconInput = document.getElementById('custom-category-icon');
+    const error = document.getElementById('custom-category-error');
+    if (!modal || !form || !nameInput || !colorInput || !iconInput || !error) return;
+
+    customCategoryReturnFocus = returnFocus;
+    form.reset();
+    colorInput.value = CUSTOM_CATEGORY_COLORS[0];
+    iconInput.value = CUSTOM_CATEGORY_ICONS[0].icon;
+    error.textContent = '';
+    document.querySelectorAll('.custom-category-color-option').forEach((option, index) => {
+        const selected = index === 0;
+        option.classList.toggle('selected', selected);
+        option.setAttribute('aria-pressed', String(selected));
+    });
+    document.querySelectorAll('.custom-category-icon-option').forEach((option, index) => {
+        const selected = index === 0;
+        option.classList.toggle('selected', selected);
+        option.setAttribute('aria-pressed', String(selected));
+    });
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => nameInput.focus());
+}
+
+function closeCustomCategoryCreator({ returnFocus = true } = {}) {
+    const modal = document.getElementById('custom-category-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    if (returnFocus && customCategoryReturnFocus?.isConnected) customCategoryReturnFocus.focus();
+    customCategoryReturnFocus = null;
+}
+window.openCustomCategoryCreator = openCustomCategoryCreator;
+
+function setupCustomCategoryCreator() {
+    const modal = document.getElementById('custom-category-modal');
+    const form = document.getElementById('custom-category-form');
+    const closeButton = document.getElementById('close-custom-category');
+    const colorGrid = document.getElementById('custom-category-color-grid');
+    const colorInput = document.getElementById('custom-category-color');
+    const iconGrid = document.getElementById('custom-category-icon-grid');
+    const iconInput = document.getElementById('custom-category-icon');
+    const nameInput = document.getElementById('custom-category-name');
+    const error = document.getElementById('custom-category-error');
+    if (!modal || !form || !closeButton || !colorGrid || !colorInput || !iconGrid || !iconInput || !nameInput || !error) return;
+
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+
+    refreshExpenseCategorySelects();
+    colorGrid.innerHTML = '';
+    CUSTOM_CATEGORY_COLORS.forEach((color, index) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = `custom-category-color-option${index === 0 ? ' selected' : ''}`;
+        option.style.setProperty('--swatch-color', color);
+        option.dataset.color = color;
+        option.setAttribute('aria-label', `Use color ${color}`);
+        option.setAttribute('aria-pressed', String(index === 0));
+        option.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+        option.addEventListener('click', () => {
+            colorInput.value = color;
+            colorGrid.querySelectorAll('.custom-category-color-option').forEach(item => {
+                const selected = item === option;
+                item.classList.toggle('selected', selected);
+                item.setAttribute('aria-pressed', String(selected));
+            });
+        });
+        colorGrid.appendChild(option);
+    });
+
+    iconGrid.innerHTML = '';
+    CUSTOM_CATEGORY_ICONS.forEach((choice, index) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = `custom-category-icon-option${index === 0 ? ' selected' : ''}`;
+        option.dataset.icon = choice.icon;
+        option.setAttribute('aria-label', `Use ${choice.label} icon`);
+        option.setAttribute('aria-pressed', String(index === 0));
+        option.innerHTML = `<i class="${choice.icon}" aria-hidden="true"></i>`;
+        option.addEventListener('click', () => {
+            iconInput.value = choice.icon;
+            iconGrid.querySelectorAll('.custom-category-icon-option').forEach(item => {
+                const selected = item === option;
+                item.classList.toggle('selected', selected);
+                item.setAttribute('aria-pressed', String(selected));
+            });
+        });
+        iconGrid.appendChild(option);
+    });
+
+    colorInput.addEventListener('input', () => {
+        colorGrid.querySelectorAll('.custom-category-color-option').forEach(item => {
+            const selected = item.dataset.color.toLowerCase() === colorInput.value.toLowerCase();
+            item.classList.toggle('selected', selected);
+            item.setAttribute('aria-pressed', String(selected));
+        });
+    });
+
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        try {
+            const category = addCustomExpenseCategory(nameInput.value, colorInput.value, iconInput.value);
+            refreshExpenseCategorySelects();
+            setupMonthlyCategoryFilter();
+            renderCategories(EXPENSE_CATEGORIES);
+            selectCategory(category);
+            updateExpenseCharts();
+            renderQuickAddButtons();
+            closeCustomCategoryCreator({ returnFocus: false });
+        } catch (creationError) {
+            error.textContent = creationError.message || 'Could not create this category.';
+            nameInput.focus();
+        }
+    });
+
+    closeButton.addEventListener('click', () => closeCustomCategoryCreator());
+    modal.addEventListener('click', event => {
+        if (event.target === modal) closeCustomCategoryCreator();
+    });
+    modal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeCustomCategoryCreator();
+        }
     });
 }
 
