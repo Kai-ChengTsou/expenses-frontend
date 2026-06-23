@@ -1431,6 +1431,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.log('Setting up calculator modal...');
         setupCalculatorModal();
         setupCustomCategoryCreator();
+        setupCategoryActionSheet();
         
         // Replace old button listeners
         const addTransBtn = document.getElementById('add-transaction-btn');
@@ -1988,8 +1989,8 @@ function openCalculatorModal(type = 'expense') {
     switchCalcType(type);
     
     // Select default category
-    const defaultCat = type === 'expense' ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0];
-    selectCategory(defaultCat);
+    const defaultCat = type === 'expense' ? getVisibleExpenseCategories()[0] : INCOME_CATEGORIES[0];
+    if (defaultCat) selectCategory(defaultCat);
 }
 
 function closeCalculatorModal() {
@@ -2039,6 +2040,7 @@ function parseLocalDate(dateValue) {
 
 function switchCalcType(type) {
     currentCalcType = type;
+    if (type !== 'expense') categoryEditMode = false;
     
     // Update Toggle UI
     document.querySelectorAll('.type-btn').forEach(btn => {
@@ -2050,38 +2052,79 @@ function switchCalcType(type) {
     renderCategories(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES);
     
     // Select first category by default if none selected or invalid
-    const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    const categories = type === 'expense' ? getVisibleExpenseCategories() : INCOME_CATEGORIES;
     selectCategory(categories[0]);
 }
 
 function renderCategories(categories) {
     const grid = document.getElementById('category-grid');
+    if (!grid) return;
+    const visibleCategories = currentCalcType === 'expense'
+        ? categories.filter(category => !hiddenExpenseCategoryIds.has(category.id))
+        : categories;
+    grid.classList.toggle('category-editing', categoryEditMode);
     const renderCategoryMarkup = categoryList => categoryList.map(cat => `
-        <div class="category-option" data-id="${cat.id}" role="button" tabindex="0">
+        <div class="category-option" data-id="${cat.id}" role="button" tabindex="0"
+            aria-label="${categoryEditMode ? `Edit ${escapeHtml(cat.label)}` : escapeHtml(cat.label)}">
             <div class="cat-icon-circle" style="${getCategoryVisualStyle(cat)}">
                 <i class="${cat.icon}"></i>
             </div>
-            <div class="cat-label">${cat.label}</div>
+            <div class="cat-label">${escapeHtml(cat.label)}</div>
         </div>
     `).join('');
-    const standardCategories = categories.filter(category => !category.custom);
-    const customCategories = categories.filter(category => category.custom);
-    const addCategoryMarkup = currentCalcType === 'expense' ? `
+    const standardCategories = visibleCategories.filter(category => !category.custom);
+    const customCategories = visibleCategories.filter(category => category.custom);
+    const editToolbarMarkup = currentCalcType === 'expense' && categoryEditMode ? `
+        <div class="category-edit-toolbar" role="status">
+            <span>Edit mode</span>
+            <button type="button" id="category-edit-done">Done</button>
+        </div>
+    ` : '';
+    const addCategoryMarkup = currentCalcType === 'expense' && !categoryEditMode ? `
         <button type="button" class="category-option category-add-option" data-action="add-category"
             aria-label="Create a custom expense category" onclick="window.openCustomCategoryCreator(this)">
             <div class="cat-icon-circle"><i class="fas fa-plus" aria-hidden="true"></i></div>
             <div class="cat-label">Add</div>
         </button>
     ` : '';
-    grid.innerHTML = renderCategoryMarkup(standardCategories) + renderCategoryMarkup(customCategories) + addCategoryMarkup;
+    grid.innerHTML = editToolbarMarkup + renderCategoryMarkup(standardCategories) + renderCategoryMarkup(customCategories) + addCategoryMarkup;
+
+    const editDone = document.getElementById('category-edit-done');
+    if (editDone) editDone.addEventListener('click', exitCategoryEditMode);
 
     grid.querySelectorAll('.category-option[data-id]').forEach(option => {
-        const select = () => handleCategorySelect(option.dataset.id);
+        const select = () => {
+            if (categoryEditMode) {
+                openCategoryActionSheet(option.dataset.id, option);
+                return;
+            }
+            handleCategorySelect(option.dataset.id);
+        };
+        option.addEventListener('dblclick', event => {
+            event.preventDefault();
+            enterCategoryEditMode();
+        });
+        option.addEventListener('touchend', event => {
+            const now = Date.now();
+            if (lastCategoryTapId === option.dataset.id && now - lastCategoryTapTime < 320) {
+                event.preventDefault();
+                enterCategoryEditMode();
+                lastCategoryTapId = null;
+                lastCategoryTapTime = 0;
+                return;
+            }
+            lastCategoryTapId = option.dataset.id;
+            lastCategoryTapTime = now;
+        }, { passive: false });
         option.addEventListener('click', select);
         option.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 select();
+            }
+            if (event.key === 'Escape' && categoryEditMode) {
+                event.preventDefault();
+                exitCategoryEditMode();
             }
         });
     });
@@ -2125,6 +2168,23 @@ const CUSTOM_CATEGORY_ICONS = [
     { icon: 'fas fa-piggy-bank', label: 'Savings' }
 ];
 let customCategoryReturnFocus = null;
+let customCategoryMode = 'create';
+let categoryEditMode = false;
+let activeCategoryActionId = null;
+let categoryActionReturnFocus = null;
+let lastCategoryTapId = null;
+let lastCategoryTapTime = 0;
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"'`]/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '`': '&#96;'
+    }[char]));
+}
 
 function refreshExpenseCategorySelects() {
     ['qa-category', 'subscription-category', 'edit-subscription-category'].forEach(id => {
@@ -2140,7 +2200,7 @@ function refreshExpenseCategorySelects() {
             select.appendChild(placeholder);
         }
 
-        EXPENSE_CATEGORIES.forEach(category => {
+        getVisibleExpenseCategories().forEach(category => {
             const option = document.createElement('option');
             option.value = category.label;
             option.textContent = category.label;
@@ -2150,30 +2210,51 @@ function refreshExpenseCategorySelects() {
     });
 }
 
-function openCustomCategoryCreator(returnFocus = null) {
+function setCustomCategorySelection(color, icon) {
+    const colorInput = document.getElementById('custom-category-color');
+    const iconInput = document.getElementById('custom-category-icon');
+    if (colorInput) colorInput.value = color;
+    if (iconInput) iconInput.value = icon;
+
+    document.querySelectorAll('.custom-category-color-option').forEach(option => {
+        const selected = option.dataset.color?.toLowerCase() === color.toLowerCase();
+        option.classList.toggle('selected', selected);
+        option.setAttribute('aria-pressed', String(selected));
+    });
+    document.querySelectorAll('.custom-category-icon-option').forEach(option => {
+        const selected = option.dataset.icon === icon;
+        option.classList.toggle('selected', selected);
+        option.setAttribute('aria-pressed', String(selected));
+    });
+}
+
+function openCustomCategoryCreator(returnFocus = null, categoryToEdit = null) {
     const modal = document.getElementById('custom-category-modal');
     const form = document.getElementById('custom-category-form');
     const nameInput = document.getElementById('custom-category-name');
     const colorInput = document.getElementById('custom-category-color');
     const iconInput = document.getElementById('custom-category-icon');
+    const editIdInput = document.getElementById('custom-category-edit-id');
     const error = document.getElementById('custom-category-error');
-    if (!modal || !form || !nameInput || !colorInput || !iconInput || !error) return;
+    const eyebrow = modal?.querySelector('.custom-category-eyebrow');
+    const title = document.getElementById('custom-category-title');
+    const submitButton = modal?.querySelector('.custom-category-create-btn');
+    if (!modal || !form || !nameInput || !colorInput || !iconInput || !editIdInput || !error) return;
 
     customCategoryReturnFocus = returnFocus;
+    customCategoryMode = categoryToEdit ? 'edit' : 'create';
     form.reset();
-    colorInput.value = CUSTOM_CATEGORY_COLORS[0];
-    iconInput.value = CUSTOM_CATEGORY_ICONS[0].icon;
+    editIdInput.value = categoryToEdit?.id || '';
+    nameInput.value = categoryToEdit?.label || '';
+    if (eyebrow) eyebrow.textContent = categoryToEdit ? 'Edit category' : 'New category';
+    if (title) title.textContent = categoryToEdit ? categoryToEdit.label : 'Make it yours';
+    if (submitButton) submitButton.textContent = categoryToEdit ? 'Save category' : 'Create category';
+    const activeColor = categoryToEdit?.color || CUSTOM_CATEGORY_COLORS[0];
+    const activeIcon = categoryToEdit?.icon || CUSTOM_CATEGORY_ICONS[0].icon;
+    colorInput.value = activeColor;
+    iconInput.value = activeIcon;
     error.textContent = '';
-    document.querySelectorAll('.custom-category-color-option').forEach((option, index) => {
-        const selected = index === 0;
-        option.classList.toggle('selected', selected);
-        option.setAttribute('aria-pressed', String(selected));
-    });
-    document.querySelectorAll('.custom-category-icon-option').forEach((option, index) => {
-        const selected = index === 0;
-        option.classList.toggle('selected', selected);
-        option.setAttribute('aria-pressed', String(selected));
-    });
+    setCustomCategorySelection(activeColor, activeIcon);
     modal.classList.add('active');
     modal.style.display = 'flex';
     modal.setAttribute('aria-hidden', 'false');
@@ -2188,8 +2269,64 @@ function closeCustomCategoryCreator({ returnFocus = true } = {}) {
     modal.setAttribute('aria-hidden', 'true');
     if (returnFocus && customCategoryReturnFocus?.isConnected) customCategoryReturnFocus.focus();
     customCategoryReturnFocus = null;
+    customCategoryMode = 'create';
 }
 window.openCustomCategoryCreator = openCustomCategoryCreator;
+
+function enterCategoryEditMode() {
+    if (currentCalcType !== 'expense' || categoryEditMode) return;
+    categoryEditMode = true;
+    renderCategories(EXPENSE_CATEGORIES);
+}
+
+function exitCategoryEditMode() {
+    if (!categoryEditMode) return;
+    categoryEditMode = false;
+    closeCategoryActionSheet({ returnFocus: false });
+    renderCategories(EXPENSE_CATEGORIES);
+    const selected = EXPENSE_CATEGORIES.find(category => category.id === selectedCategoryId && !hiddenExpenseCategoryIds.has(category.id))
+        || getVisibleExpenseCategories()[0];
+    if (selected) selectCategory(selected);
+}
+
+function openCategoryActionSheet(categoryId, returnFocus = null) {
+    const modal = document.getElementById('category-action-modal');
+    const title = document.getElementById('category-action-title');
+    const iconWrap = document.getElementById('category-action-icon');
+    const category = EXPENSE_CATEGORIES.find(item => item.id === categoryId);
+    if (!modal || !title || !iconWrap || !category) return;
+
+    activeCategoryActionId = categoryId;
+    categoryActionReturnFocus = returnFocus;
+    title.textContent = category.label;
+    iconWrap.style.cssText = getCategoryVisualStyle(category);
+    iconWrap.innerHTML = `<i class="${category.icon}" aria-hidden="true"></i>`;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => document.getElementById('category-action-edit')?.focus());
+}
+
+function closeCategoryActionSheet({ returnFocus = true } = {}) {
+    const modal = document.getElementById('category-action-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    activeCategoryActionId = null;
+    if (returnFocus && categoryActionReturnFocus?.isConnected) categoryActionReturnFocus.focus();
+    categoryActionReturnFocus = null;
+}
+
+function refreshCategoryDependentUI(category = null) {
+    refreshExpenseCategorySelects();
+    setupMonthlyCategoryFilter();
+    renderCategories(EXPENSE_CATEGORIES);
+    if (category) selectCategory(category);
+    updateExpenseCharts();
+    renderQuickAddButtons();
+    updateBudgetUI(JSON.parse(localStorage.getItem('categoryBudgets')) || {});
+}
 
 function setupCustomCategoryCreator() {
     const modal = document.getElementById('custom-category-modal');
@@ -2258,13 +2395,11 @@ function setupCustomCategoryCreator() {
     form.addEventListener('submit', event => {
         event.preventDefault();
         try {
-            const category = addCustomExpenseCategory(nameInput.value, colorInput.value, iconInput.value);
-            refreshExpenseCategorySelects();
-            setupMonthlyCategoryFilter();
-            renderCategories(EXPENSE_CATEGORIES);
-            selectCategory(category);
-            updateExpenseCharts();
-            renderQuickAddButtons();
+            const editId = document.getElementById('custom-category-edit-id')?.value;
+            const category = customCategoryMode === 'edit' && editId
+                ? updateExpenseCategory(editId, nameInput.value, colorInput.value, iconInput.value)
+                : addCustomExpenseCategory(nameInput.value, colorInput.value, iconInput.value);
+            refreshCategoryDependentUI(category);
             closeCustomCategoryCreator({ returnFocus: false });
         } catch (creationError) {
             error.textContent = creationError.message || 'Could not create this category.';
@@ -2284,7 +2419,55 @@ function setupCustomCategoryCreator() {
     });
 }
 
+function setupCategoryActionSheet() {
+    const modal = document.getElementById('category-action-modal');
+    const editButton = document.getElementById('category-action-edit');
+    const deleteButton = document.getElementById('category-action-delete');
+    const cancelButton = document.getElementById('category-action-cancel');
+    if (!modal || !editButton || !deleteButton || !cancelButton) return;
+
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+
+    editButton.addEventListener('click', () => {
+        const category = EXPENSE_CATEGORIES.find(item => item.id === activeCategoryActionId);
+        const returnFocus = categoryActionReturnFocus;
+        closeCategoryActionSheet({ returnFocus: false });
+        if (category) openCustomCategoryCreator(returnFocus, category);
+    });
+
+    deleteButton.addEventListener('click', () => {
+        const category = EXPENSE_CATEGORIES.find(item => item.id === activeCategoryActionId);
+        if (!category) return;
+        if (!confirm(`Delete "${category.label}" from the category picker? Existing transactions will stay unchanged.`)) return;
+        try {
+            hideExpenseCategory(category.id);
+            const nextCategory = getVisibleExpenseCategories()[0];
+            closeCategoryActionSheet({ returnFocus: false });
+            refreshCategoryDependentUI(nextCategory);
+            if (hiddenExpenseCategoryIds.has(selectedCategoryId) && nextCategory) selectCategory(nextCategory);
+            if (getVisibleExpenseCategories().length <= 1) exitCategoryEditMode();
+        } catch (deleteError) {
+            alert(deleteError.message || 'Could not delete this category.');
+        }
+    });
+
+    cancelButton.addEventListener('click', () => closeCategoryActionSheet());
+    modal.addEventListener('click', event => {
+        if (event.target === modal) closeCategoryActionSheet();
+    });
+    modal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeCategoryActionSheet();
+        }
+    });
+}
+
 function handleCategorySelect(id) {
+    if (categoryEditMode) {
+        openCategoryActionSheet(id);
+        return;
+    }
     const categories = currentCalcType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
     const category = categories.find(c => c.id === id);
     if (category) selectCategory(category);

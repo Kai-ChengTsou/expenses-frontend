@@ -119,6 +119,34 @@
     padding-bottom: 10px;
 }
 
+.category-edit-toolbar {
+    grid-column: 1 / -1;
+    min-height: 44px;
+    padding: 6px 6px 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 12%, var(--surface-subtle));
+    border: 1px solid color-mix(in srgb, var(--primary-color) 42%, transparent);
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.category-edit-toolbar button {
+    min-width: 64px;
+    min-height: 34px;
+    padding: 0 12px;
+    color: var(--button-text);
+    background: var(--primary-color);
+    border: 0;
+    border-radius: 11px;
+    font: inherit;
+    cursor: pointer;
+}
+
 .category-option {
     display: flex;
     flex-direction: column;
@@ -127,6 +155,8 @@
     cursor: pointer;
     transition: transform 0.1s;
     padding: 4px;
+    border-radius: 14px;
+    touch-action: manipulation;
 }
 
 .category-option:active {
@@ -186,6 +216,123 @@ button.category-add-option {
 .category-option.selected .cat-label {
     color: var(--category-color);
     font-weight: 600;
+}
+
+.category-grid.category-editing .category-option[data-id] {
+    animation: categoryEditShake 620ms ease-in-out infinite;
+}
+
+.category-grid.category-editing .category-option[data-id]:nth-child(2n) {
+    animation-delay: -130ms;
+}
+
+.category-grid.category-editing .category-option[data-id]:nth-child(3n) {
+    animation-delay: -260ms;
+}
+
+.category-grid.category-editing .category-option[data-id] .cat-icon-circle {
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--category-color) 58%, transparent),
+        0 10px 24px color-mix(in srgb, var(--category-color) 18%, transparent);
+}
+
+@keyframes categoryEditShake {
+    0%, 100% { transform: rotate(-1.2deg) translateY(0); }
+    50% { transform: rotate(1.2deg) translateY(-1px); }
+}
+
+.category-action-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 7100;
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(3, 7, 18, 0.58);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.category-action-modal.active {
+    display: flex !important;
+}
+
+.category-action-sheet {
+    width: min(100%, 390px);
+    padding: 18px;
+    color: var(--text-color);
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 22px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46), 0 0 22px var(--glow-shadow);
+    animation: customCategoryEnter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-action-preview {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.category-action-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    color: var(--category-color);
+    background: var(--category-bg);
+    border: 1px solid color-mix(in srgb, var(--category-color) 45%, transparent);
+    font-size: 1.15rem;
+}
+
+.category-action-preview span {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.category-action-preview h2 {
+    margin: 0;
+    font-size: 1.18rem;
+    line-height: 1.2;
+}
+
+.category-action-buttons {
+    display: grid;
+    gap: 10px;
+}
+
+.category-action-btn,
+.category-action-cancel {
+    min-height: 48px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: var(--text-color);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.category-action-btn.danger {
+    color: #ffffff;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border-color: transparent;
+}
+
+.category-action-cancel {
+    color: var(--text-secondary);
 }
 
 /* Custom expense category creator */
@@ -435,7 +582,9 @@ button.category-add-option {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .custom-category-sheet {
+    .custom-category-sheet,
+    .category-action-sheet,
+    .category-grid.category-editing .category-option[data-id] {
         animation: none;
     }
 }

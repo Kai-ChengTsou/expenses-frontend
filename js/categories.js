@@ -15,6 +15,10 @@ const EXPENSE_CATEGORIES = [
 ];
 
 const CUSTOM_EXPENSE_CATEGORIES_KEY = 'customExpenseCategories';
+const EXPENSE_CATEGORY_OVERRIDES_KEY = 'expenseCategoryOverrides';
+const HIDDEN_EXPENSE_CATEGORY_IDS_KEY = 'hiddenExpenseCategoryIds';
+
+let hiddenExpenseCategoryIds = new Set();
 
 function normalizeCustomCategory(rawCategory) {
     if (!rawCategory || typeof rawCategory !== 'object') return null;
@@ -43,6 +47,99 @@ function saveCustomExpenseCategories() {
         icon: item.icon
     }));
     localStorage.setItem(CUSTOM_EXPENSE_CATEGORIES_KEY, JSON.stringify(saved));
+}
+
+function loadExpenseCategoryOverrides() {
+    try {
+        const overrides = JSON.parse(localStorage.getItem(EXPENSE_CATEGORY_OVERRIDES_KEY) || '{}');
+        if (!overrides || typeof overrides !== 'object') return;
+
+        EXPENSE_CATEGORIES.forEach(category => {
+            const override = normalizeCustomCategory({
+                id: category.id,
+                label: overrides[category.id]?.label || category.label,
+                color: overrides[category.id]?.color || category.color,
+                icon: overrides[category.id]?.icon || category.icon
+            });
+            if (!override) return;
+            category.label = override.label;
+            category.color = override.color;
+            category.icon = override.icon;
+            category.bg = override.bg;
+            category.gradient = override.gradient;
+        });
+    } catch (error) {
+        console.warn('Could not load category edits:', error);
+    }
+}
+
+function saveExpenseCategoryOverrides() {
+    const overrides = {};
+    EXPENSE_CATEGORIES.forEach(category => {
+        overrides[category.id] = {
+            label: category.label,
+            color: category.color,
+            icon: category.icon
+        };
+    });
+    localStorage.setItem(EXPENSE_CATEGORY_OVERRIDES_KEY, JSON.stringify(overrides));
+}
+
+function loadHiddenExpenseCategories() {
+    try {
+        const ids = JSON.parse(localStorage.getItem(HIDDEN_EXPENSE_CATEGORY_IDS_KEY) || '[]');
+        hiddenExpenseCategoryIds = new Set(Array.isArray(ids) ? ids.map(String) : []);
+    } catch (error) {
+        hiddenExpenseCategoryIds = new Set();
+        console.warn('Could not load hidden categories:', error);
+    }
+}
+
+function saveHiddenExpenseCategories() {
+    localStorage.setItem(HIDDEN_EXPENSE_CATEGORY_IDS_KEY, JSON.stringify([...hiddenExpenseCategoryIds]));
+}
+
+function getVisibleExpenseCategories() {
+    return EXPENSE_CATEGORIES.filter(category => !hiddenExpenseCategoryIds.has(category.id));
+}
+
+function updateExpenseCategory(categoryId, label, color, icon = 'fas fa-tag') {
+    const category = EXPENSE_CATEGORIES.find(item => item.id === categoryId);
+    if (!category) throw new Error('Category not found.');
+
+    const cleanLabel = String(label || '').replace(/[<>&"'`]/g, '').trim().slice(0, 20);
+    if (!cleanLabel) throw new Error('Enter a category name.');
+    if (EXPENSE_CATEGORIES.some(item => item.id !== categoryId && item.label.toLowerCase() === cleanLabel.toLowerCase())) {
+        throw new Error('That category already exists.');
+    }
+
+    const normalized = normalizeCustomCategory({
+        id: category.id,
+        label: cleanLabel,
+        color,
+        icon
+    });
+    if (!normalized) throw new Error('Could not update this category.');
+
+    category.label = normalized.label;
+    category.color = normalized.color;
+    category.icon = normalized.icon;
+    category.bg = normalized.bg;
+    category.gradient = normalized.gradient;
+    if (category.custom) saveCustomExpenseCategories();
+    saveExpenseCategoryOverrides();
+    return category;
+}
+
+function hideExpenseCategory(categoryId) {
+    if (getVisibleExpenseCategories().length <= 1) {
+        throw new Error('Keep at least one expense category.');
+    }
+    if (!EXPENSE_CATEGORIES.some(category => category.id === categoryId)) {
+        throw new Error('Category not found.');
+    }
+    hiddenExpenseCategoryIds.add(categoryId);
+    saveHiddenExpenseCategories();
 }
 
 function loadCustomExpenseCategories() {
@@ -92,6 +189,8 @@ function importCustomExpenseCategories(rows) {
 }
 
 loadCustomExpenseCategories();
+loadExpenseCategoryOverrides();
+loadHiddenExpenseCategories();
 
 const INCOME_CATEGORIES = [
     { id: 'salary', label: '薪水', icon: 'fas fa-money-bill-wave', color: '#22c55e', bg: '#153821' },
