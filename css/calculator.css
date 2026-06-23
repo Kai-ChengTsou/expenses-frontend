@@ -112,6 +112,27 @@
     -webkit-overflow-scrolling: touch;
 }
 
+.calculator-content.category-manager-mode .category-grid-container {
+    flex: 1 1 auto;
+    padding-top: 12px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+.calculator-content.category-manager-mode .input-display-area,
+.calculator-content.category-manager-mode .date-bar,
+.calculator-content.category-manager-mode .keypad-area {
+    display: none !important;
+}
+
+.calculator-content.category-manager-mode .calculator-header {
+    flex: 0 0 auto;
+}
+
+.calculator-content.category-manager-mode .type-toggle {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .category-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -180,6 +201,18 @@ button.category-add-option {
 .category-option.category-add-option .cat-label {
     color: var(--primary-color);
     font-weight: 700;
+}
+
+.category-grid.category-editing .category-add-option {
+    animation: none;
+}
+
+.category-grid.category-editing .category-add-option .cat-icon-circle {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border-style: solid;
+    border-color: transparent;
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--primary-color) 24%, transparent);
 }
 
 .cat-icon-circle {
@@ -333,6 +366,112 @@ button.category-add-option {
 
 .category-action-cancel {
     color: var(--text-secondary);
+}
+
+.category-delete-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 7200;
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(3, 7, 18, 0.64);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.category-delete-modal.active {
+    display: flex !important;
+}
+
+.category-delete-sheet {
+    width: min(100%, 390px);
+    padding: 20px;
+    color: var(--text-color);
+    text-align: center;
+    background: var(--card-background);
+    border: 1px solid color-mix(in srgb, var(--danger-color, #ff3b30) 34%, var(--border-color));
+    border-radius: 24px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 24px color-mix(in srgb, var(--danger-color, #ff3b30) 18%, transparent);
+    animation: customCategoryEnter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-delete-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 12px;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    background: linear-gradient(135deg, #ff7a7a, #ff3b30);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(255, 59, 48, 0.28);
+    font-size: 1.22rem;
+}
+
+.category-delete-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--danger-color, #ff3b30);
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.category-delete-sheet h2 {
+    margin: 0;
+    font-size: 1.26rem;
+    line-height: 1.2;
+}
+
+.category-delete-sheet p {
+    margin: 10px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.category-delete-error {
+    min-height: 18px;
+    margin-top: 10px;
+    color: var(--danger-color, #ff3b30);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.category-delete-actions {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.category-delete-confirm,
+.category-delete-cancel {
+    min-height: 48px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 14px;
+    font: inherit;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.category-delete-confirm {
+    color: #ffffff;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border: 0;
+    box-shadow: 0 12px 24px rgba(238, 90, 82, 0.24);
+}
+
+.category-delete-cancel {
+    color: var(--text-color);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-color);
 }
 
 /* Custom expense category creator */

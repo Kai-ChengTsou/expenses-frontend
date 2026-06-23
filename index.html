@@ -19,7 +19,7 @@
     <link rel="manifest" href="./manifest.json">
 
     <link rel="stylesheet" href="css/style.css?v=1.0.45">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.26">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.27">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
     <link rel="stylesheet" href="css/budget.css?v=1.0.6">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -86,6 +86,27 @@
                         <span>Delete</span>
                     </button>
                     <button type="button" id="category-action-cancel" class="category-action-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="category-delete-modal" class="modal category-delete-modal" aria-hidden="true">
+            <div class="category-delete-sheet" role="dialog" aria-modal="true" aria-labelledby="category-delete-title">
+                <div class="category-delete-icon" id="category-delete-icon">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </div>
+                <span class="category-delete-eyebrow">Delete category</span>
+                <h2 id="category-delete-title">Remove this category?</h2>
+                <p id="category-delete-message">
+                    This will hide the category from your picker. Existing transactions will stay in your history.
+                </p>
+                <div id="category-delete-error" class="category-delete-error" role="alert"></div>
+                <div class="category-delete-actions">
+                    <button type="button" id="category-delete-confirm" class="category-delete-confirm">
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                        <span>Delete category</span>
+                    </button>
+                    <button type="button" id="category-delete-cancel" class="category-delete-cancel">Keep it</button>
                 </div>
             </div>
         </div>
@@ -678,11 +699,11 @@
     <script src="js/data-transfer.js?v=1.0.29"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
     <script src="js/navigation.js?v=1.0.34"></script>
-    <script src="js/app.js?v=1.0.59"></script>
+    <script src="js/app.js?v=1.0.60"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.68')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.69')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

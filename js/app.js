@@ -1979,6 +1979,9 @@ function openCalculatorModal(type = 'expense') {
     
     // Reset State
     editingTransaction = null;
+    categoryEditMode = false;
+    closeCategoryActionSheet({ returnFocus: false });
+    closeCategoryDeleteSheet({ returnFocus: false });
     currentCalcAmount = '0';
     currentCalcDate = new Date();
     document.getElementById('calc-description').value = '';
@@ -1999,6 +2002,10 @@ function closeCalculatorModal() {
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = '';
     editingTransaction = null;
+    categoryEditMode = false;
+    closeCategoryActionSheet({ returnFocus: false });
+    closeCategoryDeleteSheet({ returnFocus: false });
+    modal?.querySelector('.calculator-content')?.classList.remove('category-manager-mode');
 }
 
 function openEditTransaction(transactionId) {
@@ -2016,6 +2023,9 @@ function openEditTransaction(transactionId) {
     modal.style.display = 'flex';
     resetSwipeDismissState(modal);
     document.body.style.overflow = 'hidden';
+    categoryEditMode = false;
+    closeCategoryActionSheet({ returnFocus: false });
+    closeCategoryDeleteSheet({ returnFocus: false });
 
     currentCalcDate = parseLocalDate(transaction.date);
     currentCalcAmount = String(Math.abs(parseFloat(String(transaction.amount).replace(/[^0-9.-]+/g, '')) || 0));
@@ -2059,10 +2069,12 @@ function switchCalcType(type) {
 function renderCategories(categories) {
     const grid = document.getElementById('category-grid');
     if (!grid) return;
+    const calculatorContent = grid.closest('.calculator-content');
     const visibleCategories = currentCalcType === 'expense'
         ? categories.filter(category => !hiddenExpenseCategoryIds.has(category.id))
         : categories;
     grid.classList.toggle('category-editing', categoryEditMode);
+    if (calculatorContent) calculatorContent.classList.toggle('category-manager-mode', categoryEditMode);
     const renderCategoryMarkup = categoryList => categoryList.map(cat => `
         <div class="category-option" data-id="${cat.id}" role="button" tabindex="0"
             aria-label="${categoryEditMode ? `Edit ${escapeHtml(cat.label)}` : escapeHtml(cat.label)}">
@@ -2080,7 +2092,7 @@ function renderCategories(categories) {
             <button type="button" id="category-edit-done">Done</button>
         </div>
     ` : '';
-    const addCategoryMarkup = currentCalcType === 'expense' && !categoryEditMode ? `
+    const addCategoryMarkup = currentCalcType === 'expense' ? `
         <button type="button" class="category-option category-add-option" data-action="add-category"
             aria-label="Create a custom expense category" onclick="window.openCustomCategoryCreator(this)">
             <div class="cat-icon-circle"><i class="fas fa-plus" aria-hidden="true"></i></div>
@@ -2172,6 +2184,8 @@ let customCategoryMode = 'create';
 let categoryEditMode = false;
 let activeCategoryActionId = null;
 let categoryActionReturnFocus = null;
+let activeCategoryDeleteId = null;
+let categoryDeleteReturnFocus = null;
 let lastCategoryTapId = null;
 let lastCategoryTapTime = 0;
 
@@ -2283,6 +2297,7 @@ function exitCategoryEditMode() {
     if (!categoryEditMode) return;
     categoryEditMode = false;
     closeCategoryActionSheet({ returnFocus: false });
+    closeCategoryDeleteSheet({ returnFocus: false });
     renderCategories(EXPENSE_CATEGORIES);
     const selected = EXPENSE_CATEGORIES.find(category => category.id === selectedCategoryId && !hiddenExpenseCategoryIds.has(category.id))
         || getVisibleExpenseCategories()[0];
@@ -2316,6 +2331,39 @@ function closeCategoryActionSheet({ returnFocus = true } = {}) {
     activeCategoryActionId = null;
     if (returnFocus && categoryActionReturnFocus?.isConnected) categoryActionReturnFocus.focus();
     categoryActionReturnFocus = null;
+}
+
+function openCategoryDeleteSheet(categoryId, returnFocus = null) {
+    const modal = document.getElementById('category-delete-modal');
+    const title = document.getElementById('category-delete-title');
+    const message = document.getElementById('category-delete-message');
+    const iconWrap = document.getElementById('category-delete-icon');
+    const error = document.getElementById('category-delete-error');
+    const category = EXPENSE_CATEGORIES.find(item => item.id === categoryId);
+    if (!modal || !title || !message || !iconWrap || !category) return;
+
+    activeCategoryDeleteId = categoryId;
+    categoryDeleteReturnFocus = returnFocus;
+    title.textContent = `Delete "${category.label}"?`;
+    message.textContent = 'This will hide the category from your picker. Existing transactions will stay in your history.';
+    iconWrap.style.cssText = getCategoryVisualStyle(category);
+    iconWrap.innerHTML = `<i class="${category.icon}" aria-hidden="true"></i>`;
+    if (error) error.textContent = '';
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => document.getElementById('category-delete-confirm')?.focus());
+}
+
+function closeCategoryDeleteSheet({ returnFocus = true } = {}) {
+    const modal = document.getElementById('category-delete-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    activeCategoryDeleteId = null;
+    if (returnFocus && categoryDeleteReturnFocus?.isConnected) categoryDeleteReturnFocus.focus();
+    categoryDeleteReturnFocus = null;
 }
 
 function syncCategoryLabelReferences(previousLabel, nextLabel) {
@@ -2463,9 +2511,13 @@ function setupCategoryActionSheet() {
     const editButton = document.getElementById('category-action-edit');
     const deleteButton = document.getElementById('category-action-delete');
     const cancelButton = document.getElementById('category-action-cancel');
+    const deleteModal = document.getElementById('category-delete-modal');
+    const deleteConfirm = document.getElementById('category-delete-confirm');
+    const deleteCancel = document.getElementById('category-delete-cancel');
     if (!modal || !editButton || !deleteButton || !cancelButton) return;
 
     if (modal.parentElement !== document.body) document.body.appendChild(modal);
+    if (deleteModal && deleteModal.parentElement !== document.body) document.body.appendChild(deleteModal);
 
     editButton.addEventListener('click', () => {
         const category = EXPENSE_CATEGORIES.find(item => item.id === activeCategoryActionId);
@@ -2477,16 +2529,24 @@ function setupCategoryActionSheet() {
     deleteButton.addEventListener('click', () => {
         const category = EXPENSE_CATEGORIES.find(item => item.id === activeCategoryActionId);
         if (!category) return;
-        if (!confirm(`Delete "${category.label}" from the category picker? Existing transactions will stay unchanged.`)) return;
+        const returnFocus = categoryActionReturnFocus;
+        closeCategoryActionSheet({ returnFocus: false });
+        openCategoryDeleteSheet(category.id, returnFocus);
+    });
+
+    deleteConfirm?.addEventListener('click', () => {
+        const category = EXPENSE_CATEGORIES.find(item => item.id === activeCategoryDeleteId);
+        if (!category) return;
         try {
             hideExpenseCategory(category.id);
             const nextCategory = getVisibleExpenseCategories()[0];
-            closeCategoryActionSheet({ returnFocus: false });
+            closeCategoryDeleteSheet({ returnFocus: false });
             refreshCategoryDependentUI(nextCategory);
             if (hiddenExpenseCategoryIds.has(selectedCategoryId) && nextCategory) selectCategory(nextCategory);
             if (getVisibleExpenseCategories().length <= 1) exitCategoryEditMode();
         } catch (deleteError) {
-            alert(deleteError.message || 'Could not delete this category.');
+            const errorText = document.getElementById('category-delete-error');
+            if (errorText) errorText.textContent = deleteError.message || 'Could not delete this category.';
         }
     });
 
@@ -2498,6 +2558,17 @@ function setupCategoryActionSheet() {
         if (event.key === 'Escape') {
             event.preventDefault();
             closeCategoryActionSheet();
+        }
+    });
+
+    deleteCancel?.addEventListener('click', () => closeCategoryDeleteSheet());
+    deleteModal?.addEventListener('click', event => {
+        if (event.target === deleteModal) closeCategoryDeleteSheet();
+    });
+    deleteModal?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeCategoryDeleteSheet();
         }
     });
 }
