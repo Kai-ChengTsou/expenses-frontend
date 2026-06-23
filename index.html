@@ -19,7 +19,7 @@
     <link rel="manifest" href="./manifest.json">
 
     <link rel="stylesheet" href="css/style.css?v=1.0.45">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.25">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.24">
     <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
     <link rel="stylesheet" href="css/budget.css?v=1.0.6">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -433,65 +433,43 @@
                     </div>
                 </div>
 
-                <div id="add-subscription-modal" class="modal calculator-modal subscription-calculator-modal" aria-hidden="true">
-                    <div class="modal-content calculator-content subscription-calculator-content" role="dialog" aria-modal="true" aria-labelledby="add-subscription-title">
+                <div id="add-subscription-modal" class="modal calculator-modal subscription-calculator-modal">
+                    <div class="modal-content calculator-content subscription-calculator-content">
                         <div class="modal-header calculator-header subscription-calculator-header">
-                            <div class="subscription-sheet-title">
-                                <span>Recurring payment</span>
-                                <h3 id="add-subscription-title">Add Subscription</h3>
-                            </div>
-                            <button type="button" class="close-add-subscription-modal" aria-label="Close add subscription">
-                                <i class="fas fa-xmark" aria-hidden="true"></i>
-                            </button>
+                            <h3>Add Subscription</h3>
+                            <span class="close-add-subscription-modal">&times;</span>
                         </div>
 
                         <form id="add-subscription-form" class="subscription-calculator-form">
-                            <div class="subscription-form-panel" aria-label="Subscription details">
-                                <div class="subscription-form-hero">
-                                    <div class="subscription-icon-preview" aria-hidden="true">
-                                        <i class="fas fa-calendar-check"></i>
-                                    </div>
-                                    <div>
-                                        <p>New plan</p>
-                                        <strong>Track the next charge before it hits.</strong>
-                                    </div>
+                            <div class="subscription-form-panel">
+                                <div class="subscription-icon-preview">
+                                    <i class="fas fa-calendar-check"></i>
                                 </div>
-
                                 <div class="subscription-form-fields">
-                                    <label class="subscription-field" for="sub-name">
-                                        <span>Subscription name</span>
-                                        <input type="text" id="sub-name" placeholder="Netflix, iCloud, Spotify" autocomplete="off" required>
-                                    </label>
-                                    <label class="subscription-field" for="sub-payment">
-                                        <span>Account or payment</span>
-                                        <input type="text" id="sub-payment" placeholder="Apple Card, Visa, bank account" autocomplete="off" required>
-                                    </label>
+                                    <input type="text" id="sub-name" placeholder="Subscription name" required>
+                                    <input type="text" id="sub-payment" placeholder="Account or payment method" required>
                                 </div>
+                            </div>
 
-                                <div class="input-display-area subscription-display-area">
-                                    <div class="selected-category-icon subscription-selected-icon">
-                                        <i class="fas fa-repeat" aria-hidden="true"></i>
-                                        <span>Monthly charge</span>
-                                    </div>
-                                    <div class="amount-display" aria-live="polite">
-                                        <span class="currency-symbol">$</span>
-                                        <span id="sub-display-amount">0</span>
-                                    </div>
-                                    <input type="hidden" id="sub-amount" required>
+                            <div class="input-display-area subscription-display-area">
+                                <div class="selected-category-icon subscription-selected-icon">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <span>Monthly</span>
                                 </div>
+                                <div class="amount-display">
+                                    <span class="currency-symbol">$</span>
+                                    <span id="sub-display-amount">0</span>
+                                </div>
+                                <input type="hidden" id="sub-amount" required>
+                            </div>
 
-                                <div class="date-bar subscription-billing-bar">
-                                    <button type="button" class="date-nav-btn" id="sub-prev-day" aria-label="Previous billing day">
-                                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                                    </button>
-                                    <label for="sub-billing-date" class="subscription-billing-label">
-                                        <span>Billing day</span>
-                                        <input type="number" id="sub-billing-date" value="1" min="1" max="31" inputmode="numeric" required>
-                                    </label>
-                                    <button type="button" class="date-nav-btn" id="sub-next-day" aria-label="Next billing day">
-                                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                                    </button>
-                                </div>
+                            <div class="date-bar subscription-billing-bar">
+                                <button type="button" class="date-nav-btn" id="sub-prev-day"><i class="fas fa-chevron-left"></i></button>
+                                <label for="sub-billing-date" class="subscription-billing-label">
+                                    <span>Billing Day</span>
+                                    <input type="number" id="sub-billing-date" value="1" min="1" max="31" required>
+                                </label>
+                                <button type="button" class="date-nav-btn" id="sub-next-day"><i class="fas fa-chevron-right"></i></button>
                             </div>
 
                             <div class="keypad-area subscription-keypad-area">
