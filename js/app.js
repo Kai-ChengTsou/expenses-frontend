@@ -2318,11 +2318,46 @@ function closeCategoryActionSheet({ returnFocus = true } = {}) {
     categoryActionReturnFocus = null;
 }
 
+function syncCategoryLabelReferences(previousLabel, nextLabel) {
+    const oldLabel = String(previousLabel || '').trim();
+    const newLabel = String(nextLabel || '').trim();
+    if (!oldLabel || !newLabel || oldLabel === newLabel) return;
+
+    const replaceCategoryLabel = item => {
+        if (!item || String(item.category) !== oldLabel) return item;
+        return { ...item, category: newLabel };
+    };
+
+    const transactionList = getLocalStorageTransactions();
+    const nextTransactions = transactionList.map(replaceCategoryLabel);
+    if (nextTransactions.some((item, index) => item !== transactionList[index])) {
+        saveLocalStorageTransactions(nextTransactions);
+        transactionData = nextTransactions;
+    }
+
+    const subscriptions = getLocalSubscriptions();
+    const nextSubscriptions = subscriptions.map(replaceCategoryLabel);
+    if (nextSubscriptions.some((item, index) => item !== subscriptions[index])) {
+        saveLocalSubscriptions(nextSubscriptions);
+    }
+
+    const quickAdds = getQuickAddSettings();
+    const nextQuickAdds = quickAdds.map(replaceCategoryLabel);
+    if (nextQuickAdds.some((item, index) => item !== quickAdds[index])) {
+        saveQuickAddSettings(nextQuickAdds);
+    }
+
+    if (transactionCategoryFilter === oldLabel) {
+        transactionCategoryFilter = newLabel;
+    }
+}
+
 function refreshCategoryDependentUI(category = null) {
     refreshExpenseCategorySelects();
     setupMonthlyCategoryFilter();
     renderCategories(EXPENSE_CATEGORIES);
     if (category) selectCategory(category);
+    updateTransactionsList();
     updateExpenseCharts();
     renderQuickAddButtons();
     updateBudgetUI(JSON.parse(localStorage.getItem('categoryBudgets')) || {});
@@ -2396,9 +2431,13 @@ function setupCustomCategoryCreator() {
         event.preventDefault();
         try {
             const editId = document.getElementById('custom-category-edit-id')?.value;
+            const previousLabel = customCategoryMode === 'edit' && editId
+                ? EXPENSE_CATEGORIES.find(item => item.id === editId)?.label
+                : null;
             const category = customCategoryMode === 'edit' && editId
                 ? updateExpenseCategory(editId, nameInput.value, colorInput.value, iconInput.value)
                 : addCustomExpenseCategory(nameInput.value, colorInput.value, iconInput.value);
+            syncCategoryLabelReferences(previousLabel, category.label);
             refreshCategoryDependentUI(category);
             closeCustomCategoryCreator({ returnFocus: false });
         } catch (creationError) {
