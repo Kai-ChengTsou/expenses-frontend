@@ -4085,16 +4085,21 @@ function openSubscriptionCalculator() {
     document.getElementById('sub-billing-date').value = new Date().getDate();
     updateSubscriptionAmountDisplay();
     modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
     resetSwipeDismissState(modal);
     lockPageScroll();
     requestAnimationFrame(syncAppViewportHeight);
+    requestAnimationFrame(() => document.getElementById('sub-name')?.focus());
 }
 
 function closeSubscriptionCalculator() {
     const modal = document.getElementById('add-subscription-modal');
     const form = document.getElementById('add-subscription-form');
     resetSwipeDismissState(modal);
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
     if (form) form.reset();
     document.documentElement.classList.remove('subscription-calculator-open');
     document.body.classList.remove('subscription-calculator-open');

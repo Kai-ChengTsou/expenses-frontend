@@ -800,15 +800,73 @@ button.category-add-option {
 }
 
 #add-subscription-modal .subscription-calculator-header {
-    min-height: calc(48px + env(safe-area-inset-top));
-    padding: env(safe-area-inset-top) 16px 4px;
+    min-height: calc(74px + env(safe-area-inset-top));
+    padding: calc(env(safe-area-inset-top) + 10px) 18px 12px;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+#add-subscription-modal .subscription-sheet-title {
+    min-width: 0;
+}
+
+#add-subscription-modal .subscription-sheet-title span {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+#add-subscription-modal .subscription-sheet-title h3 {
+    display: block;
+    margin: 0;
+    color: var(--text-color);
+    font-size: clamp(22px, 6vw, 30px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: 0;
+}
+
+#add-subscription-modal .close-add-subscription-modal {
+    position: static;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(24, 31, 48, 0.8);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+    touch-action: manipulation;
+}
+
+#add-subscription-modal .close-add-subscription-modal:hover,
+#add-subscription-modal .close-add-subscription-modal:focus-visible {
+    color: var(--text-color);
+    background: rgba(31, 43, 66, 0.96);
+    outline: none;
+}
+
+#add-subscription-modal .close-add-subscription-modal:active {
+    transform: scale(0.96);
 }
 
 #add-subscription-modal .subscription-calculator-form {
     min-height: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     overflow: hidden;
 }
 
@@ -816,9 +874,79 @@ button.category-add-option {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    justify-content: center;
-    padding: clamp(10px, 2svh, 20px) 16px;
-    scroll-padding-block: 12px;
+    display: grid;
+    grid-template-rows: auto auto auto auto;
+    align-content: start;
+    gap: clamp(12px, 2svh, 18px);
+    padding: clamp(10px, 2svh, 18px) 16px clamp(12px, 2svh, 18px);
+    scroll-padding-block: 14px;
+}
+
+#add-subscription-modal .subscription-form-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(40, 214, 200, 0.22);
+    border-radius: 22px;
+    background:
+        linear-gradient(135deg, rgba(40, 214, 200, 0.16), rgba(79, 172, 254, 0.07)),
+        rgba(16, 23, 37, 0.58);
+}
+
+#add-subscription-modal .subscription-form-hero p,
+#add-subscription-modal .subscription-form-hero strong {
+    display: block;
+    margin: 0;
+    letter-spacing: 0;
+}
+
+#add-subscription-modal .subscription-form-hero p {
+    margin-bottom: 3px;
+    color: #7ee7dd;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+#add-subscription-modal .subscription-form-hero strong {
+    color: var(--text-color);
+    font-size: 15px;
+    line-height: 1.35;
+}
+
+#add-subscription-modal .subscription-icon-preview {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    margin: 0;
+    border-radius: 16px;
+    font-size: 21px;
+}
+
+#add-subscription-modal .subscription-form-fields {
+    display: grid;
+    gap: 12px;
+}
+
+#add-subscription-modal .subscription-field {
+    display: grid;
+    gap: 7px;
+}
+
+#add-subscription-modal .subscription-field span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+#add-subscription-modal .subscription-form-fields input {
+    min-height: 50px;
+    padding: 13px 14px;
+    border-radius: 16px;
+    font-size: 16px;
 }
 
 #add-subscription-modal .subscription-display-area,
@@ -831,35 +959,135 @@ button.category-add-option {
 }
 
 #add-subscription-modal .subscription-display-area {
-    min-height: 64px;
-    padding: 8px 16px;
+    min-height: 104px;
+    padding: 16px;
+    border: 1px solid rgba(40, 214, 200, 0.22);
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(40, 214, 200, 0.16), transparent 35%),
+        rgba(10, 15, 26, 0.72);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+}
+
+#add-subscription-modal .subscription-selected-icon {
+    min-width: 0;
+}
+
+#add-subscription-modal .subscription-selected-icon i {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(40, 214, 200, 0.14);
+    margin-right: 8px;
+}
+
+#add-subscription-modal .subscription-selected-icon span {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#add-subscription-modal .amount-display {
+    justify-content: flex-end;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+#add-subscription-modal .amount-display .currency-symbol {
+    font-size: clamp(22px, 6vw, 30px);
+}
+
+#add-subscription-modal #sub-display-amount {
+    font-size: clamp(40px, 13vw, 64px);
+    line-height: 1;
 }
 
 #add-subscription-modal .subscription-billing-bar {
-    min-height: 52px;
-    padding: 6px 16px;
+    min-height: 64px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    background: rgba(24, 31, 48, 0.58);
+    gap: 8px;
+}
+
+#add-subscription-modal .subscription-billing-bar .date-nav-btn {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 15px;
+    background: rgba(31, 43, 66, 0.76);
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+#add-subscription-modal .subscription-billing-bar .date-nav-btn:active {
+    transform: scale(0.96);
+}
+
+#add-subscription-modal .subscription-billing-label {
+    gap: 10px;
+    font-size: 13px;
+}
+
+#add-subscription-modal .subscription-billing-label input {
+    max-width: 70px;
+    min-height: 44px;
+    border-radius: 14px;
 }
 
 #add-subscription-modal .subscription-keypad-area,
 [data-theme="cute"] #add-subscription-modal .subscription-keypad-area {
-    padding: 8px 12px max(8px, env(safe-area-inset-bottom)) !important;
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom)) !important;
+    background: rgba(10, 15, 26, 0.48);
     box-shadow: none !important;
 }
 
 #add-subscription-modal .subscription-keypad-area .keypad-grid {
-    gap: clamp(6px, 1svh, 10px);
+    gap: clamp(7px, 1.1svh, 10px);
 }
 
 #add-subscription-modal .sub-keypad-btn {
-    height: clamp(44px, 6.2svh, 56px);
+    height: clamp(46px, 6.4svh, 56px);
+    min-height: 44px;
+    border-radius: 18px;
+}
+
+#add-subscription-modal .sub-keypad-btn.submit-btn {
+    border-radius: 18px;
+    font-size: 17px;
 }
 
 @media (max-height: 650px) {
-    #add-subscription-modal .subscription-icon-preview {
+    #add-subscription-modal .subscription-calculator-header {
+        min-height: calc(62px + env(safe-area-inset-top));
+        padding-bottom: 8px;
+    }
+
+    #add-subscription-modal .subscription-sheet-title span {
+        display: none;
+    }
+
+    #add-subscription-modal .subscription-sheet-title h3 {
+        font-size: 22px;
+    }
+
+    #add-subscription-modal .subscription-form-hero {
         display: none;
     }
 
     #add-subscription-modal .subscription-form-panel {
+        gap: 9px;
         padding-block: 8px;
     }
 
@@ -872,16 +1100,58 @@ button.category-add-option {
     }
 
     #add-subscription-modal .subscription-display-area {
-        min-height: 56px;
-        padding-block: 6px;
+        min-height: 76px;
+        padding: 10px 14px;
+    }
+
+    #add-subscription-modal #sub-display-amount {
+        font-size: 36px;
     }
 
     #add-subscription-modal .subscription-billing-bar {
-        min-height: 48px;
-        padding-block: 4px;
+        min-height: 54px;
+        padding: 5px;
     }
 
     #add-subscription-modal .sub-keypad-btn {
         height: 42px;
     }
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-form-hero,
+[data-theme="cute"] #add-subscription-modal .subscription-display-area,
+[data-theme="cute"] #add-subscription-modal .subscription-billing-bar {
+    background: rgba(255, 250, 253, 0.88);
+    border-color: var(--border-color);
+    box-shadow: 0 12px 24px rgba(204, 121, 162, 0.12);
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-form-hero {
+    background:
+        linear-gradient(135deg, rgba(255, 232, 243, 0.95), rgba(240, 231, 255, 0.78)),
+        rgba(255, 250, 253, 0.92);
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-form-hero p {
+    color: var(--primary-color);
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-icon-preview,
+[data-theme="cute"] #add-subscription-modal .subscription-selected-icon i {
+    background: linear-gradient(145deg, #ffe8f3, #f0e7ff);
+    color: var(--primary-color);
+    border-color: var(--border-color);
+    box-shadow: 0 10px 20px rgba(204, 121, 162, 0.14);
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-billing-bar .date-nav-btn,
+[data-theme="cute"] #add-subscription-modal .close-add-subscription-modal {
+    background: rgba(255, 247, 252, 0.94);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    box-shadow: 0 8px 20px rgba(204, 121, 162, 0.14);
+}
+
+[data-theme="cute"] #add-subscription-modal .subscription-keypad-area {
+    background: rgba(255, 250, 253, 0.58);
 }
