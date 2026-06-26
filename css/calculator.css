@@ -43,6 +43,23 @@
     transition: transform 0.18s ease-out;
 }
 
+#add-subscription-modal.swipe-dismiss-active {
+    transform: translateY(var(--swipe-dismiss-y, 0));
+}
+
+#add-subscription-modal.swipe-dismiss-active.swipe-dismiss-dragging {
+    transition: none !important;
+}
+
+#add-subscription-modal.swipe-dismiss-active.swipe-dismiss-settling,
+#add-subscription-modal.swipe-dismiss-active.swipe-dismiss-closing {
+    transition: transform 0.18s ease-out;
+}
+
+#add-subscription-modal.swipe-dismiss-active .subscription-calculator-content {
+    transform: none;
+}
+
 @keyframes slideUp {
     from { transform: translateY(50px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }

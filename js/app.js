@@ -1831,7 +1831,8 @@ updateBalance = function() {
 function resetSwipeDismissState(modal) {
     const content = modal?.querySelector('.calculator-content');
     if (!content) return;
-    modal.classList.remove('swipe-dismiss-active');
+    modal.classList.remove('swipe-dismiss-active', 'swipe-dismiss-dragging', 'swipe-dismiss-settling', 'swipe-dismiss-closing');
+    modal.style.removeProperty('--swipe-dismiss-y');
     content.classList.remove('swipe-dismiss-dragging', 'swipe-dismiss-settling', 'swipe-dismiss-closing');
     content.style.removeProperty('--swipe-dismiss-y');
 }
@@ -1845,6 +1846,20 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
     let startTime = 0;
     let activePointerId = null;
     let isDragging = false;
+    const movesWholeModal = modal.id === 'add-subscription-modal';
+
+    const setSwipeOffset = (value) => {
+        content.style.setProperty('--swipe-dismiss-y', value);
+        if (movesWholeModal) modal.style.setProperty('--swipe-dismiss-y', value);
+    };
+
+    const setSwipePhase = (phase) => {
+        modal.classList.add('swipe-dismiss-active');
+        if (movesWholeModal) {
+            modal.classList.remove('swipe-dismiss-dragging', 'swipe-dismiss-settling', 'swipe-dismiss-closing');
+            if (phase) modal.classList.add(phase);
+        }
+    };
 
     const isInteractiveTarget = (target) => Boolean(
         target.closest('button, input, textarea, select, label, .keypad-grid, .category-grid-container')
@@ -1854,9 +1869,11 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
         if (shouldClose) {
             content.classList.remove('swipe-dismiss-dragging');
             content.classList.add('swipe-dismiss-closing');
-            content.style.setProperty('--swipe-dismiss-y', '110vh');
+            setSwipePhase('swipe-dismiss-closing');
+            setSwipeOffset('110vh');
             setTimeout(() => {
                 closeHandler();
+                modal.classList.remove('swipe-dismiss-closing');
                 content.classList.remove('swipe-dismiss-closing');
             }, 180);
             return;
@@ -1864,7 +1881,8 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
 
         content.classList.remove('swipe-dismiss-dragging');
         content.classList.add('swipe-dismiss-settling');
-        content.style.setProperty('--swipe-dismiss-y', '0px');
+        setSwipePhase('swipe-dismiss-settling');
+        setSwipeOffset('0px');
         setTimeout(() => {
             resetSwipeDismissState(modal);
         }, 180);
@@ -1894,10 +1912,10 @@ function setupSwipeDownToClose(modal, content, closeHandler) {
 
         isDragging = true;
         event.preventDefault();
-        modal.classList.add('swipe-dismiss-active');
+        setSwipePhase('swipe-dismiss-dragging');
         content.classList.add('swipe-dismiss-dragging');
         content.classList.remove('swipe-dismiss-settling');
-        content.style.setProperty('--swipe-dismiss-y', `${Math.min(deltaY, 260)}px`);
+        setSwipeOffset(`${Math.min(deltaY, 260)}px`);
     }, { passive: false });
 
     const endDrag = (event) => {
