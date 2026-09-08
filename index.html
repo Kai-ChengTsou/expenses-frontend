@@ -18,29 +18,16 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./images/icons/favicon-16x16.png">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="stylesheet" href="css/style.css?v=1.0.46">
-    <link rel="stylesheet" href="css/calculator.css?v=1.0.28">
-    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.3">
-    <link rel="stylesheet" href="css/budget.css?v=1.0.7">
-    <link rel="stylesheet" href="css/sanrio.css?v=1.0.3">
+    <link rel="stylesheet" href="css/style.css?v=1.0.45">
+    <link rel="stylesheet" href="css/calculator.css?v=1.0.27">
+    <link rel="stylesheet" href="css/delete-modal.css?v=1.0.2">
+    <link rel="stylesheet" href="css/budget.css?v=1.0.6">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <dialog id="theme-picker" aria-labelledby="theme-picker-title">
-        <div class="theme-picker-panel">
-            <div class="theme-picker-heading"><div><p>MAKE IT YOURS</p><h2 id="theme-picker-title">Choose your theme</h2></div><button id="theme-picker-close" type="button" aria-label="Close theme picker">&times;</button></div>
-            <p class="theme-picker-description">A new look. The same Tommy Expense.</p>
-            <div class="theme-options" role="group" aria-label="App theme">
-                <button class="theme-option" data-theme-choice="neon" role="radio" aria-checked="false"><span class="theme-preview preview-dark"><span></span><span></span><span></span></span><span class="theme-option-copy"><strong>Dark</strong><small>Your original neon look</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
-                <button class="theme-option" data-theme-choice="cute" role="radio" aria-checked="false"><span class="theme-preview preview-light"><span></span><span></span><span></span></span><span class="theme-option-copy"><strong>Light</strong><small>Your original pastel look</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
-                <button class="theme-option" data-theme-choice="sanrio" role="radio" aria-checked="false"><span class="theme-preview preview-sanrio"><img src="images/sanrio/kitty.svg" alt="" width="34" height="34"></span><span class="theme-option-copy"><strong>Sanrio</strong><small>Cream, pink &amp; little friends</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
-            </div>
-            <p class="theme-picker-footnote">Your choice is saved on this device.</p>
-        </div>
-    </dialog>
     <div class="app-container">
         <div id="custom-category-modal" class="modal custom-category-modal" aria-hidden="true">
             <div class="custom-category-sheet" role="dialog" aria-modal="true" aria-labelledby="custom-category-title">
@@ -132,7 +119,7 @@
                         <button class="type-btn active" data-type="expense">Expense</button>
                         <button class="type-btn" data-type="income">Income</button>
                     </div>
-                    <button type="button" class="close-add-modal" aria-label="Close transaction calculator">&times;</button>
+                    <span class="close-add-modal">&times;</span>
                 </div>
 
                 <div class="category-grid-container">
@@ -225,8 +212,12 @@
                 </button>
             </div>
             <div class="header-actions">
-                <button id="theme-toggle" class="theme-settings-btn" type="button" aria-label="Choose theme" aria-haspopup="dialog" aria-controls="theme-picker">
-                    <i class="fas fa-palette" aria-hidden="true"></i>
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to cute theme" aria-pressed="false">
+                    <span class="theme-toggle-track" aria-hidden="true">
+                        <span class="theme-toggle-thumb">
+                            <i class="fas fa-bolt"></i>
+                        </span>
+                    </span>
                 </button>
                 <div class="status-message" id="status-message"></div>
             </div>
@@ -493,7 +484,7 @@
                     <div class="modal-content calculator-content subscription-calculator-content">
                         <div class="modal-header calculator-header subscription-calculator-header">
                             <h3>Add Subscription</h3>
-                            <button type="button" class="close-add-subscription-modal" aria-label="Close subscription calculator">&times;</button>
+                            <span class="close-add-subscription-modal">&times;</span>
                         </div>
 
                         <form id="add-subscription-form" class="subscription-calculator-form">
@@ -702,8 +693,8 @@
     <script src="js/state.js?v=1.0.27"></script>
     <script src="js/viewport.js?v=1.0.27"></script>
     <script src="js/storage.js?v=1.0.27"></script>
-    <script src="js/theme.js?v=1.0.30"></script>
-    <script src="js/categories.js?v=1.0.32"></script>
+    <script src="js/theme.js?v=1.0.29"></script>
+    <script src="js/categories.js?v=1.0.30"></script>
     <script src="js/pwa.js?v=1.0.27"></script>
     <script src="js/data-transfer.js?v=1.0.29"></script>
     <script src="js/time-utils.js?v=1.0.27"></script>
@@ -712,7 +703,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js?v=1.0.73')
+                navigator.serviceWorker.register('/service-worker.js?v=1.0.69')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

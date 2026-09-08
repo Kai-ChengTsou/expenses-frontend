@@ -210,10 +210,6 @@ function getCategoryVisualStyle(category) {
 function getThemedCategory(category) {
     if (!category) return null;
     const cute = CUTE_CATEGORY_OVERRIDES[category.id];
-    if (currentTheme === THEMES.SANRIO) {
-        const accent = category.color;
-        return { ...category, color: accent, bg: "#fff0f2", gradient: `linear-gradient(90deg, #f5b5c8, ${accent})` };
-    }
     if (currentTheme === THEMES.CUTE && cute) {
         return {
             ...category,
