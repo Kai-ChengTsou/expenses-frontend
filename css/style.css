@@ -67,7 +67,7 @@
     --subscription-modal-bottom-color: #090d18;
 }
 
-[data-theme="cute"] {
+:is([data-theme="cute"], [data-theme="sanrio"]) {
     --primary-color: #e85d9e;
     --accent-color: #ff9ec7;
     --secondary-color: #a979ff;
@@ -280,7 +280,7 @@ header {
     transition: transform 0.24s ease, color 0.24s ease;
 }
 
-[data-theme="cute"] .theme-toggle-thumb {
+:is([data-theme="cute"], [data-theme="sanrio"]) .theme-toggle-thumb {
     transform: translateX(22px);
 }
 
@@ -3653,42 +3653,42 @@ section h2 {
 }
 
 /* Theme compatibility layer for legacy hardcoded sections */
-[data-theme="cute"] header,
-[data-theme="cute"] .card,
-[data-theme="cute"] .budget-stat-item,
-[data-theme="cute"] .budget-item,
-[data-theme="cute"] .transaction-item,
-[data-theme="cute"] .subscription-item,
-[data-theme="cute"] .quick-add-btn,
-[data-theme="cute"] .quick-add-item,
-[data-theme="cute"] .quick-add-modal-content,
-[data-theme="cute"] .modal-content,
-[data-theme="cute"] .bottom-nav {
+:is([data-theme="cute"], [data-theme="sanrio"]) header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-stat-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-modal-content,
+:is([data-theme="cute"], [data-theme="sanrio"]) .modal-content,
+:is([data-theme="cute"], [data-theme="sanrio"]) .bottom-nav {
     background: var(--card-gradient);
     border-color: var(--border-color);
     box-shadow: 0 12px 30px var(--shadow-color);
 }
 
-[data-theme="cute"] .bottom-nav {
+:is([data-theme="cute"], [data-theme="sanrio"]) .bottom-nav {
     background: rgba(255, 247, 252, 0.96);
 }
 
-[data-theme="cute"] .nav-item {
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-item {
     color: var(--text-secondary);
 }
 
-[data-theme="cute"] .nav-item.active,
-[data-theme="cute"] .nav-item.active i,
-[data-theme="cute"] .nav-item.active span {
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-item.active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-item.active i,
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-item.active span {
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .nav-item.active {
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-item.active {
     background: transparent;
     box-shadow: none;
 }
 
-[data-theme="cute"] .nav-add-btn {
+:is([data-theme="cute"], [data-theme="sanrio"]) .nav-add-btn {
     background: linear-gradient(145deg, #ff8fbe 0%, #d873e8 58%, #9f7cff 100%);
     box-shadow:
         0 0 0 4px rgba(255, 143, 190, 0.14),
@@ -3696,321 +3696,321 @@ section h2 {
         inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-[data-theme="cute"] input,
-[data-theme="cute"] select,
-[data-theme="cute"] textarea,
-[data-theme="cute"] table,
-[data-theme="cute"] thead,
-[data-theme="cute"] tbody,
-[data-theme="cute"] tr,
-[data-theme="cute"] .transaction-day-card,
-[data-theme="cute"] .day-header,
-[data-theme="cute"] .transaction-list,
-[data-theme="cute"] .category-item,
-[data-theme="cute"] .category-info,
-[data-theme="cute"] .category-insights,
-[data-theme="cute"] .insight-item,
-[data-theme="cute"] .month-selector,
-[data-theme="cute"] .month-dropdown,
-[data-theme="cute"] .quick-add-tabs,
-[data-theme="cute"] .quick-add-tab,
-[data-theme="cute"] .subscription-card,
-[data-theme="cute"] .subscription-detail-card,
-[data-theme="cute"] .detail-row,
-[data-theme="cute"] .detail-meta,
-[data-theme="cute"] .modal-header,
-[data-theme="cute"] .modal-footer,
-[data-theme="cute"] .btn-cancel,
-[data-theme="cute"] .budget-amount-input,
-[data-theme="cute"] .keypad-btn,
-[data-theme="cute"] .date-bar,
-[data-theme="cute"] .keypad-area,
-[data-theme="cute"] .input-display-area,
-[data-theme="cute"] .type-toggle,
-[data-theme="cute"] .close-add-modal {
+:is([data-theme="cute"], [data-theme="sanrio"]) input,
+:is([data-theme="cute"], [data-theme="sanrio"]) select,
+:is([data-theme="cute"], [data-theme="sanrio"]) textarea,
+:is([data-theme="cute"], [data-theme="sanrio"]) table,
+:is([data-theme="cute"], [data-theme="sanrio"]) thead,
+:is([data-theme="cute"], [data-theme="sanrio"]) tbody,
+:is([data-theme="cute"], [data-theme="sanrio"]) tr,
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-day-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .day-header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-list,
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-info,
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-insights,
+:is([data-theme="cute"], [data-theme="sanrio"]) .insight-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-dropdown,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-tabs,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-tab,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-detail-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-row,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-meta,
+:is([data-theme="cute"], [data-theme="sanrio"]) .modal-header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .modal-footer,
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-cancel,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-amount-input,
+:is([data-theme="cute"], [data-theme="sanrio"]) .keypad-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .date-bar,
+:is([data-theme="cute"], [data-theme="sanrio"]) .keypad-area,
+:is([data-theme="cute"], [data-theme="sanrio"]) .input-display-area,
+:is([data-theme="cute"], [data-theme="sanrio"]) .type-toggle,
+:is([data-theme="cute"], [data-theme="sanrio"]) .close-add-modal {
     background: var(--control-background);
     color: var(--text-color);
     border-color: var(--border-color);
 }
 
-[data-theme="cute"] .transaction-day-card,
-[data-theme="cute"] .category-item,
-[data-theme="cute"] .insight-item,
-[data-theme="cute"] .detail-row,
-[data-theme="cute"] .quick-add-tab,
-[data-theme="cute"] .month-selector {
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-day-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .insight-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-row,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-tab,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector {
     box-shadow: 0 8px 20px rgba(204, 121, 162, 0.12);
 }
 
-[data-theme="cute"] .icon-bg-1 { --category-color: #ad96ff; --category-bg: #f1edff; }
-[data-theme="cute"] .icon-bg-2 { --category-color: #ff9850; --category-bg: #fff0e5; }
-[data-theme="cute"] .icon-bg-3 { --category-color: #ff7394; --category-bg: #ffe8ee; }
-[data-theme="cute"] .icon-bg-4 { --category-color: #72e69a; --category-bg: #e8f9ee; }
-[data-theme="cute"] .icon-bg-5 { --category-color: #fbd94f; --category-bg: #fff8da; }
-[data-theme="cute"] .icon-bg-6 { --category-color: #c4cada; --category-bg: #f0f2f6; }
-[data-theme="cute"] .icon-bg-7 { --category-color: #df82ff; --category-bg: #f7eaff; }
-[data-theme="cute"] .icon-bg-8 { --category-color: #ff82c5; --category-bg: #ffe9f5; }
-[data-theme="cute"] .icon-bg-9 { --category-color: #56e0d5; --category-bg: #e5faf8; }
-[data-theme="cute"] .icon-bg-10 { --category-color: #ffc66f; --category-bg: #fff3df; }
-[data-theme="cute"] .icon-bg-11 { --category-color: #70b8ff; --category-bg: #e8f4ff; }
-[data-theme="cute"] .icon-bg-12 { --category-color: #62dfff; --category-bg: #e6faff; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-1 { --category-color: #ad96ff; --category-bg: #f1edff; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-2 { --category-color: #ff9850; --category-bg: #fff0e5; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-3 { --category-color: #ff7394; --category-bg: #ffe8ee; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-4 { --category-color: #72e69a; --category-bg: #e8f9ee; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-5 { --category-color: #fbd94f; --category-bg: #fff8da; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-6 { --category-color: #c4cada; --category-bg: #f0f2f6; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-7 { --category-color: #df82ff; --category-bg: #f7eaff; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-8 { --category-color: #ff82c5; --category-bg: #ffe9f5; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-9 { --category-color: #56e0d5; --category-bg: #e5faf8; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-10 { --category-color: #ffc66f; --category-bg: #fff3df; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-11 { --category-color: #70b8ff; --category-bg: #e8f4ff; }
+:is([data-theme="cute"], [data-theme="sanrio"]) .icon-bg-12 { --category-color: #62dfff; --category-bg: #e6faff; }
 
-[data-theme="cute"] .status-message,
-[data-theme="cute"] .detail-value.warning-text {
+:is([data-theme="cute"], [data-theme="sanrio"]) .status-message,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-value.warning-text {
     background: rgba(255, 158, 199, 0.18);
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .empty-subscriptions,
-[data-theme="cute"] .category-loading,
-[data-theme="cute"] .no-data,
-[data-theme="cute"] .detail-label,
-[data-theme="cute"] .subscription-meta,
-[data-theme="cute"] .quick-add-description {
+:is([data-theme="cute"], [data-theme="sanrio"]) .empty-subscriptions,
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-loading,
+:is([data-theme="cute"], [data-theme="sanrio"]) .no-data,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-label,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-meta,
+:is([data-theme="cute"], [data-theme="sanrio"]) .quick-add-description {
     color: var(--text-secondary);
 }
 
-[data-theme="cute"] .keypad-btn.operator,
-[data-theme="cute"] .keypad-btn.action {
+:is([data-theme="cute"], [data-theme="sanrio"]) .keypad-btn.operator,
+:is([data-theme="cute"], [data-theme="sanrio"]) .keypad-btn.action {
     background: rgba(255, 232, 243, 0.92);
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .calculator-content {
+:is([data-theme="cute"], [data-theme="sanrio"]) .calculator-content {
     background: var(--body-background);
 }
 
-[data-theme="cute"] .calculator-modal {
+:is([data-theme="cute"], [data-theme="sanrio"]) .calculator-modal {
     background-color: var(--background-color);
 }
 
-[data-theme="cute"] .btn-primary,
-[data-theme="cute"] .btn-save-single,
-[data-theme="cute"] .submit-btn,
-[data-theme="cute"] .type-btn.active,
-[data-theme="cute"] .refresh-btn,
-[data-theme="cute"] .add-btn,
-[data-theme="cute"] .save-btn,
-[data-theme="cute"] .floating-add-btn {
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-primary,
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-save-single,
+:is([data-theme="cute"], [data-theme="sanrio"]) .submit-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .type-btn.active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .refresh-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .add-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .save-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .floating-add-btn {
     background: var(--logo-gradient);
     color: var(--button-text);
     box-shadow: 0 10px 24px var(--glow-shadow);
 }
 
-[data-theme="cute"] .btn-danger,
-[data-theme="cute"] .delete-btn,
-[data-theme="cute"] .list-delete-btn,
-[data-theme="cute"] .btn-open,
-[data-theme="cute"] .btn-delete {
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-danger,
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .list-delete-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-open,
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-delete {
     background: linear-gradient(145deg, #ff7fae, #d9446a);
     color: #ffffff;
     box-shadow: 0 8px 18px rgba(217, 68, 106, 0.24);
 }
 
-[data-theme="cute"] .btn-close,
-[data-theme="cute"] .bell-style,
-[data-theme="cute"] .check-style {
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-close,
+:is([data-theme="cute"], [data-theme="sanrio"]) .bell-style,
+:is([data-theme="cute"], [data-theme="sanrio"]) .check-style {
     background: linear-gradient(145deg, #ffb35c, #ff9ec7);
     color: #ffffff;
     box-shadow: 0 8px 18px rgba(255, 158, 199, 0.24);
 }
 
-[data-theme="cute"] .delete-modal-content.cute-popup {
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-modal-content.cute-popup {
     background: linear-gradient(180deg, #fffafd, #ffe8f3);
     border: 1px solid rgba(232, 93, 158, 0.18);
 }
 
-[data-theme="cute"] .delete-modal-content h3,
-[data-theme="cute"] .popup-body p {
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-modal-content h3,
+:is([data-theme="cute"], [data-theme="sanrio"]) .popup-body p {
     color: var(--text-color);
 }
 
-[data-theme="cute"] .popup-star {
+:is([data-theme="cute"], [data-theme="sanrio"]) .popup-star {
     color: #ffb35c;
 }
 
-[data-theme="cute"] .circle-bg {
+:is([data-theme="cute"], [data-theme="sanrio"]) .circle-bg {
     stroke: rgba(232, 93, 158, 0.18);
 }
 
-[data-theme="cute"] .budget-progress-bar {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-bar {
     background: rgba(232, 93, 158, 0.14);
 }
 
-[data-theme="cute"] .budget-progress-fill.warning {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-fill.warning {
     background: linear-gradient(90deg, #ffd166, #ffb35c, #ff8fab);
 }
 
-[data-theme="cute"] .budget-progress-fill.danger {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-fill.danger {
     background: linear-gradient(90deg, #ff8fab, #d9446a, #a979ff);
 }
 
-[data-theme="cute"] .modal {
+:is([data-theme="cute"], [data-theme="sanrio"]) .modal {
     background-color: rgba(79, 45, 70, 0.42);
 }
 
 /* Final cute-mode coverage for late legacy selectors */
-[data-theme="cute"] .month-selector-btn,
-[data-theme="cute"] .month-picker-dropdown,
-[data-theme="cute"] #month-picker-year-label,
-[data-theme="cute"] .year-nav-btn,
-[data-theme="cute"] .month-btn,
-[data-theme="cute"] .view-toggle-card,
-[data-theme="cute"] .view-toggle-btn,
-[data-theme="cute"] .subscription-day-card,
-[data-theme="cute"] .subscription-list-item-inline,
-[data-theme="cute"] .subscription-detail-content,
-[data-theme="cute"] .subscription-detail-content .modal-header,
-[data-theme="cute"] .subscription-detail-body,
-[data-theme="cute"] .detail-section,
-[data-theme="cute"] .detail-item,
-[data-theme="cute"] .subscription-form-panel,
-[data-theme="cute"] .subscription-calculator-header,
-[data-theme="cute"] .subscription-billing-bar,
-[data-theme="cute"] .subscription-display-area,
-[data-theme="cute"] .subscription-keypad-area,
-[data-theme="cute"] .sub-keypad-btn,
-[data-theme="cute"] .loading-message {
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-picker-dropdown,
+:is([data-theme="cute"], [data-theme="sanrio"]) #month-picker-year-label,
+:is([data-theme="cute"], [data-theme="sanrio"]) .year-nav-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-day-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-list-item-inline,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-detail-content,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-detail-content .modal-header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-detail-body,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-section,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-form-panel,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-calculator-header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-billing-bar,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-display-area,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-keypad-area,
+:is([data-theme="cute"], [data-theme="sanrio"]) .sub-keypad-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .loading-message {
     background: var(--soft-panel-background);
     border-color: var(--border-color);
     color: var(--text-color);
     box-shadow: 0 10px 24px rgba(204, 121, 162, 0.14);
 }
 
-[data-theme="cute"] .month-selector-btn,
-[data-theme="cute"] .view-toggle-btn,
-[data-theme="cute"] .month-btn,
-[data-theme="cute"] .year-nav-btn,
-[data-theme="cute"] .sub-keypad-btn,
-[data-theme="cute"] .delete-transaction-btn-top,
-[data-theme="cute"] .add-transaction-btn-top,
-[data-theme="cute"] .subscription-item-delete {
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .year-nav-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .sub-keypad-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-transaction-btn-top,
+:is([data-theme="cute"], [data-theme="sanrio"]) .add-transaction-btn-top,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-delete {
     box-shadow:
         4px 4px 12px rgba(204, 121, 162, 0.16),
         -2px -2px 10px rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="cute"] .month-selector-btn:hover,
-[data-theme="cute"] .view-toggle-btn:hover,
-[data-theme="cute"] .month-btn:hover,
-[data-theme="cute"] .year-nav-btn:hover {
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector-btn:hover,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-btn:hover,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-btn:hover,
+:is([data-theme="cute"], [data-theme="sanrio"]) .year-nav-btn:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);
     box-shadow: 0 12px 24px var(--glow-shadow);
 }
 
-[data-theme="cute"] .month-selector-btn:active,
-[data-theme="cute"] .month-btn:active,
-[data-theme="cute"] .year-nav-btn:active,
-[data-theme="cute"] .view-toggle-btn:active {
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-selector-btn:active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-btn:active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .year-nav-btn:active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-btn:active {
     box-shadow:
         inset 3px 3px 8px rgba(204, 121, 162, 0.18),
         inset -2px -2px 8px rgba(255, 255, 255, 0.7);
 }
 
-[data-theme="cute"] .month-btn.selected,
-[data-theme="cute"] .view-toggle-btn.active,
-[data-theme="cute"] .sub-keypad-btn.submit-btn,
-[data-theme="cute"] .add-transaction-btn-top {
+:is([data-theme="cute"], [data-theme="sanrio"]) .month-btn.selected,
+:is([data-theme="cute"], [data-theme="sanrio"]) .view-toggle-btn.active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .sub-keypad-btn.submit-btn,
+:is([data-theme="cute"], [data-theme="sanrio"]) .add-transaction-btn-top {
     background: var(--logo-gradient);
     border-color: transparent;
     color: var(--button-text);
     box-shadow: 0 10px 24px var(--glow-shadow);
 }
 
-[data-theme="cute"] .delete-transaction-btn-top,
-[data-theme="cute"] .subscription-item-delete {
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-transaction-btn-top,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-delete {
     background: linear-gradient(145deg, #ff7fae, #d9446a);
     border-color: transparent;
     color: #ffffff;
 }
 
-[data-theme="cute"] .delete-transaction-btn-top.active {
+:is([data-theme="cute"], [data-theme="sanrio"]) .delete-transaction-btn-top.active {
     background: linear-gradient(145deg, #d9446a, #b83258);
     color: #ffffff;
 }
 
-[data-theme="cute"] .transaction-day-card,
-[data-theme="cute"] .subscription-day-card {
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-day-card,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-day-card {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 252, 0.94));
     border: 1px solid var(--border-color);
 }
 
-[data-theme="cute"] .day-header,
-[data-theme="cute"] .transaction-item,
-[data-theme="cute"] .subscription-list-item-inline {
+:is([data-theme="cute"], [data-theme="sanrio"]) .day-header,
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-list-item-inline {
     border-color: rgba(232, 93, 158, 0.14);
 }
 
-[data-theme="cute"] .transaction-item:active,
-[data-theme="cute"] .subscription-list-item-inline:hover {
+:is([data-theme="cute"], [data-theme="sanrio"]) .transaction-item:active,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-list-item-inline:hover {
     background: rgba(255, 232, 243, 0.86);
 }
 
-[data-theme="cute"] .subscription-list-item-inline.warning {
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-list-item-inline.warning {
     background: linear-gradient(145deg, #fff0e8, #ffe4f1);
     border: 1px solid rgba(217, 137, 31, 0.18);
 }
 
-[data-theme="cute"] .subscription-item-icon,
-[data-theme="cute"] .subscription-icon-preview,
-[data-theme="cute"] .detail-icon,
-[data-theme="cute"] .insight-icon {
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-icon,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-icon-preview,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-icon,
+:is([data-theme="cute"], [data-theme="sanrio"]) .insight-icon {
     background: linear-gradient(145deg, #ffe8f3, #f0e7ff);
     color: var(--primary-color);
     border: 1px solid rgba(232, 93, 158, 0.2);
     box-shadow: 0 10px 20px rgba(232, 93, 158, 0.16);
 }
 
-[data-theme="cute"] .insight-icon i,
-[data-theme="cute"] .detail-icon i,
-[data-theme="cute"] .subscription-icon-preview i,
-[data-theme="cute"] .subscription-item-icon i {
+:is([data-theme="cute"], [data-theme="sanrio"]) .insight-icon i,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-icon i,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-icon-preview i,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-icon i {
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .category-amount,
-[data-theme="cute"] .subscription-item-amount,
-[data-theme="cute"] .detail-value,
-[data-theme="cute"] .subscription-detail-content .price,
-[data-theme="cute"] .subscription-amount {
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-amount,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-amount,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-value,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-detail-content .price,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-amount {
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .category-percentage,
-[data-theme="cute"] .insight-title,
-[data-theme="cute"] .subscription-item-billing,
-[data-theme="cute"] .detail-label,
-[data-theme="cute"] .subscription-billing-label span {
+:is([data-theme="cute"], [data-theme="sanrio"]) .category-percentage,
+:is([data-theme="cute"], [data-theme="sanrio"]) .insight-title,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-item-billing,
+:is([data-theme="cute"], [data-theme="sanrio"]) .detail-label,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-billing-label span {
     color: var(--text-secondary);
 }
 
-[data-theme="cute"] .subscription-form-fields input,
-[data-theme="cute"] .subscription-billing-label input {
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-form-fields input,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-billing-label input {
     background: rgba(255, 247, 252, 0.94);
     color: var(--text-color);
     border-color: var(--border-color);
 }
 
-[data-theme="cute"] .subscription-form-fields input:focus,
-[data-theme="cute"] .subscription-billing-label input:focus {
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-form-fields input:focus,
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-billing-label input:focus {
     background: #fffafd;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-[data-theme="cute"] .sub-keypad-btn.operator,
-[data-theme="cute"] .sub-keypad-btn.action {
+:is([data-theme="cute"], [data-theme="sanrio"]) .sub-keypad-btn.operator,
+:is([data-theme="cute"], [data-theme="sanrio"]) .sub-keypad-btn.action {
     background: #ffe8f3;
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .subscription-keypad-area {
+:is([data-theme="cute"], [data-theme="sanrio"]) .subscription-keypad-area {
     /* No gap-painting needed — flex layout now fills the full screen */
 }
 
-[data-theme="cute"] .close-subscription-detail,
-[data-theme="cute"] .close-add-subscription-modal,
-[data-theme="cute"] .close-quick-add-config {
+:is([data-theme="cute"], [data-theme="sanrio"]) .close-subscription-detail,
+:is([data-theme="cute"], [data-theme="sanrio"]) .close-add-subscription-modal,
+:is([data-theme="cute"], [data-theme="sanrio"]) .close-quick-add-config {
     color: var(--text-secondary);
 }

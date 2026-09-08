@@ -1,7 +1,8 @@
 // Theme setup lives separately from the feature logic in app.js.
 const THEMES = {
     NEON: 'neon',
-    CUTE: 'cute'
+    CUTE: 'cute',
+    SANRIO: 'sanrio'
 };
 
 const THEME_META = {
@@ -68,6 +69,12 @@ const CUTE_CATEGORY_OVERRIDES = {
     other: { color: '#c4cada', bg: '#f0f2f6', gradient: 'linear-gradient(90deg, #b4bdcf, #c4cada, #e2e5ec)' }
 };
 
+THEME_META.sanrio = {
+    icon: 'fas fa-heart', colorScheme: '#fffaf5',
+    monthlyGradient: ['#f8b8ca', '#e96a92'],
+    categoryChartColors: ['#df668c', '#8cbcd0', '#b09ac8', '#e6bb69', '#83b8a1', '#ee9e89', '#c59bb7', '#91a5cc', '#c4bb83', '#ad91b9', '#8ebbb5', '#d3a991']
+};
+
 let currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) || THEMES.NEON;
 if (!Object.values(THEMES).includes(currentTheme)) currentTheme = THEMES.NEON;
 
@@ -77,7 +84,7 @@ function getCssVar(name, fallback) {
 }
 
 function applyTheme(theme, shouldPersist = true) {
-    currentTheme = theme === THEMES.CUTE ? THEMES.CUTE : THEMES.NEON;
+    currentTheme = Object.values(THEMES).includes(theme) ? theme : THEMES.NEON;
     document.documentElement.dataset.theme = currentTheme;
     document.body?.setAttribute('data-theme', currentTheme);
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -89,27 +96,47 @@ function applyTheme(theme, shouldPersist = true) {
 function updateThemeToggleUI() {
     const toggle = document.getElementById('theme-toggle');
     if (!toggle) return;
-    const isCute = currentTheme === THEMES.CUTE;
-    const meta = THEME_META[currentTheme];
-    toggle.setAttribute('aria-pressed', String(isCute));
-    toggle.setAttribute('aria-label', isCute ? 'Switch to neon theme' : 'Switch to cute theme');
-    const icon = toggle.querySelector('.theme-toggle-thumb i');
-    if (icon) icon.className = meta.icon;
+    const names = { neon: 'Dark', cute: 'Light', sanrio: 'Sanrio' };
+    toggle.setAttribute('aria-label', `Choose theme. Current theme: ${names[currentTheme]}`);
+    document.querySelectorAll('[data-theme-choice]').forEach(option => {
+        option.setAttribute('aria-checked', String(option.dataset.themeChoice === currentTheme));
+    });
 }
 
 function setupThemeSwitch() {
     const toggle = document.getElementById('theme-toggle');
     if (!toggle) return;
     updateThemeToggleUI();
+    const picker = document.getElementById('theme-picker');
+    const close = () => picker.close();
     toggle.addEventListener('click', () => {
-        applyTheme(currentTheme === THEMES.CUTE ? THEMES.NEON : THEMES.CUTE);
+        picker.showModal();
+        picker.querySelector('[aria-checked="true"]')?.focus();
+    });
+    document.getElementById('theme-picker-close').addEventListener('click', close);
+    picker.addEventListener('click', event => { if (event.target === picker) close(); });
+    picker.addEventListener('close', () => toggle.focus());
+    picker.addEventListener('keydown', event => {
+        if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        const options = [...picker.querySelectorAll('[data-theme-choice]')];
+        const index = options.indexOf(document.activeElement);
+        if (index < 0) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
+            : (index + (['ArrowDown', 'ArrowRight'].includes(event.key) ? 1 : -1) + options.length) % options.length;
+        options[next].focus();
+    });
+    picker.querySelectorAll('[data-theme-choice]').forEach(option => option.addEventListener('click', () => {
+        applyTheme(option.dataset.themeChoice);
         updateTransactionsList();
         updateExpenseCharts();
         updateBalance();
         if (typeof renderQuickAddButtons === 'function') renderQuickAddButtons();
         const budgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
         if (typeof updateBudgetUI === 'function') updateBudgetUI(budgets);
-    });
+        if (typeof renderSubscriptionListInline === 'function') renderSubscriptionListInline();
+        close();
+    }));
 }
 
 applyTheme(currentTheme, false);

@@ -1,0 +1,180 @@
+/* Theme chooser is shared. All visual reskin rules below are Sanrio-only. */
+.theme-settings-btn { width:44px; height:44px; flex-shrink:0; display:grid; place-items:center; border:1px solid var(--border-color); border-radius:14px; background:var(--control-background); color:var(--text-color); cursor:pointer; font-size:19px; }
+button.close-add-modal,button.close-add-subscription-modal { border:0; padding:0; cursor:pointer; }
+#theme-picker { margin:auto; padding:0; width:min(420px, calc(100% - 32px)); max-height:calc(100dvh - 40px); overflow:auto; border:1px solid var(--border-color); border-radius:24px; background:var(--card-background); color:var(--text-color); box-shadow:0 24px 80px #0004; }
+#theme-picker::backdrop { background:#21192380; backdrop-filter:blur(5px); }
+.theme-picker-panel { padding:24px; }
+.theme-picker-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.theme-picker-heading p { font-size:10px; letter-spacing:2px; color:var(--text-secondary); }
+.theme-picker-heading h2 { font-size:22px; margin:4px 0; }
+#theme-picker-close { width:44px; height:44px; border:0; border-radius:50%; background:var(--control-background); color:var(--text-color); font-size:28px; cursor:pointer; }
+.theme-picker-description,.theme-picker-footnote { font-size:13px; color:var(--text-secondary); margin:12px 0 20px; }
+.theme-picker-footnote { margin:20px 0 0; text-align:center; }
+.theme-options { display:grid; gap:12px; }
+.theme-option { width:100%; display:flex; align-items:center; gap:14px; padding:14px; text-align:left; border:1px solid var(--border-color); border-radius:16px; background:var(--surface-subtle); color:var(--text-color); cursor:pointer; }
+.theme-option[aria-checked="true"] { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
+.theme-option-copy { flex:1; }
+.theme-option-copy strong,.theme-option-copy small { display:block; }
+.theme-option-copy small { color:var(--text-secondary); font-size:12px; margin-top:3px; }
+.theme-check { visibility:hidden; color:var(--primary-color); font-weight:700; }
+[aria-checked="true"] > .theme-check { visibility:visible; }
+.theme-preview { width:48px; height:56px; border-radius:10px; display:flex; align-items:end; justify-content:center; gap:3px; padding:10px; flex-shrink:0; border:1px solid #8883; }
+.theme-preview span { width:7px; height:18px; border-radius:3px; background:#59a8ff; }
+.theme-preview span:nth-child(2) { height:30px; }
+.theme-preview span:nth-child(3) { height:24px; }
+.preview-dark { background:#101726; }.preview-light { background:#fff5fb; }.preview-light span { background:#d58ccb; }
+.preview-sanrio { background:#fff3ef; align-items:center; padding:4px; }
+
+[data-theme="sanrio"] {
+ color-scheme:light;
+ --primary-color:#bc456c; --accent-color:#ee9db5; --secondary-color:#9a7eb4;
+ --text-color:#49352f; --text-secondary:#806963; --background-color:#fffaf5;
+ --card-background:#fffdfa; --header-background:#fff0ed;
+ --card-gradient:linear-gradient(180deg,#fffdfa,#fff9f4);
+ --body-background:linear-gradient(160deg,#fffaf5,#fff7f2);
+ --control-background:#fff9f4; --soft-panel-background:#fff6f1; --surface-raised:#fffdfa; --surface-subtle:#fff6f1;
+ --nav-background:#fffcf8; --nav-active-background:#ffedf2; --nav-active-color:#bc456c; --nav-border-color:#f1d5cf; --nav-glow:transparent;
+ --pressed-surface:#fce7ed; --button-background:#bc456c; --button-text:#fff;
+ --shadow-color:#c68e7c12; --glow-shadow:transparent; --highlight-color:#fce7ed; --border-color:#eed6cf;
+ --category-color:#bc456c; --category-bg:#fff0f2; --success-color:#397c60; --budget-remaining-color:#397c60; --danger-color:#bc384e; --warning-color:#91601a;
+ --budget-circle-start:#e881a1; --budget-circle-middle:#f3b5c5; --budget-circle-end:#b29ac7;
+ --logo-gradient:linear-gradient(135deg,#c64c76,#ba4068); --section-line-gradient:linear-gradient(90deg,#f2b1c3,transparent);
+ --export-gradient:linear-gradient(#fff9f4,#fff9f4); --import-gradient:linear-gradient(#fff9f4,#fff9f4);
+ --focus-ring:#a53569; --chart-grid-color:#eadcd6; --chart-label-color:#806963; --chart-empty-color:#f7dce5; --chart-border-color:#fffdfa;
+ --tooltip-background:#fffdfa; --tooltip-text-color:#49352f;
+ --subscription-modal-background:linear-gradient(#fffaf5,#fff4ee); --subscription-modal-bottom-color:#fff4ee;
+}
+[data-theme="sanrio"] header { background:linear-gradient(180deg,#ffe8e7,#fff6f0); border:0; border-bottom:1px solid #f1c9cd; border-radius:0 0 20px 20px; padding:16px 12px; box-shadow:none; margin-bottom:22px; }
+[data-theme="sanrio"] .logo { gap:5px; min-width:0; }
+[data-theme="sanrio"] .logo h1 { color:var(--text-color); -webkit-text-fill-color:var(--text-color); background:none; font-size:21px; font-weight:700; }
+[data-theme="sanrio"] .refresh-btn { background:transparent; color:var(--primary-color); box-shadow:none; }
+[data-theme="sanrio"] :is(.card,.transaction-day-card,.category-item,.subscription-card,.subscription-detail-card,.budget-item,.budget-stat-item,.quick-add-item,.quick-add-btn,.modal-content,.custom-category-sheet,.category-action-sheet,.category-delete-sheet) { border-color:var(--border-color); box-shadow:0 3px 12px var(--shadow-color); background:var(--card-gradient); }
+[data-theme="sanrio"] .card { border-radius:18px; }
+[data-theme="sanrio"] :is(.dashboard,.dashboard > *,.summary-row > .card,.chart-container) { min-width:0; }
+[data-theme="sanrio"] .summary-row > .card { flex:1 1 0; }
+[data-theme="sanrio"] .summary-card-title-sm { font-size:14px; }
+[data-theme="sanrio"] .summary-row .total-amount { overflow-wrap:anywhere; }
+[data-theme="sanrio"] .balance-summary-card { position:relative; background:linear-gradient(125deg,#fff6f2,#ffedf0); }
+[data-theme="sanrio"] .balance-summary-card::before { content:""; position:absolute; width:27px; height:27px; left:6px; top:-12px; background:url('../images/sanrio/bow.svg') center/contain no-repeat; pointer-events:none; }
+[data-theme="sanrio"] .balance-summary-card { overflow:visible; }
+[data-theme="sanrio"] .balance-summary-toggle { justify-content:space-between; text-align:left; min-height:126px; }
+[data-theme="sanrio"] .balance-summary-copy { align-items:flex-start; }
+[data-theme="sanrio"] .balance-summary-toggle::after { content:"⌄"; font-size:22px; color:var(--text-color); }
+[data-theme="sanrio"] .balance-summary-toggle[aria-expanded="true"]::after { content:"⌃"; }
+[data-theme="sanrio"] .balance-summary-title { font-size:16px; font-weight:500; }
+[data-theme="sanrio"] .balance-summary-toggle .total-amount { margin:6px 0 0; }
+[data-theme="sanrio"] .summary-card { text-align:left; }
+[data-theme="sanrio"] .monthly-trends-card .chart-container { height:230px; min-height:0; }
+[data-theme="sanrio"] :is(.income-card,.expense-card) { background-position:right 10px bottom 12px; background-size:38px; background-repeat:no-repeat; }
+[data-theme="sanrio"] .income-card { background-image:url('../images/sanrio/cinnamoroll.svg'); }
+[data-theme="sanrio"] .expense-card { background-image:url('../images/sanrio/melody.svg'); }
+[data-theme="sanrio"] :is(.income-card,.expense-card) .total-amount { padding-right:30px; font-size:clamp(18px,5vw,24px); }
+[data-theme="sanrio"] .total-amount { color:var(--primary-color); text-shadow:none; }
+[data-theme="sanrio"] .excel-action-btn { color:var(--primary-color); border:1px solid var(--border-color); box-shadow:none; }
+[data-theme="sanrio"] .bottom-nav { background:var(--nav-background); border-color:var(--border-color); box-shadow:0 -3px 18px #ba876b0a; }
+[data-theme="sanrio"] .nav-item { min-height:48px; color:var(--text-secondary); }
+[data-theme="sanrio"] .nav-item i { position:relative; font-size:21px; margin-top:8px; }
+[data-theme="sanrio"] .nav-item i::after { content:""; position:absolute; width:21px; height:21px; right:-9px; top:-12px; background:center/contain no-repeat; }
+[data-theme="sanrio"] [data-section="dashboard"] i::after { background-image:url('../images/sanrio/bow.svg'); }
+[data-theme="sanrio"] [data-section="transactions"] i::after { background-image:url('../images/sanrio/cinnamoroll.svg'); }
+[data-theme="sanrio"] [data-section="categories"] i::after { background-image:url('../images/sanrio/kuromi.svg'); }
+[data-theme="sanrio"] [data-section="budget"] i::after { background-image:url('../images/sanrio/pompom.svg'); }
+[data-theme="sanrio"] .nav-add-btn { background:linear-gradient(145deg,#f597b3,#bc456c); box-shadow:0 2px 6px #d991a433; position:relative; }
+[data-theme="sanrio"] .nav-add-btn::before { content:""; position:absolute; width:24px; height:14px; top:-11px; left:50%; transform:translateX(-50%); border-left:8px solid #f597b3; border-right:8px solid #f597b3; border-radius:60% 60% 0 0; }
+[data-theme="sanrio"] :is(.calculator-content,.subscription-calculator-content) { background:var(--body-background); }
+[data-theme="sanrio"] :is(.subscription-form-fields input,.subscription-billing-label input) { background:var(--control-background); border-color:var(--border-color); }
+[data-theme="sanrio"] :is(.subscription-icon-preview,.subscription-selected-icon i) { background:#ffedf0; color:var(--primary-color); box-shadow:none; }
+[data-theme="sanrio"] .subscription-calculator-content::before { display:none; }
+[data-theme="sanrio"] :is(.keypad-btn,.sub-keypad-btn,.budget-calc-key) { border:1px solid var(--border-color); background:#fffaf5; color:var(--text-color); box-shadow:none; border-radius:12px; }
+[data-theme="sanrio"] :is(.keypad-btn.operator,.keypad-btn.action,.sub-keypad-btn.operator,.sub-keypad-btn.action,.budget-calc-key.action) { color:var(--primary-color); background:#fff0f0; }
+[data-theme="sanrio"] :is(.keypad-btn.submit-btn,.sub-keypad-btn.submit-btn,.budget-calc-key.save,.type-btn.active) { background:#fbd3df; color:#853449; box-shadow:none; }
+[data-theme="sanrio"] :is(.input-display-area,.date-bar,.keypad-area,.type-toggle) { background:var(--control-background); border-color:var(--border-color); box-shadow:none; }
+[data-theme="sanrio"] .cat-icon-circle { background:#fff4ef; border:1px solid var(--border-color); box-shadow:none; }
+[data-theme="sanrio"] .category-option.selected .cat-icon-circle { border-color:var(--primary-color); background:#ffe9f0; box-shadow:0 0 0 2px #f6ccd9; }
+[data-theme="sanrio"] .category-option[data-id] .cat-icon-circle { position:relative; }
+[data-theme="sanrio"] :is(.category-option[data-id="food"],.category-option[data-id="transport"],.category-option[data-id="shopping"],.category-option[data-id="gf"],.category-option[data-id="entertainment"]) .cat-icon-circle::after { content:""; position:absolute; right:-5px; top:-6px; width:22px; height:22px; background:center/contain no-repeat; }
+[data-theme="sanrio"] .category-option[data-id="food"] .cat-icon-circle::after { background-image:url('../images/sanrio/pompom.svg'); }
+[data-theme="sanrio"] .category-option[data-id="transport"] .cat-icon-circle::after { background-image:url('../images/sanrio/cinnamoroll.svg'); }
+[data-theme="sanrio"] .category-option[data-id="shopping"] .cat-icon-circle::after { background-image:url('../images/sanrio/kitty.svg'); }
+[data-theme="sanrio"] .category-option[data-id="gf"] .cat-icon-circle::after { background-image:url('../images/sanrio/melody.svg'); }
+[data-theme="sanrio"] .category-option[data-id="entertainment"] .cat-icon-circle::after { background-image:url('../images/sanrio/kuromi.svg'); }
+[data-theme="sanrio"] :is(.month-selector,.month-dropdown,.quick-add-tabs,.quick-add-tab,.insight-item,.detail-row,.budget-stat-item,.budget-item) { background:var(--control-background); box-shadow:none; border-color:var(--border-color); }
+[data-theme="sanrio"] :is(input,select,textarea) { accent-color:var(--primary-color); color:var(--text-color); background:var(--control-background); }
+[data-theme="sanrio"] :is(.delete-modal-content.cute-popup,.popup-icon,.bell-style,.check-style) { background:#fff1ed; color:var(--text-color); box-shadow:none; }
+[data-theme="sanrio"] .budget-circle-container::after { content:""; position:absolute; width:34px; height:34px; right:10px; bottom:8px; background:url('../images/sanrio/pompom.svg') center/contain no-repeat; pointer-events:none; }
+[data-theme="sanrio"] .budget-progress-fill { background:linear-gradient(90deg,#e881a1,#b29ac7); }
+[data-theme="sanrio"] .budget-progress-fill.warning { background:#bd8b3e; }
+[data-theme="sanrio"] .budget-progress-fill.danger { background:var(--danger-color); }
+[data-theme="sanrio"] .circle-bg { stroke:#f5e6df; }
+[data-theme="sanrio"] .custom-category-color-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+[data-theme="sanrio"] .custom-category-color-option { width:44px; height:44px; justify-self:center; }
+[data-theme="sanrio"] .custom-category-create-btn { background:var(--logo-gradient); box-shadow:none; }
+@media (max-width:360px) { [data-theme="sanrio"] .logo h1 { font-size:18px; } .theme-picker-panel { padding:18px; } }
+@media (prefers-reduced-motion:reduce) { [data-theme="sanrio"] *, .theme-option { animation:none !important; transition:none !important; } }
+
+/* Delicate character artwork: one shared transparent image, cropped with CSS.
+   The source stays untouched; coordinates refer to its 2172 x 724 canvas. */
+[data-theme="sanrio"] [data-section="dashboard"] i::after, [data-theme="sanrio"] .category-option[data-id="shopping"] .cat-icon-circle::after, .preview-sanrio::after,
+[data-theme="sanrio"] [data-section="transactions"] i::after, [data-theme="sanrio"] .category-option[data-id="transport"] .cat-icon-circle::after, [data-theme="sanrio"] .income-card::after,
+[data-theme="sanrio"] .category-option[data-id="gf"] .cat-icon-circle::after, [data-theme="sanrio"] .expense-card::after,
+[data-theme="sanrio"] [data-section="categories"] i::after, [data-theme="sanrio"] .category-option[data-id="entertainment"] .cat-icon-circle::after,
+[data-theme="sanrio"] [data-section="budget"] i::after, [data-theme="sanrio"] .category-option[data-id="food"] .cat-icon-circle::after, [data-theme="sanrio"] .budget-circle-container::after {
+ content:""; display:block; width:var(--art-size,32px); height:var(--art-size,32px);
+ background-image:url('../images/sanrio/friends-delicate.png'); background-repeat:no-repeat;
+ pointer-events:none;
+}
+[data-theme="sanrio"] [data-section="dashboard"] i::after, [data-theme="sanrio"] .category-option[data-id="shopping"] .cat-icon-circle::after, .preview-sanrio::after {
+ background-size:calc(var(--art-size,32px) * 5.196172) calc(var(--art-size,32px) * 1.732057);
+ background-position:calc(var(--art-size,32px) * 0.000000) calc(var(--art-size,32px) * -0.403110);
+}
+[data-theme="sanrio"] [data-section="transactions"] i::after, [data-theme="sanrio"] .category-option[data-id="transport"] .cat-icon-circle::after, [data-theme="sanrio"] .income-card::after {
+ background-size:calc(var(--art-size,32px) * 4.450820) calc(var(--art-size,32px) * 1.483607);
+ background-position:calc(var(--art-size,32px) * -0.856557) calc(var(--art-size,32px) * -0.350410);
+}
+[data-theme="sanrio"] .category-option[data-id="gf"] .cat-icon-circle::after, [data-theme="sanrio"] .expense-card::after {
+ background-size:calc(var(--art-size,32px) * 4.525000) calc(var(--art-size,32px) * 1.508333);
+ background-position:calc(var(--art-size,32px) * -1.764583) calc(var(--art-size,32px) * -0.177083);
+}
+[data-theme="sanrio"] [data-section="categories"] i::after, [data-theme="sanrio"] .category-option[data-id="entertainment"] .cat-icon-circle::after {
+ background-size:calc(var(--art-size,32px) * 5.221154) calc(var(--art-size,32px) * 1.740385);
+ background-position:calc(var(--art-size,32px) * -3.076923) calc(var(--art-size,32px) * -0.383413);
+}
+[data-theme="sanrio"] [data-section="budget"] i::after, [data-theme="sanrio"] .category-option[data-id="food"] .cat-icon-circle::after, [data-theme="sanrio"] .budget-circle-container::after {
+ background-size:calc(var(--art-size,32px) * 4.601695) calc(var(--art-size,32px) * 1.533898);
+ background-position:calc(var(--art-size,32px) * -3.601695) calc(var(--art-size,32px) * -0.331568);
+}
+
+[data-theme="sanrio"] .nav-item i { width:32px; height:32px; margin-top:0; }
+[data-theme="sanrio"] .nav-item i::before { content:none; }
+[data-theme="sanrio"] .nav-item i::after { top:0; right:0; --art-size:32px; }
+[data-theme="sanrio"] .nav-item { gap:5px; }
+[data-theme="sanrio"] .nav-item:not(.active) i { opacity:.82; }
+[data-theme="sanrio"] .nav-add-btn::before { display:none; }
+[data-theme="sanrio"] .nav-add-btn { background:linear-gradient(155deg,#efa0b8,#d66b91); box-shadow:0 3px 9px #c7869b25,inset 0 1px 0 #ffffff70; }
+[data-theme="sanrio"] :is(.income-card,.expense-card) { background-image:none; }
+[data-theme="sanrio"] :is(.income-card,.expense-card)::after { --art-size:34px; position:absolute; right:9px; bottom:12px; opacity:.85; }
+[data-theme="sanrio"] .budget-circle-container::after { --art-size:36px; }
+.preview-sanrio img { display:none; }
+.preview-sanrio::after { --art-size:34px; }
+[data-theme="sanrio"] :is(.category-option[data-id="food"],.category-option[data-id="transport"],.category-option[data-id="shopping"],.category-option[data-id="gf"],.category-option[data-id="entertainment"]) .cat-icon-circle { background:#fffaf7; }
+[data-theme="sanrio"] :is(.category-option[data-id="food"],.category-option[data-id="transport"],.category-option[data-id="shopping"],.category-option[data-id="gf"],.category-option[data-id="entertainment"]) .cat-icon-circle > i { visibility:hidden; }
+[data-theme="sanrio"] :is(.category-option[data-id="food"],.category-option[data-id="transport"],.category-option[data-id="shopping"],.category-option[data-id="gf"],.category-option[data-id="entertainment"]) .cat-icon-circle::after { --art-size:36px; top:50%; right:50%; transform:translate(50%,-50%); }
+
+/* Clip each crop to its own artwork; tall ears must not pull in a neighbour. */
+[data-theme="sanrio"] .category-option[data-id="gf"] .cat-icon-circle::after,
+[data-theme="sanrio"] .expense-card::after { clip-path:inset(0 12.3%); }
+[data-theme="sanrio"] .nav-item:not(.active) i { opacity:1; }
+
+/* Quiet line-icon companions keep non-character categories in the same palette. */
+[data-theme="sanrio"] .cat-icon-circle > i { color:var(--category-color); }
+[data-theme="sanrio"] .category-option.selected .cat-icon-circle > i { color:var(--category-color); }
+[data-theme="sanrio"] [data-section="transactions"] i::after { --art-size:38px; right:-3px; top:-3px; }
+
+/* Category choices remain functional pictograms in every theme. */
+[data-theme="sanrio"] .category-option[data-id] .cat-icon-circle > i {
+    visibility: visible;
+}
+
+[data-theme="sanrio"] .category-option[data-id] .cat-icon-circle::after {
+    display: none;
+}

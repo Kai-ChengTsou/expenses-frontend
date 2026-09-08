@@ -463,69 +463,69 @@
     }
 }
 
-[data-theme="cute"] .budget-stat-item,
-[data-theme="cute"] .budget-item {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-stat-item,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-item {
     background: var(--card-gradient);
     border-color: var(--border-color);
     box-shadow: 0 12px 28px rgba(204, 121, 162, 0.16);
 }
 
-[data-theme="cute"] .budget-item.is-over-budget {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-item.is-over-budget {
     background: linear-gradient(135deg, #fff0f4, #fff7fb);
     border-color: rgba(217, 68, 106, 0.48);
     box-shadow: 0 12px 28px rgba(217, 68, 106, 0.16), inset 3px 0 0 #d9446a;
 }
 
-[data-theme="cute"] .budget-over-warning {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-over-warning {
     background: rgba(217, 68, 106, 0.09);
     border-color: rgba(217, 68, 106, 0.22);
     color: #a62f50;
 }
 
-[data-theme="cute"] .budget-over-warning i,
-[data-theme="cute"] .budget-item.is-over-budget .budget-cat-amount strong {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-over-warning i,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-item.is-over-budget .budget-cat-amount strong {
     color: #c73560;
 }
 
-[data-theme="cute"] .budget-over-warning strong {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-over-warning strong {
     color: #7f2440;
 }
 
-[data-theme="cute"] .circle-bg {
+:is([data-theme="cute"], [data-theme="sanrio"]) .circle-bg {
     stroke: rgba(255, 158, 199, 0.28);
 }
 
-[data-theme="cute"] .circle-progress {
+:is([data-theme="cute"], [data-theme="sanrio"]) .circle-progress {
     filter: drop-shadow(0 0 10px rgba(232, 93, 158, 0.18));
 }
 
-[data-theme="cute"] .stat-value.spent {
+:is([data-theme="cute"], [data-theme="sanrio"]) .stat-value.spent {
     color: var(--danger-color);
 }
 
-[data-theme="cute"] .budget-progress-bar {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-bar {
     background: rgba(232, 93, 158, 0.14);
 }
 
-[data-theme="cute"] .budget-progress-fill {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-fill {
     background: linear-gradient(90deg, var(--category-color, var(--primary-color)), #ff9ec7, var(--accent-color));
 }
 
-[data-theme="cute"] .budget-progress-fill.warning {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-fill.warning {
     background: linear-gradient(90deg, #ffd166, #ffb35c, #ff8fab);
 }
 
-[data-theme="cute"] .budget-progress-fill.danger {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-progress-fill.danger {
     background: linear-gradient(90deg, #ff8fab, #d9446a, #a979ff);
 }
 
-[data-theme="cute"] .budget-grid-item:active {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-grid-item:active {
     background: rgba(255, 158, 199, 0.14);
 }
 
-[data-theme="cute"] .budget-amount-input,
-[data-theme="cute"] .btn-back,
-[data-theme="cute"] .budget-calc-key {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-amount-input,
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-back,
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-calc-key {
     background: rgba(255, 247, 252, 0.92);
     color: var(--text-color);
     border-color: var(--border-color);
@@ -534,22 +534,22 @@
         -2px -2px 10px rgba(255, 255, 255, 0.85);
 }
 
-[data-theme="cute"] .budget-amount-input:focus {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-amount-input:focus {
     background: rgba(255, 232, 243, 0.92);
     border-color: var(--primary-color);
 }
 
-[data-theme="cute"] .btn-save-single {
+:is([data-theme="cute"], [data-theme="sanrio"]) .btn-save-single {
     background: var(--logo-gradient);
     color: var(--button-text);
 }
 
-[data-theme="cute"] .budget-calc-key.action {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-calc-key.action {
     background: #ffe8f3;
     color: var(--primary-color);
 }
 
-[data-theme="cute"] .budget-calc-key.save {
+:is([data-theme="cute"], [data-theme="sanrio"]) .budget-calc-key.save {
     background: var(--logo-gradient);
     color: var(--button-text);
     box-shadow: 0 10px 24px var(--glow-shadow);
