@@ -107,6 +107,7 @@
 }
 
 .budget-item {
+    cursor: pointer;
     background: linear-gradient(180deg, rgba(24, 31, 48, 0.88), rgba(18, 24, 38, 0.92));
     border-radius: 14px;
     padding: 15px;
@@ -114,6 +115,15 @@
     border: 1px solid rgba(99, 135, 197, 0.13);
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.budget-item:hover {
+    border-color: var(--primary-color);
+}
+
+.budget-item:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
 }
 
 .budget-item.is-over-budget {

@@ -1532,8 +1532,18 @@ function setupBudgetSection() {
     const budgetCalcKeys = document.querySelectorAll('.budget-calc-key');
     
     let currentEditingId = null;
+    let directEditing = false;
+
+    function closeBudgetModal() {
+        modal.style.display = 'none';
+        const returnTarget = directEditing
+            ? Array.from(document.querySelectorAll('#budget-breakdown .budget-item')).find(item => item.dataset.id === currentEditingId)
+            : editBtn;
+        (returnTarget || editBtn)?.focus();
+    }
     
     function showGridView() {
+        directEditing = false;
         gridView.style.display = 'grid';
         inputView.style.display = 'none';
         modalTitle.textContent = 'Tap to set budget';
@@ -1584,6 +1594,25 @@ function setupBudgetSection() {
             modal.style.display = 'flex';
         });
     }
+
+    const breakdown = document.getElementById('budget-breakdown');
+    function editCategoryBudget(event) {
+        const item = event.target.closest('.budget-item[data-id]');
+        if (!item || !breakdown.contains(item)) return;
+        if (event.type === 'keydown') {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+        }
+        const cat = EXPENSE_CATEGORIES.find(category => category.id === item.dataset.id);
+        if (!cat) return;
+        categoryBudgets = JSON.parse(localStorage.getItem('categoryBudgets')) || {};
+        directEditing = true;
+        showInputView(cat);
+        modal.style.display = 'flex';
+        amountInput.focus();
+    }
+    breakdown?.addEventListener('click', editCategoryBudget);
+    breakdown?.addEventListener('keydown', editCategoryBudget);
     
     if (backBtn) {
         backBtn.addEventListener('click', () => {
@@ -1602,6 +1631,10 @@ function setupBudgetSection() {
             }
             localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
             updateBudgetUI(categoryBudgets);
+            if (directEditing) {
+                closeBudgetModal();
+                return;
+            }
             renderBudgetGrid();
             showGridView();
         }
@@ -1644,14 +1677,16 @@ function setupBudgetSection() {
     }
     
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
+        closeBtn.addEventListener('click', closeBudgetModal);
     }
+
+    modal.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeBudgetModal();
+    });
     
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.style.display = 'none';
+            closeBudgetModal();
         }
     });
 }
@@ -1778,8 +1813,9 @@ function updateBudgetUI(categoryBudgets) {
                 
                 html += `
                     <div class="budget-item${isOver ? ' is-over-budget' : ''}"
+                         data-id="${cat.id}" role="button" tabindex="0" aria-haspopup="dialog"
                          style="${getCategoryVisualStyle(themedCat)}"
-                         ${isOver ? `role="group" aria-label="${cat.label} is over budget by $${overAmount.toLocaleString()}"` : ''}>
+                         title="Edit category budget">
                         <div class="budget-item-header">
                             <div class="budget-cat-info">
                                 <div class="budget-cat-icon" style="${getCategoryVisualStyle(themedCat)}">
